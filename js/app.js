@@ -1,0 +1,387 @@
+/* app.js — UI wiring. */
+(function (TRAD) {
+  'use strict';
+
+  var $ = function (id) { return document.getElementById(id); };
+
+  TRAD.validatePatterns();
+
+  var ctx = null, bodhran = null, drone = null, transport = null;
+  var midi = new TRAD.MidiOut();
+  var tune = TRAD.tunes[0];
+  var cells = [];
+  var settings = load();
+
+  /* ---------- persistence ---------- */
+  function load() {
+    try { return JSON.parse(localStorage.getItem('bodhran.settings') || '{}'); }
+    catch (e) { return {}; }
+  }
+  function save() {
+    try {
+      localStorage.setItem('bodhran.settings', JSON.stringify(settings));
+    } catch (e) { /* private window, or storage blocked — not worth reporting */ }
+  }
+  function remember(key, value) { settings[key] = value; save(); }
+
+  /* ---------- audio graph, built on first interaction ---------- */
+  function ensureAudio() {
+    if (ctx) { if (ctx.state === 'suspended') ctx.resume(); return; }
+    var AC = window.AudioContext || window.webkitAudioContext;
+    ctx = new AC({ latencyHint: 'interactive' });
+
+    var out = ctx.createGain();
+    out.gain.value = 1;
+
+    // Catch-all limiter on the sum of drum + reverb + drone. The drum has its
+    // own compressor, but that sits before the reverb send, so it cannot see
+    // the total — without this, volume at maximum clips audibly.
+    var limiter = ctx.createDynamicsCompressor();
+    limiter.threshold.value = -3;
+    limiter.knee.value = 0;
+    limiter.ratio.value = 20;
+    limiter.attack.value = 0.001;
+    limiter.release.value = 0.1;
+
+    out.connect(limiter);
+    limiter.connect(ctx.destination);
+
+    bodhran = new TRAD.Bodhran(ctx, out);
+    drone = new TRAD.Drone(ctx, out);
+    transport = new TRAD.Transport(ctx, bodhran, midi);
+    transport.onBar = onBar;
+
+    applyAll();
+    requestAnimationFrame(frame);
+  }
+
+  /* Push every control value into the audio side. */
+  function applyAll() {
+    if (!transport) return;
+    transport.tune = tune;
+    transport.bpm = +$('bpm').value;
+    transport.complexity = +$('complexity').value;
+    transport.humanize = +$('humanize').value;
+    transport.phraseLength = +$('phrase').value;
+    transport.countInBars = +$('countin').value;
+    transport.swingOverride = swingOverride();
+    bodhran.setLevel(+$('level').value);
+    bodhran.setRoom(+$('room').value);
+    bodhran.tuning = +$('tuning').value;
+    bodhran.tone = +$('tone').value;
+    drone.setLevel(+$('drone-level').value);
+  }
+
+  // The swing slider sits at 0 by default, meaning "whatever the tune wants".
+  // Only once it's moved does it take over.
+  var swingTouched = false;
+  function swingOverride() { return swingTouched ? +$('swing').value : null; }
+
+  /* ---------- tune chips ---------- */
+  function buildChips() {
+    var host = $('tunes');
+    TRAD.tunes.forEach(function (t) {
+      var b = document.createElement('button');
+      b.className = 'chip';
+      b.type = 'button';
+      b.setAttribute('role', 'radio');
+      b.setAttribute('aria-checked', String(t.id === tune.id));
+      b.dataset.id = t.id;
+      b.innerHTML = t.name + '<span class="meter">' + t.meter + '</span>';
+      b.addEventListener('click', function () { selectTune(t.id); });
+      host.appendChild(b);
+    });
+  }
+
+  function selectTune(id, keepTempo) {
+    tune = TRAD.tuneById(id);
+    remember('tune', id);
+
+    Array.prototype.forEach.call($('tunes').children, function (c) {
+      c.setAttribute('aria-checked', String(c.dataset.id === id));
+    });
+    $('tune-blurb').textContent = tune.blurb;
+    $('beat-unit').textContent = 'per ' + tune.beatUnit;
+
+    var bpmEl = $('bpm');
+    bpmEl.min = tune.bpmRange[0];
+    bpmEl.max = tune.bpmRange[1];
+    if (!keepTempo) setBpm(tune.defaultBpm);
+    else setBpm(clamp(+bpmEl.value, tune.bpmRange[0], tune.bpmRange[1]));
+
+    swingTouched = false;
+    $('swing').value = tune.swing;
+    $('swing-out').textContent = tune.swing
+      ? 'tune default (' + Math.round(tune.swing * 100) + '%)'
+      : 'tune default (straight)';
+
+    if (transport) { transport.tune = tune; transport.swingOverride = null; }
+    renderGrid(tune.grids.core[0]);
+  }
+
+  function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+
+  /* ---------- tempo ---------- */
+  function setBpm(v) {
+    v = clamp(Math.round(v), +$('bpm').min, +$('bpm').max);
+    $('bpm').value = v;
+    $('bpm-num').value = v;
+    if (transport) transport.bpm = v;
+    remember('bpm_' + tune.id, v);
+  }
+
+  var taps = [];
+  function tapTempo() {
+    var now = performance.now();
+    // More than two seconds since the last tap means you've started over.
+    if (taps.length && now - taps[taps.length - 1] > 2000) taps = [];
+    taps.push(now);
+    if (taps.length > 5) taps.shift();
+    if (taps.length < 2) return;
+    var span = taps[taps.length - 1] - taps[0];
+    setBpm(60000 / (span / (taps.length - 1)));
+  }
+
+  /* ---------- bar visualiser ---------- */
+  function renderGrid(grid) {
+    var host = $('grid');
+    host.innerHTML = '';
+    cells = [];
+    var slotsPerBeat = grid.length / tune.beatsPerBar;
+    for (var i = 0; i < grid.length; i++) {
+      var ch = grid[i];
+      var el = document.createElement('div');
+      var kind = ch === '-' ? 'rest' : (ch === 'g' ? 'ghost' : ch);
+      el.className = 'cell ' + kind + (i % slotsPerBeat === 0 ? ' beat' : '');
+      host.appendChild(el);
+      cells.push(el);
+    }
+  }
+
+  function onBar(grid, bar, countIn) {
+    renderGrid(grid);
+    // The bar counter is absolute; show it as a position within the phrase.
+    var n = transport.phraseLength;
+    $('bar-count').textContent = countIn ? 'count-in'
+      : n ? 'bar ' + ((bar % n) + 1) + ' of ' + n
+          : 'bar ' + (bar + 1);
+  }
+
+  function frame() {
+    requestAnimationFrame(frame);
+    if (!transport || !transport.running) return;
+    var due = transport.due();
+    for (var i = 0; i < due.length; i++) {
+      var ev = due[i];
+      var cell = cells[ev.slot];
+      if (cell && cells.length === ev.len) {
+        cell.classList.add('on');
+        (function (c) { setTimeout(function () { c.classList.remove('on'); }, 90); })(cell);
+      }
+      if (ev.char === 'D' || ev.char === 'C') flashPlay();
+    }
+  }
+
+  var flashTimer = null;
+  function flashPlay() {
+    var b = $('play');
+    b.classList.add('hit');
+    clearTimeout(flashTimer);
+    flashTimer = setTimeout(function () { b.classList.remove('hit'); }, 110);
+  }
+
+  /* ---------- play / stop ---------- */
+  function toggle() {
+    ensureAudio();
+    transport.toggle();
+    var b = $('play');
+    b.classList.toggle('playing', transport.running);
+    b.setAttribute('aria-pressed', String(transport.running));
+    b.querySelector('.play-label').textContent = transport.running ? 'Stop' : 'Play';
+    if (!transport.running) {
+      $('bar-count').textContent = '—';
+      renderGrid(tune.grids.core[0]);
+    }
+  }
+
+  /* ---------- wiring ---------- */
+  function bindSlider(id, outId, format, onChange) {
+    var el = $(id), out = $(outId);
+    function update() {
+      out.textContent = format(+el.value);
+      if (onChange) onChange(+el.value);
+      remember(id, +el.value);
+    }
+    el.addEventListener('input', update);
+    update();
+  }
+
+  function pct(v) { return Math.round(v * 100) + '%'; }
+
+  function init() {
+    buildChips();
+
+    $('play').addEventListener('click', toggle);
+    $('tap').addEventListener('click', function () { tapTempo(); });
+    $('bpm-up').addEventListener('click', function () { setBpm(+$('bpm').value + 5); });
+    $('bpm-down').addEventListener('click', function () { setBpm(+$('bpm').value - 5); });
+    $('bpm').addEventListener('input', function () { setBpm(+this.value); });
+    $('bpm-num').addEventListener('change', function () { setBpm(+this.value); });
+
+    bindSlider('complexity', 'complexity-out', function (v) {
+      return v < 0.2 ? 'sparse' : v < 0.45 ? 'steady' : v < 0.7 ? 'even'
+           : v < 0.88 ? 'busy' : 'flat out';
+    }, function (v) { if (transport) transport.complexity = v; });
+
+    bindSlider('humanize', 'humanize-out', pct,
+      function (v) { if (transport) transport.humanize = v; });
+
+    bindSlider('phrase', 'phrase-out', function (v) {
+      return v === 0 ? 'never' : v + ' bars';
+    }, function (v) { if (transport) transport.phraseLength = v; });
+
+    bindSlider('level', 'level-out', pct,
+      function (v) { if (bodhran) bodhran.setLevel(v); });
+
+    bindSlider('tuning', 'tuning-out', function (v) { return v + ' Hz'; },
+      function (v) { if (bodhran) bodhran.tuning = v; });
+
+    bindSlider('tone', 'tone-out', function (v) {
+      return v < 0.25 ? 'damped' : v < 0.45 ? 'warm' : v < 0.7 ? 'balanced'
+           : v < 0.88 ? 'open' : 'bright';
+    }, function (v) { if (bodhran) bodhran.tone = v; });
+
+    bindSlider('room', 'room-out', pct,
+      function (v) { if (bodhran) bodhran.setRoom(v); });
+
+    bindSlider('drone-level', 'drone-level-out', pct,
+      function (v) { if (drone) drone.setLevel(v); });
+
+    $('swing').addEventListener('input', function () {
+      swingTouched = true;
+      $('swing-out').textContent = +this.value === 0 ? 'straight' : pct(+this.value);
+      if (transport) transport.swingOverride = +this.value;
+    });
+
+    $('countin').addEventListener('change', function () {
+      if (transport) transport.countInBars = +this.value;
+      remember('countin', this.value);
+    });
+
+    $('drone-on').addEventListener('change', function () {
+      ensureAudio();
+      if (this.checked) drone.start(+$('drone-root').value);
+      else drone.stop();
+      remember('droneOn', this.checked);
+    });
+    $('drone-root').addEventListener('change', function () {
+      remember('droneRoot', this.value);
+      if ($('drone-on').checked) { ensureAudio(); drone.start(+this.value); }
+    });
+
+    document.addEventListener('keydown', function (e) {
+      if (/^(INPUT|SELECT|TEXTAREA)$/.test(e.target.tagName)) return;
+      if (e.code === 'Space') { e.preventDefault(); toggle(); }
+      else if (e.key === 'ArrowRight') { e.preventDefault(); setBpm(+$('bpm').value + 1); }
+      else if (e.key === 'ArrowLeft') { e.preventDefault(); setBpm(+$('bpm').value - 1); }
+      else if (e.key === 't' || e.key === 'T') tapTempo();
+    });
+
+    restore();
+    setupMidi();
+  }
+
+  function restore() {
+    ['complexity', 'humanize', 'phrase', 'level', 'tuning', 'tone', 'room',
+     'drone-level'].forEach(function (id) {
+      if (settings[id] != null) {
+        $(id).value = settings[id];
+        $(id).dispatchEvent(new Event('input'));
+      }
+    });
+    if (settings.countin != null) $('countin').value = settings.countin;
+    if (settings.droneRoot != null) $('drone-root').value = settings.droneRoot;
+
+    var startTune = settings.tune && TRAD.tuneById(settings.tune).id === settings.tune
+      ? settings.tune : TRAD.tunes[0].id;
+    selectTune(startTune);
+    if (settings['bpm_' + startTune] != null) setBpm(settings['bpm_' + startTune]);
+  }
+
+  /* ---------- MIDI ---------- */
+  function setupMidi() {
+    var status = $('midi-status');
+    if (!midi.available()) {
+      status.innerHTML = 'This browser has no Web MIDI, so GarageBand output is ' +
+        'unavailable here. <b>Chrome</b> or <b>Edge</b> on macOS support it; ' +
+        'Safari does not.';
+      return;
+    }
+    midi.init().then(function (ports) {
+      var sel = $('midi-port');
+      if (!ports.length) {
+        status.innerHTML = 'MIDI is available, but no output ports were found. ' +
+          'Turn on the <b>IAC Driver</b> in Audio MIDI Setup, then reload.';
+        return;
+      }
+      status.textContent = 'Route bodhrán hits to GarageBand, Logic or any ' +
+        'other app over a virtual MIDI bus.';
+      $('midi-controls').classList.remove('hidden');
+      ports.forEach(function (p) {
+        var o = document.createElement('option');
+        o.value = p.id;
+        o.textContent = p.name;
+        sel.appendChild(o);
+      });
+      if (settings.midiPort) sel.value = settings.midiPort;
+      midi.selectPort(sel.value);
+
+      sel.addEventListener('change', function () {
+        midi.selectPort(this.value);
+        remember('midiPort', this.value);
+      });
+      $('midi-on').addEventListener('change', function () {
+        midi.enabled = this.checked;
+        if (!this.checked) midi.allNotesOff();
+      });
+      $('midi-channel').addEventListener('change', function () {
+        midi.channel = clamp(+this.value, 1, 16);
+        this.value = midi.channel;
+        remember('midiChannel', midi.channel);
+      });
+      $('midi-bass').addEventListener('change', function () {
+        midi.notes.bass = clamp(+this.value, 0, 127);
+        this.value = midi.notes.bass;
+        remember('midiBass', midi.notes.bass);
+      });
+      $('midi-treble').addEventListener('change', function () {
+        midi.notes.treble = midi.notes.ghost = clamp(+this.value, 0, 127);
+        this.value = midi.notes.treble;
+        remember('midiTreble', midi.notes.treble);
+      });
+
+      if (settings.midiChannel) {
+        $('midi-channel').value = midi.channel = settings.midiChannel;
+      }
+      if (settings.midiBass) { $('midi-bass').value = midi.notes.bass = settings.midiBass; }
+      if (settings.midiTreble) {
+        $('midi-treble').value = settings.midiTreble;
+        midi.notes.treble = midi.notes.ghost = settings.midiTreble;
+      }
+    }).catch(function (err) {
+      // Chrome gates Web MIDI behind a permission prompt; a denied or dismissed
+      // prompt lands here, as does MIDI being blocked by policy.
+      var denied = /denied|not granted|NotAllowed/i.test(err.name + ' ' + err.message);
+      status.innerHTML = denied
+        ? 'Your browser blocked MIDI access. Allow MIDI for this site (click the ' +
+          'icon at the left of the address bar), then reload the page.'
+        : 'MIDI could not be started: ' + err.message;
+    });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+})(window.TRAD = window.TRAD || {});

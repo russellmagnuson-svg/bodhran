@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#141110">
+<meta name="apple-mobile-web-app-title" content="Bodhrán">
+<meta name="description" content="Rhythmic bodhrán accompaniment for traditional Irish tunes — reels, jigs, polkas and more.">
+<title>Bodhrán</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png" sizes="192x192" type="image/png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+
+<main class="app">
+
+  <header class="head">
+    <h1>Bodhrán</h1>
+    <p class="sub">Rhythmic accompaniment for traditional Irish tunes</p>
+  </header>
+
+  <!-- Transport -->
+  <section class="panel transport">
+    <button id="play" class="play" aria-label="Start or stop" aria-pressed="false">
+      <span class="play-icon" aria-hidden="true"></span>
+      <span class="play-label">Play</span>
+    </button>
+
+    <div class="tempo">
+      <div class="tempo-readout">
+        <input id="bpm-num" type="number" min="40" max="220" step="1" value="112"
+               aria-label="Tempo in beats per minute">
+        <div class="tempo-unit">
+          <span>bpm</span>
+          <small id="beat-unit">per crotchet</small>
+        </div>
+      </div>
+      <input id="bpm" type="range" min="70" max="160" step="1" value="112"
+             aria-label="Tempo slider">
+      <div class="tempo-actions">
+        <button id="tap" class="ghost-btn">Tap tempo</button>
+        <button id="bpm-down" class="ghost-btn" aria-label="Slower">−5</button>
+        <button id="bpm-up" class="ghost-btn" aria-label="Faster">+5</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Tune type -->
+  <section class="panel">
+    <h2>Tune type</h2>
+    <div id="tunes" class="chips" role="radiogroup" aria-label="Tune type"></div>
+    <p id="tune-blurb" class="blurb"></p>
+  </section>
+
+  <!-- What you're hearing -->
+  <section class="panel">
+    <h2>This bar
+      <span id="bar-count" class="tag">—</span>
+    </h2>
+    <div id="grid" class="grid" aria-hidden="true"></div>
+    <div class="legend">
+      <span><i class="sw bass"></i> dum — low, centre of the skin</span>
+      <span><i class="sw treble"></i> tak — high, near the rim</span>
+      <span><i class="sw ghost"></i> ghost</span>
+    </div>
+  </section>
+
+  <!-- Feel -->
+  <section class="panel">
+    <h2>Feel</h2>
+    <div class="sliders">
+      <label>Busyness
+        <input id="complexity" type="range" min="0" max="1" step="0.01" value="0.5">
+        <output id="complexity-out">even</output>
+      </label>
+      <label>Humanise
+        <input id="humanize" type="range" min="0" max="1" step="0.01" value="0.4">
+        <output id="humanize-out">40%</output>
+      </label>
+      <label>Swing
+        <input id="swing" type="range" min="0" max="1" step="0.01" value="0">
+        <output id="swing-out">tune default</output>
+      </label>
+      <label>Fills every
+        <input id="phrase" type="range" min="0" max="8" step="2" value="4">
+        <output id="phrase-out">4 bars</output>
+      </label>
+    </div>
+    <div class="row">
+      <label class="inline">Count-in
+        <select id="countin">
+          <option value="0">none</option>
+          <option value="1" selected>1 bar</option>
+          <option value="2">2 bars</option>
+        </select>
+      </label>
+    </div>
+  </section>
+
+  <!-- Drum -->
+  <section class="panel">
+    <h2>Drum</h2>
+    <div class="sliders">
+      <label>Volume
+        <input id="level" type="range" min="0" max="1.4" step="0.01" value="0.9">
+        <output id="level-out">90%</output>
+      </label>
+      <label>Tuning
+        <input id="tuning" type="range" min="58" max="112" step="1" value="78">
+        <output id="tuning-out">78 Hz</output>
+      </label>
+      <label>Tone
+        <input id="tone" type="range" min="0" max="1" step="0.01" value="0.5">
+        <output id="tone-out">balanced</output>
+      </label>
+      <label>Room
+        <input id="room" type="range" min="0" max="0.6" step="0.01" value="0.16">
+        <output id="room-out">16%</output>
+      </label>
+    </div>
+  </section>
+
+  <!-- Drone -->
+  <section class="panel">
+    <h2>Drone <span class="tag muted">optional</span></h2>
+    <div class="row">
+      <label class="inline">
+        <input id="drone-on" type="checkbox"> Play a root-and-fifth drone
+      </label>
+      <label class="inline">Root
+        <select id="drone-root">
+          <option value="50" selected>D</option>
+          <option value="43">G</option>
+          <option value="45">A</option>
+          <option value="52">E</option>
+          <option value="48">C</option>
+          <option value="41">F</option>
+          <option value="46">A#/B♭</option>
+        </select>
+      </label>
+    </div>
+    <div class="sliders one">
+      <label>Drone level
+        <input id="drone-level" type="range" min="0" max="0.5" step="0.01" value="0.18">
+        <output id="drone-level-out">18%</output>
+      </label>
+    </div>
+  </section>
+
+  <!-- MIDI -->
+  <section class="panel">
+    <h2>Send to GarageBand <span class="tag muted">MIDI</span></h2>
+    <p id="midi-status" class="blurb">Checking for MIDI support…</p>
+    <div id="midi-controls" class="hidden">
+      <div class="row">
+        <label class="inline">
+          <input id="midi-on" type="checkbox"> Send MIDI
+        </label>
+        <label class="inline">Port
+          <select id="midi-port"></select>
+        </label>
+        <label class="inline">Channel
+          <input id="midi-channel" type="number" min="1" max="16" value="10" class="num">
+        </label>
+      </div>
+      <div class="row">
+        <label class="inline">dum note
+          <input id="midi-bass" type="number" min="0" max="127" value="36" class="num">
+        </label>
+        <label class="inline">tak note
+          <input id="midi-treble" type="number" min="0" max="127" value="37" class="num">
+        </label>
+      </div>
+      <details class="how">
+        <summary>How to hook this up to GarageBand</summary>
+        <ol>
+          <li>Open <b>Audio MIDI Setup</b> (in /Applications/Utilities).</li>
+          <li><b>Window → Show MIDI Studio</b>, double-click <b>IAC Driver</b>,
+              tick <b>Device is online</b>, and make sure there is one bus.</li>
+          <li>Reload this page, then pick the IAC bus in <b>Port</b> above.</li>
+          <li>In GarageBand, create a <b>Software Instrument</b> track with a
+              drum kit. It listens to incoming MIDI on the selected track.</li>
+          <li>Tick <b>Send MIDI</b> and press play. Adjust the note numbers
+              above until they land on sounds you like in the kit.</li>
+        </ol>
+        <p class="note">Web MIDI works in Chrome and Edge. Safari does not
+           support it, so this panel stays disabled there.</p>
+      </details>
+    </div>
+  </section>
+
+  <footer class="foot">
+    <p><b>Space</b> play/stop · <b>←/→</b> tempo · <b>T</b> tap tempo</p>
+  </footer>
+
+</main>
+
+<script src="js/patterns.js"></script>
+<script src="js/bodhran.js"></script>
+<script src="js/drone.js"></script>
+<script src="js/midiout.js"></script>
+<script src="js/transport.js"></script>
+<script src="js/app.js"></script>
+<script>
+  // Offline support. Guarded on http(s) so opening index.html straight off
+  // disk still works — service workers are not allowed on file:// URLs.
+  if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
+    addEventListener('load', function () {
+      navigator.serviceWorker.register('sw.js').catch(function () {
+        /* offline support is a bonus; the app works fine without it */
+      });
+    });
+  }
+</script>
+</body>
+</html>

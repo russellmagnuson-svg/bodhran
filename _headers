@@ -1,0 +1,22 @@
+# Cloudflare Pages response headers.
+# The app has no content-hashed filenames, so HTML/JS/CSS must revalidate or a
+# deploy would be invisible behind a stale browser cache. Everything is tiny,
+# so there is nothing to gain by caching it hard.
+
+/sw.js
+  Cache-Control: no-cache
+
+/index.html
+  Cache-Control: no-cache
+
+/manifest.webmanifest
+  Cache-Control: no-cache
+
+/js/*
+  Cache-Control: public, max-age=0, must-revalidate
+
+/css/*
+  Cache-Control: public, max-age=0, must-revalidate
+
+/icons/*
+  Cache-Control: public, max-age=604800
