@@ -21,6 +21,7 @@
   <header class="head">
     <h1>Bodhrán</h1>
     <p class="sub">Rhythmic accompaniment for traditional Irish tunes</p>
+    <button id="about-open" class="ghost-btn about-btn" type="button">About this app</button>
   </header>
 
   <!-- Transport -->
@@ -198,6 +199,74 @@
   </footer>
 
 </main>
+
+<dialog id="about" class="about" aria-labelledby="about-title">
+  <div class="about-head">
+    <h2 id="about-title">About Bodhrán</h2>
+    <button id="about-close" class="icon-btn" type="button" aria-label="Close">&#10005;</button>
+  </div>
+
+  <div class="about-body">
+
+    <p class="lede">A practice accompanist. You play the melody &mdash; fiddle,
+    flute, whistle, box, banjo, whatever you have &mdash; and it plays the
+    bodhr&aacute;n behind you. Built for the times there is nobody around to
+    back you up.</p>
+
+    <h3>Getting going</h3>
+    <ol class="steps">
+      <li>Pick a tune type.</li>
+      <li>Set the tempo, or beat it in with <b>Tap tempo</b>.</li>
+      <li>Press <b>Play</b>. You get a bar of count-in first.</li>
+    </ol>
+
+    <h3>Tune types</h3>
+    <p class="hint" id="about-count">Tempos are the defaults; each has its own sensible range.</p>
+    <div id="about-tunes" class="tune-list"></div>
+
+    <h3>It is not a loop</h3>
+    <p>Every bar is chosen fresh from a bank of patterns, with a fill thrown in
+    at the end of each phrase, so it shifts about the way a player does rather
+    than repeating one bar forever.</p>
+    <ul>
+      <li><b>Busyness</b> slides the weighting from sparse, through steady, to
+          flat out.</li>
+      <li><b>Humanise</b> adds the small timing and volume scatter that stops it
+          sounding like a machine.</li>
+      <li><b>Swing</b> is preset per tune type &mdash; hornpipes 62%, barndances
+          45%, the rest straight &mdash; and you can override it.</li>
+      <li><b>Fills every</b> sets the phrase length the fills land on.</li>
+    </ul>
+
+    <h3>The drum</h3>
+    <p>There are no recordings in here. Every hit is built from scratch as you
+    play: the low <b>dum</b> of the tipper butt in the middle of the skin, the
+    high <b>tak</b> up near the rim, and the ghost notes brushed in between.
+    That is why <b>Tuning</b>, <b>Tone</b> and <b>Room</b> can change the drum
+    while it is still playing.</p>
+
+    <h3>Drone</h3>
+    <p>An optional root-and-fifth pad. Useful for tuning against, and for
+    hearing what mode a tune is actually in.</p>
+
+    <h3>Sending it to GarageBand</h3>
+    <p>The app can drive a software instrument in GarageBand, Logic or Ableton
+    over a virtual MIDI bus, with the setup steps in that panel. Needs Chrome or
+    Edge &mdash; Safari has no Web MIDI. The built-in drum works everywhere.</p>
+
+    <h3>On your phone</h3>
+    <p>Open it in Safari and <b>Share &rarr; Add to Home Screen</b> and it runs
+    full-screen with its own icon. It also works with no signal at all, which
+    matters rather a lot in a pub basement.</p>
+
+    <h3>Keyboard</h3>
+    <p class="keys"><b>Space</b> play/stop &middot; <b>&larr;</b> <b>&rarr;</b>
+    nudge tempo &middot; <b>T</b> tap tempo</p>
+
+    <p class="hint">Your settings are remembered in this browser, tempo included,
+    per tune type.</p>
+  </div>
+</dialog>
 
 <script src="js/patterns.js"></script>
 <script src="js/bodhran.js"></script>

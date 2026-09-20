@@ -204,6 +204,55 @@
     }
   }
 
+
+  /* ---------- about ---------- */
+  // The tune list is generated from the pattern data rather than written out
+  // by hand, so it cannot drift when a tune type is added or re-tuned.
+  function buildAbout() {
+    var host = $('about-tunes');
+    if (host.childElementCount) return;   // build once
+
+    var patterns = 0;
+    TRAD.tunes.forEach(function (t) {
+      Object.keys(t.grids).forEach(function (bank) { patterns += t.grids[bank].length; });
+
+      var row = document.createElement('div');
+      row.className = 'tune-row';
+
+      var n = document.createElement('span');
+      n.className = 'n';
+      n.textContent = t.name;
+
+      var m = document.createElement('span');
+      m.className = 'm';
+      m.textContent = t.meter + ' \u00b7 ' + t.defaultBpm + ' bpm per ' + t.beatUnit +
+                      ' (' + t.bpmRange[0] + '\u2013' + t.bpmRange[1] + ')';
+
+      var b = document.createElement('span');
+      b.className = 'b';
+      b.textContent = t.blurb;
+
+      row.appendChild(n); row.appendChild(m); row.appendChild(b);
+      host.appendChild(row);
+    });
+
+    $('about-count').textContent = patterns + ' rhythm patterns across ' +
+      TRAD.tunes.length + ' tune types. Tempos below are the defaults; each has ' +
+      'its own sensible range.';
+  }
+
+  function wireAbout() {
+    var dlg = $('about');
+    $('about-open').addEventListener('click', function () {
+      buildAbout();
+      dlg.showModal();
+    });
+    $('about-close').addEventListener('click', function () { dlg.close(); });
+    // The dialog has no padding, so a click landing on the element itself is a
+    // click on the backdrop rather than on the content.
+    dlg.addEventListener('click', function (e) { if (e.target === dlg) dlg.close(); });
+  }
+
   /* ---------- wiring ---------- */
   function bindSlider(id, outId, format, onChange) {
     var el = $(id), out = $(outId);
@@ -281,12 +330,14 @@
 
     document.addEventListener('keydown', function (e) {
       if (/^(INPUT|SELECT|TEXTAREA)$/.test(e.target.tagName)) return;
+      if ($('about').open) return;   // dialog owns the keyboard while it is up
       if (e.code === 'Space') { e.preventDefault(); toggle(); }
       else if (e.key === 'ArrowRight') { e.preventDefault(); setBpm(+$('bpm').value + 1); }
       else if (e.key === 'ArrowLeft') { e.preventDefault(); setBpm(+$('bpm').value - 1); }
       else if (e.key === 't' || e.key === 'T') tapTempo();
     });
 
+    wireAbout();
     restore();
     setupMidi();
   }
