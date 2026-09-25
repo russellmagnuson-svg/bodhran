@@ -105,9 +105,10 @@
     {
       id: 'march', name: 'March', meter: '4/4', beatsPerBar: 4,
       beatUnit: 'crotchet', defaultBpm: 100, bpmRange: [60, 150], swing: 0,
-      blurb: 'Square and deliberate. Good for slow practice too.',
+      blurb: 'Square and stepping. Good for slow practice too.',
       grids: {
-        simple: ['D-t-D-t-'],
+        // DUM, rest, ta-ta: the drum-corps figure, square and stepping.
+        simple: ['D-ttD-tt'],
         sparse: ['D-t-D-t-'],
         core:   ['D-ttD-tt', 'DtdtD-tt', 'D-ttDtdt'],
         busy:   ['D-t-dtd-D-t-dtd-'],
@@ -119,7 +120,9 @@
       beatUnit: 'crotchet', defaultBpm: 92, bpmRange: [60, 130], swing: 0.45,
       blurb: 'Lightly swung and relaxed — cousin to the hornpipe.',
       grids: {
-        simple: ['D-t-D-t-'],
+        // Taks sit on the offbeats, so the tune's 45% swing drags them late;
+        // beat 3 is only a ghost. Lopes rather than drives.
+        simple: ['D--tg--t'],
         sparse: ['D-t-D-t-'],
         core:   ['DtdtDt-t', 'DtdtDtdt'],
         busy:   ['DtdtDtdtDtd-dtdt'],
