@@ -23,7 +23,10 @@
       beatUnit: 'crotchet', defaultBpm: 112, bpmRange: [60, 160], swing: 0,
       blurb: 'Driving quavers, weight on 1 and 3. The session workhorse.',
       grids: {
-        simple: ['D-t-D-t-'],
+        // The extra tak on the and-of-4 is the lift that throws a reel into the
+        // next bar. It also breaks the two halves apart, where four flat
+        // crotchets just ticked. Being an offbeat, it answers the swing slider.
+        simple: ['D-t-D-tt'],
         sparse: ['D-t-D-t-', 'D-t-D-tt', 'D-t-d-t-'],
         core:   ['DtdtDtdt', 'DtdtDt-t', 'DtdtDttt', 'D-dtDtdt'],
         busy:   ['Dgt-dgt-Dgt-dtdt', 'Dtdgdtd-Dtdgdtdt', 'DtdtDtdtDtdgdtdt'],
