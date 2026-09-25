@@ -53,7 +53,12 @@ resolution:
 So the classic jig figure "down (skip) up, down (skip) up" is `D-tD-t`: six
 slots for 6/8, hits on 1, 3, 4 and 6.
 
-Each tune type has four banks — `sparse`, `core`, `busy` and `fills`. The
+Each tune type has a `simple` bank holding exactly one grid — the plain steady
+figure for that style, used when **Simple rhythm** is ticked. It is never
+chosen by the weighting; the transport reaches for it directly.
+
+The other four banks — `sparse`, `core`, `busy` and `fills` — drive the
+varying mode. The
 **Busyness** slider shifts the weighting between the first three; a `fills`
 pattern gets thrown in at the end of each phrase. A bar also has a decent
 chance of repeating the previous one, because a player who changed pattern
@@ -63,7 +68,7 @@ every single bar would be exhausting to play along with.
 
 Add a string to the right bank. The only rule is that its length must divide
 evenly by the tune's `beatsPerBar`, so a jig pattern is 6 or 12 characters, a
-reel 8 or 16. `TRAD.validatePatterns()` runs on page load and reports any grid
+reel 8 or 16. Every style runs from 60 bpm up, so slow practice works anywhere. `TRAD.validatePatterns()` runs on page load and reports any grid
 that breaks the rule in the browser console.
 
 ### Timing

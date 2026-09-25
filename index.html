@@ -73,6 +73,10 @@
   <!-- Feel -->
   <section class="panel">
     <h2>Feel</h2>
+    <label class="inline toggle-row">
+      <input id="simple" type="checkbox">
+      <span><b>Simple rhythm</b> &mdash; one steady pattern, no variation or fills</span>
+    </label>
     <div class="sliders">
       <label>Busyness
         <input id="complexity" type="range" min="0" max="1" step="0.01" value="0.5">
@@ -216,7 +220,8 @@
     <h3>Getting going</h3>
     <ol class="steps">
       <li>Pick a tune type.</li>
-      <li>Set the tempo, or beat it in with <b>Tap tempo</b>.</li>
+      <li>Set the tempo, or beat it in with <b>Tap tempo</b>. Everything
+          goes down to 60 bpm for slow practice.</li>
       <li>Press <b>Play</b>. You get a bar of count-in first.</li>
     </ol>
 
@@ -224,10 +229,18 @@
     <p class="hint" id="about-count">Tempos are the defaults; each has its own sensible range.</p>
     <div id="about-tunes" class="tune-list"></div>
 
-    <h3>It is not a loop</h3>
-    <p>Every bar is chosen fresh from a bank of patterns, with a fill thrown in
-    at the end of each phrase, so it shifts about the way a player does rather
-    than repeating one bar forever.</p>
+    <h3>Simple rhythm</h3>
+    <p>Every style has one plain, steady figure &mdash; the pattern a player
+    falls back on. Tick <b>Simple rhythm</b> in Feel and you get that and
+    nothing else: same bar every bar, no variation, no fills. Worth using while
+    you are still learning a tune, when a drum wandering about underneath is
+    just one more thing to listen past. Untick it once the tune is in your
+    fingers.</p>
+
+    <h3>Or let it move</h3>
+    <p>With simple rhythm off, every bar is chosen fresh from a bank of
+    patterns, with a fill thrown in at the end of each phrase, so it shifts
+    about the way a player does rather than repeating one bar forever.</p>
     <ul>
       <li><b>Busyness</b> slides the weighting from sparse, through steady, to
           flat out.</li>

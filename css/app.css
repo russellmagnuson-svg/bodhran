@@ -430,3 +430,22 @@ dialog.about::backdrop {
   .about-body { padding: 4px 14px 20px; }
   .about-head { padding: 14px; }
 }
+
+/* ---------- simple-mode toggle ---------- */
+.toggle-row {
+  align-items: flex-start;
+  gap: 9px;
+  margin-bottom: 16px;
+  padding: 10px 12px;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  cursor: pointer;
+  line-height: 1.45;
+}
+.toggle-row input { margin-top: 1px; flex: 0 0 auto; }
+.toggle-row b { color: var(--text); font-weight: 600; }
+
+/* a control that simple mode has taken over */
+.sliders label.is-off { opacity: 0.38; }
+.sliders label.is-off input[type=range] { cursor: not-allowed; }

@@ -22,6 +22,7 @@
     this.tune = TRAD.tunes[0];
     this.bpm = this.tune.defaultBpm;
     this.complexity = 0.5;
+    this.simple = false;   // lock to one steady figure, no variation, no fills
     this.humanize = 0.4;
     this.phraseLength = 4;
     this.countInBars = 1;
@@ -58,6 +59,11 @@
       this._grid = 'C' + 'c'.repeat(this.tune.beatsPerBar - 1);
       this._countIn = true;
       this._countInLeft--;
+    } else if (this.simple) {
+      // One figure, every bar, so a learner has something steady to lean on.
+      this._grid = this.tune.grids.simple[0];
+      this._lastGrid = this._grid;
+      this._countIn = false;
     } else {
       this._grid = TRAD.pickGrid(
         this.tune, this.complexity,

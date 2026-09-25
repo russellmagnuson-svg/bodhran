@@ -20,9 +20,10 @@
   var TUNES = [
     {
       id: 'reel', name: 'Reel', meter: '4/4', beatsPerBar: 4,
-      beatUnit: 'crotchet', defaultBpm: 112, bpmRange: [70, 160], swing: 0,
+      beatUnit: 'crotchet', defaultBpm: 112, bpmRange: [60, 160], swing: 0,
       blurb: 'Driving quavers, weight on 1 and 3. The session workhorse.',
       grids: {
+        simple: ['D-t-D-t-'],
         sparse: ['D-t-D-t-', 'D-t-D-tt', 'D-t-d-t-'],
         core:   ['DtdtDtdt', 'DtdtDt-t', 'DtdtDttt', 'D-dtDtdt'],
         busy:   ['Dgt-dgt-Dgt-dtdt', 'Dtdgdtd-Dtdgdtdt', 'DtdtDtdtDtdgdtdt'],
@@ -31,9 +32,10 @@
     },
     {
       id: 'jig', name: 'Jig', meter: '6/8', beatsPerBar: 2,
-      beatUnit: 'dotted crotchet', defaultBpm: 120, bpmRange: [70, 160], swing: 0,
+      beatUnit: 'dotted crotchet', defaultBpm: 120, bpmRange: [60, 160], swing: 0,
       blurb: 'Two lilting groups of three. Down on 1, up on 3.',
       grids: {
+        simple: ['D-tD-t'],
         sparse: ['D-tD-t', 'D--D-t'],
         core:   ['DtdDtd', 'D-tDtd', 'DttDtt', 'DtdD-t'],
         busy:   ['Dgtdt-Dgtdt-', 'Dt-td-Dt-tdg', 'D-t-d-Dt-tdt'],
@@ -42,9 +44,10 @@
     },
     {
       id: 'slipjig', name: 'Slip jig', meter: '9/8', beatsPerBar: 3,
-      beatUnit: 'dotted crotchet', defaultBpm: 118, bpmRange: [70, 160], swing: 0,
+      beatUnit: 'dotted crotchet', defaultBpm: 118, bpmRange: [60, 160], swing: 0,
       blurb: 'A jig with a third group tacked on — three lots of three.',
       grids: {
+        simple: ['D-tD-tD-t'],
         sparse: ['D-tD-tD-t'],
         core:   ['DtdDtdDtd', 'D-tDtdD-t', 'DttD-tDtt'],
         busy:   ['D-t-d-D-t-d-D-tdtd', 'Dt-td-Dt-td-Dt-td-'],
@@ -53,9 +56,10 @@
     },
     {
       id: 'polka', name: 'Polka', meter: '2/4', beatsPerBar: 2,
-      beatUnit: 'crotchet', defaultBpm: 132, bpmRange: [80, 190], swing: 0,
+      beatUnit: 'crotchet', defaultBpm: 132, bpmRange: [60, 190], swing: 0,
       blurb: 'Short, punchy bars. Sliabh Luachra bounce — hit 1 hard.',
       grids: {
+        simple: ['D-t-'],
         sparse: ['D-t-', 'D-Dt'],
         core:   ['DtDt', 'DtD-', 'DtdT'],
         busy:   ['D-t-Dgtt', 'DtdtD-tt', 'DgttD-tt'],
@@ -67,6 +71,7 @@
       beatUnit: 'crotchet', defaultBpm: 88, bpmRange: [60, 130], swing: 0.62,
       blurb: 'Swung quavers and a bit of swagger. Slower than a reel.',
       grids: {
+        simple: ['D-t-D-t-'],
         sparse: ['D-t-D-t-'],
         core:   ['DtdtDtdt', 'DtdtDt-t', 'DtDtDtdt'],
         busy:   ['DtdtDtdtDtdtDt-t'],
@@ -75,9 +80,10 @@
     },
     {
       id: 'slide', name: 'Slide', meter: '12/8', beatsPerBar: 4,
-      beatUnit: 'dotted crotchet', defaultBpm: 128, bpmRange: [80, 175], swing: 0,
+      beatUnit: 'dotted crotchet', defaultBpm: 128, bpmRange: [60, 175], swing: 0,
       blurb: 'Long rolling 12/8 bars — a jig that keeps going.',
       grids: {
+        simple: ['D-tD-tD-tD-t'],
         sparse: ['D-tD-tD-tD-t'],
         core:   ['DtdD-tDtdD-t', 'DtdDtdDtdDtd', 'DttD-tDttD-t'],
         busy:   ['D-t-d-D-tdtdD-t-d-D-tdtd'],
@@ -89,6 +95,7 @@
       beatUnit: 'crotchet', defaultBpm: 116, bpmRange: [60, 180], swing: 0,
       blurb: 'Bass on 1, two lighter taps after it.',
       grids: {
+        simple: ['D-t-t-'],
         sparse: ['D-t-t-'],
         core:   ['D-tdt-', 'D-t-tt', 'Ddtdtd'],
         busy:   ['D-t-d-t-d-t-', 'D-t-dtd-t-dt'],
@@ -100,6 +107,7 @@
       beatUnit: 'crotchet', defaultBpm: 100, bpmRange: [60, 150], swing: 0,
       blurb: 'Square and deliberate. Good for slow practice too.',
       grids: {
+        simple: ['D-t-D-t-'],
         sparse: ['D-t-D-t-'],
         core:   ['D-ttD-tt', 'DtdtD-tt', 'D-ttDtdt'],
         busy:   ['D-t-dtd-D-t-dtd-'],
@@ -111,6 +119,7 @@
       beatUnit: 'crotchet', defaultBpm: 92, bpmRange: [60, 130], swing: 0.45,
       blurb: 'Lightly swung and relaxed — cousin to the hornpipe.',
       grids: {
+        simple: ['D-t-D-t-'],
         sparse: ['D-t-D-t-'],
         core:   ['DtdtDt-t', 'DtdtDtdt'],
         busy:   ['DtdtDtdtDtd-dtdt'],
@@ -119,9 +128,10 @@
     },
     {
       id: 'mazurka', name: 'Mazurka', meter: '3/4', beatsPerBar: 3,
-      beatUnit: 'crotchet', defaultBpm: 120, bpmRange: [70, 170], swing: 0,
+      beatUnit: 'crotchet', defaultBpm: 120, bpmRange: [60, 170], swing: 0,
       blurb: 'Three-time with the weight thrown onto beat 2.',
       grids: {
+        simple: ['d-T-t-'],
         sparse: ['d-T-t-'],
         core:   ['ddT-td', 'd-T-tt', 'dtT-t-'],
         busy:   ['d-t-T-t-d-t-'],
@@ -162,6 +172,10 @@
     if (problems.length) console.error('[patterns] ' + problems.join('\n[patterns] '));
     return problems;
   }
+
+  /* The `simple` bank holds exactly one grid per tune: the plain, steady
+   * figure for that style. It is never picked by the weighting below — the
+   * transport reaches for it directly when simple mode is on. */
 
   /* Choose a bar's grid.
    * complexity 0..1 slides the weighting from sparse -> core -> busy.

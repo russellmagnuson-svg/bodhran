@@ -61,6 +61,7 @@
     transport.tune = tune;
     transport.bpm = +$('bpm').value;
     transport.complexity = +$('complexity').value;
+    transport.simple = $('simple').checked;
     transport.humanize = +$('humanize').value;
     transport.phraseLength = +$('phrase').value;
     transport.countInBars = +$('countin').value;
@@ -116,7 +117,12 @@
       : 'tune default (straight)';
 
     if (transport) { transport.tune = tune; transport.swingOverride = null; }
-    renderGrid(tune.grids.core[0]);
+    renderGrid(idleGrid());
+  }
+
+  /* What to show in the bar display when nothing is playing. */
+  function idleGrid() {
+    return $('simple').checked ? tune.grids.simple[0] : tune.grids.core[0];
   }
 
   function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
@@ -200,10 +206,22 @@
     b.querySelector('.play-label').textContent = transport.running ? 'Stop' : 'Play';
     if (!transport.running) {
       $('bar-count').textContent = '—';
-      renderGrid(tune.grids.core[0]);
+      renderGrid(idleGrid());
     }
   }
 
+
+
+  /* Simple mode overrides the variation controls, so grey them out rather than
+   * leaving sliders on screen that silently do nothing. */
+  function applySimple(on) {
+    if (transport) transport.simple = on;
+    ['complexity', 'phrase'].forEach(function (id) {
+      $(id).disabled = on;
+      $(id).closest('label').classList.toggle('is-off', on);
+    });
+    remember('simple', on);
+  }
 
   /* ---------- about ---------- */
   // The tune list is generated from the pattern data rather than written out
@@ -312,6 +330,11 @@
       if (transport) transport.swingOverride = +this.value;
     });
 
+    $('simple').addEventListener('change', function () {
+      applySimple(this.checked);
+      if (!transport || !transport.running) renderGrid(idleGrid());
+    });
+
     $('countin').addEventListener('change', function () {
       if (transport) transport.countInBars = +this.value;
       remember('countin', this.value);
@@ -351,12 +374,17 @@
       }
     });
     if (settings.countin != null) $('countin').value = settings.countin;
+    $('simple').checked = !!settings.simple;
+    applySimple(!!settings.simple);
     if (settings.droneRoot != null) $('drone-root').value = settings.droneRoot;
 
     var startTune = settings.tune && TRAD.tuneById(settings.tune).id === settings.tune
       ? settings.tune : TRAD.tunes[0].id;
+    // Read the saved tempo before selectTune runs: it calls setBpm(default),
+    // and setBpm remembers, which would clobber the value we want back.
+    var savedBpm = settings['bpm_' + startTune];
     selectTune(startTune);
-    if (settings['bpm_' + startTune] != null) setBpm(settings['bpm_' + startTune]);
+    if (savedBpm != null) setBpm(savedBpm);
   }
 
   /* ---------- MIDI ---------- */
