@@ -120,9 +120,9 @@
       beatUnit: 'crotchet', defaultBpm: 92, bpmRange: [60, 130], swing: 0.45,
       blurb: 'Lightly swung and relaxed — cousin to the hornpipe.',
       grids: {
-        // Taks sit on the offbeats, so the tune's 45% swing drags them late;
-        // beat 3 is only a ghost. Lopes rather than drives.
-        simple: ['D--tg--t'],
+        // Taks sit on the offbeats, so the tune's 45% swing drags them late.
+        // Beat 3 is a soft dum: the pulse is there, it just is not pushing.
+        simple: ['D--td--t'],
         sparse: ['D-t-D-t-'],
         core:   ['DtdtDt-t', 'DtdtDtdt'],
         busy:   ['DtdtDtdtDtd-dtdt'],
