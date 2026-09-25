@@ -53,6 +53,14 @@ resolution:
 So the classic jig figure "down (skip) up, down (skip) up" is `D-tD-t`: six
 slots for 6/8, hits on 1, 3, 4 and 6.
 
+**The rule that shapes every pattern here:** the tipper oscillates, so down
+strokes land on the beats and up strokes land between them — the bright `tak`
+belongs *off* the pulse. Putting it on beats 2 and 4 gives a rock backbeat
+played on a bodhrán, and Irish music has no backbeat. Weight follows the dance
+(1 and 3 in a reel, 1 and 4 in a jig, 1 in a waltz, 2 in a mazurka) and is
+carried by a harder down stroke, not by switching sound. If you add patterns,
+keep `T`/`t` off the main beats.
+
 There are three rhythm modes. **Full** uses the weighted banks below.
 **Simple** locks to the tune's `simple` bank, which holds exactly one grid —
 the plain steady figure for that style — never chosen by the weighting; the

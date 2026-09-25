@@ -1,5 +1,14 @@
 /* patterns.js — tune types and bodhrán rhythm banks.
  *
+ * THE RULE THAT SHAPES ALL OF THESE: a bodhrán tipper oscillates. Down strokes
+ * land on the beats and produce the low "dum"; up strokes land between the
+ * beats and produce the brighter "tak". So the bright sound belongs OFF the
+ * pulse. Putting it on beats 2 and 4 gives you a rock backbeat played on a
+ * bodhrán, which is what these banks used to do. Irish music has no backbeat:
+ * the weight follows the dance — 1 and 3 in a reel, 1 and 4 in a jig, 1 in a
+ * waltz, 2 in a mazurka — and it is carried by a harder down stroke, not by
+ * switching to a different sound.
+ *
  * A "grid" is a string. Each character is one evenly-spaced slot in a bar, so
  * the string's length sets the resolution:
  *   6  chars in 6/8  -> quaver grid
@@ -21,14 +30,11 @@
     {
       id: 'reel', name: 'Reel', meter: '4/4', beatsPerBar: 4,
       beatUnit: 'crotchet', defaultBpm: 112, bpmRange: [60, 160], swing: 0,
-      blurb: 'Driving quavers, weight on 1 and 3. The session workhorse.',
+      blurb: 'Continuous down-up quavers, leaning on 1 and 3.',
       grids: {
-        // The extra tak on the and-of-4 is the lift that throws a reel into the
-        // next bar. It also breaks the two halves apart, where four flat
-        // crotchets just ticked. Being an offbeat, it answers the swing slider.
-        simple: ['D-t-D-tt'],
-        sparse: ['D-t-D-t-', 'D-t-D-tt', 'D-t-d-t-'],
-        core:   ['DtdtDtdt', 'DtdtDt-t', 'DtdtDttt', 'D-dtDtdt'],
+        simple: ['DtdtDtdt'],
+        sparse: ['D-d-D-d-', 'Dtdtdtdt'],
+        core:   ['DtdtDtdt', 'DtdtDtd-', 'D-dtDtdt', 'Dtd-Dtdt'],
         busy:   ['Dgt-dgt-Dgt-dtdt', 'Dtdgdtd-Dtdgdtdt', 'DtdtDtdtDtdgdtdt'],
         fills:  ['D-t-dgt-D-t-dtDt', 'DtdtDtdtD-t-dtTt', 'Dgt-dgt-DtdtdtDt']
       }
@@ -48,7 +54,7 @@
     {
       id: 'slipjig', name: 'Slip jig', meter: '9/8', beatsPerBar: 3,
       beatUnit: 'dotted crotchet', defaultBpm: 118, bpmRange: [60, 160], swing: 0,
-      blurb: 'A jig with a third group tacked on — three lots of three.',
+      blurb: 'A jig with a third group tacked on \u2014 three lots of three.',
       grids: {
         simple: ['D-tD-tD-t'],
         sparse: ['D-tD-tD-t'],
@@ -60,12 +66,12 @@
     {
       id: 'polka', name: 'Polka', meter: '2/4', beatsPerBar: 2,
       beatUnit: 'crotchet', defaultBpm: 132, bpmRange: [60, 190], swing: 0,
-      blurb: 'Short, punchy bars. Sliabh Luachra bounce — hit 1 hard.',
+      blurb: 'Short, punchy bars. Sliabh Luachra bounce \u2014 hit 1 hard.',
       grids: {
-        simple: ['D-t-'],
-        sparse: ['D-t-', 'D-Dt'],
-        core:   ['DtDt', 'DtD-', 'DtdT'],
-        busy:   ['D-t-Dgtt', 'DtdtD-tt', 'DgttD-tt'],
+        simple: ['Dtdt'],
+        sparse: ['D-d-', 'Dtd-'],
+        core:   ['DtDt', 'Dtdt', 'DtdT'],
+        busy:   ['D-t-D-tt', 'DtdtD-tt', 'D-ttD-tt'],
         fills:  ['D-t-DtDt', 'DtdtDttt', 'D-ttDtdt']
       }
     },
@@ -74,17 +80,17 @@
       beatUnit: 'crotchet', defaultBpm: 88, bpmRange: [60, 130], swing: 0.62,
       blurb: 'Swung quavers and a bit of swagger. Slower than a reel.',
       grids: {
-        simple: ['D-t-D-t-'],
-        sparse: ['D-t-D-t-'],
-        core:   ['DtdtDtdt', 'DtdtDt-t', 'DtDtDtdt'],
-        busy:   ['DtdtDtdtDtdtDt-t'],
-        fills:  ['D-t-d-t-D-t-dtDt', 'DtdtDtdtDtdtDtTt']
+        simple: ['DtdtDtdt'],
+        sparse: ['D-d-D-d-', 'Dtdtdtdt'],
+        core:   ['DtdtDtdt', 'DtdtDtd-', 'DtDtDtdt'],
+        busy:   ['DtdtDtdtDtdtDtd-'],
+        fills:  ['D-t-d-t-D-t-dtDt', 'DtdtDtdtDtdtDtdt']
       }
     },
     {
       id: 'slide', name: 'Slide', meter: '12/8', beatsPerBar: 4,
       beatUnit: 'dotted crotchet', defaultBpm: 128, bpmRange: [60, 175], swing: 0,
-      blurb: 'Long rolling 12/8 bars — a jig that keeps going.',
+      blurb: 'Long rolling 12/8 bars \u2014 a jig that keeps going.',
       grids: {
         simple: ['D-tD-tD-tD-t'],
         sparse: ['D-tD-tD-tD-t'],
@@ -96,38 +102,35 @@
     {
       id: 'waltz', name: 'Waltz', meter: '3/4', beatsPerBar: 3,
       beatUnit: 'crotchet', defaultBpm: 116, bpmRange: [60, 180], swing: 0,
-      blurb: 'Bass on 1, two lighter taps after it.',
+      blurb: 'Three even beats, the weight sitting on the first.',
       grids: {
-        simple: ['D-t-t-'],
-        sparse: ['D-t-t-'],
-        core:   ['D-tdt-', 'D-t-tt', 'Ddtdtd'],
-        busy:   ['D-t-d-t-d-t-', 'D-t-dtd-t-dt'],
+        simple: ['Dtdtdt'],
+        sparse: ['D-d-d-', 'Dtd-d-'],
+        core:   ['Dtdtdt', 'Dtd-dt', 'DtdtdT'],
+        busy:   ['D-t-d-t-d-t-', 'Dtd-dtd-dtd-'],
         fills:  ['D--t--t-dtdt', 'D-t-d-t-dtDt']
       }
     },
     {
       id: 'march', name: 'March', meter: '4/4', beatsPerBar: 4,
       beatUnit: 'crotchet', defaultBpm: 100, bpmRange: [60, 150], swing: 0,
-      blurb: 'Square and stepping. Good for slow practice too.',
+      blurb: 'Every beat weighted. Square and stepping.',
       grids: {
-        // DUM, rest, ta-ta: the drum-corps figure, square and stepping.
-        simple: ['D-ttD-tt'],
-        sparse: ['D-t-D-t-'],
-        core:   ['D-ttD-tt', 'DtdtD-tt', 'D-ttDtdt'],
+        simple: ['DtDtDtDt'],
+        sparse: ['D-D-D-D-', 'DtD-DtD-'],
+        core:   ['DtDtDtDt', 'DtdtDtDt', 'DtD-DtDt'],
         busy:   ['D-t-dtd-D-t-dtd-'],
-        fills:  ['D-t-d-t-D-t-dtdt', 'D-ttD-ttD-t-dtDt']
+        fills:  ['D-t-d-t-D-t-dtdt', 'DtDtDtDtD-t-dtDt']
       }
     },
     {
       id: 'barndance', name: 'Barndance', meter: '4/4', beatsPerBar: 4,
       beatUnit: 'crotchet', defaultBpm: 92, bpmRange: [60, 130], swing: 0.45,
-      blurb: 'Lightly swung and relaxed — cousin to the hornpipe.',
+      blurb: 'Lightly swung and in no hurry \u2014 cousin to the hornpipe.',
       grids: {
-        // Taks sit on the offbeats, so the tune's 45% swing drags them late.
-        // Beat 3 is a soft dum: the pulse is there, it just is not pushing.
-        simple: ['D--td--t'],
-        sparse: ['D-t-D-t-'],
-        core:   ['DtdtDt-t', 'DtdtDtdt'],
+        simple: ['Dtdtdtdt'],
+        sparse: ['D-d-d-d-', 'Dtd-dtd-'],
+        core:   ['Dtdtdtdt', 'Dtdtdtd-', 'Dtd-dtdt'],
         busy:   ['DtdtDtdtDtd-dtdt'],
         fills:  ['D-t-d-t-D-t-dtDt']
       }
@@ -137,11 +140,11 @@
       beatUnit: 'crotchet', defaultBpm: 120, bpmRange: [60, 170], swing: 0,
       blurb: 'Three-time with the weight thrown onto beat 2.',
       grids: {
-        simple: ['d-T-t-'],
-        sparse: ['d-T-t-'],
-        core:   ['ddT-td', 'd-T-tt', 'dtT-t-'],
-        busy:   ['d-t-T-t-d-t-'],
-        fills:  ['d-T-t-d-tdtd']
+        simple: ['dtDtdt'],
+        sparse: ['d-D-d-', 'dtD-d-'],
+        core:   ['dtDtdt', 'dtDtd-', 'ddDtdt'],
+        busy:   ['d-t-D-t-d-t-', 'dtd-Dtd-dtd-'],
+        fills:  ['d-t-D-t-dtdt', 'dtd-Dtd-dtdt']
       }
     }
   ];
