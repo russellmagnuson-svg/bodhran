@@ -152,6 +152,13 @@
   /* Which synth voice each character uses. */
   var VOICE = { D: 'bass', d: 'bass', T: 'treble', t: 'treble', g: 'ghost' };
 
+  /* One bass hit per beat, every one identical: no tak, no accent pattern,
+   * nothing to follow but the pulse. The grid has exactly one slot per beat,
+   * so it lands on the same beat the tempo is counted in. */
+  function pulseGrid(tune) {
+    return new Array(tune.beatsPerBar + 1).join('D');
+  }
+
   function byId(id) {
     for (var i = 0; i < TUNES.length; i++) if (TUNES[i].id === id) return TUNES[i];
     return TUNES[0];
@@ -223,6 +230,7 @@
   TRAD.tunes = TUNES;
   TRAD.tuneById = byId;
   TRAD.pickGrid = pickGrid;
+  TRAD.pulseGrid = pulseGrid;
   TRAD.swingShift = swingShift;
   TRAD.VELOCITY = VELOCITY;
   TRAD.VOICE = VOICE;

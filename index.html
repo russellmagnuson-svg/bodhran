@@ -73,10 +73,12 @@
   <!-- Feel -->
   <section class="panel">
     <h2>Feel</h2>
-    <label class="inline toggle-row">
-      <input id="simple" type="checkbox">
-      <span><b>Simple rhythm</b> &mdash; one steady pattern, no variation or fills</span>
-    </label>
+    <div id="modes" class="modes" role="radiogroup" aria-label="Rhythm">
+      <button class="mode" type="button" role="radio" data-mode="full" aria-checked="true">Full</button>
+      <button class="mode" type="button" role="radio" data-mode="simple" aria-checked="false">Simple</button>
+      <button class="mode" type="button" role="radio" data-mode="pulse" aria-checked="false">Pulse</button>
+    </div>
+    <p id="mode-desc" class="blurb mode-desc"></p>
     <div class="sliders">
       <label>Busyness
         <input id="complexity" type="range" min="0" max="1" step="0.01" value="0.5">
@@ -229,23 +231,29 @@
     <p class="hint" id="about-count">Tempos are the defaults; each has its own sensible range.</p>
     <div id="about-tunes" class="tune-list"></div>
 
-    <h3>Simple rhythm</h3>
-    <p>Every style has one plain, steady figure &mdash; the pattern a player
-    falls back on. Tick <b>Simple rhythm</b> in Feel and you get that and
-    nothing else: same bar every bar, no variation, no fills. Worth using while
-    you are still learning a tune, when a drum wandering about underneath is
-    just one more thing to listen past. Untick it once the tune is in your
-    fingers.</p>
+    <h3>Three rhythms</h3>
+    <p>The <b>Feel</b> panel picks one of three, and greys out whatever the
+    choice has taken over so there are no controls on screen quietly doing
+    nothing.</p>
+    <ul>
+      <li><b>Full</b> &mdash; every bar is chosen fresh from a bank of patterns,
+          with a fill at the end of each phrase, so it shifts about the way a
+          player does rather than repeating one bar forever.</li>
+      <li><b>Simple</b> &mdash; one plain steady figure for the style, same bar
+          every bar, no fills. Worth using while you are still learning a tune,
+          when a drum wandering about underneath is just one more thing to
+          listen past.</li>
+      <li><b>Pulse</b> &mdash; bass drum on every beat and nothing else. No tak,
+          no accents, no humanising: every beat identical, on the same beat you
+          count the tempo in. A plain reference to play against.</li>
+    </ul>
 
-    <h3>Or let it move</h3>
-    <p>With simple rhythm off, every bar is chosen fresh from a bank of
-    patterns, with a fill thrown in at the end of each phrase, so it shifts
-    about the way a player does rather than repeating one bar forever.</p>
+    <h3>Shaping the full mode</h3>
     <ul>
       <li><b>Busyness</b> slides the weighting from sparse, through steady, to
           flat out.</li>
       <li><b>Humanise</b> adds the small timing and volume scatter that stops it
-          sounding like a machine.</li>
+          sounding like a machine. It still applies in Simple.</li>
       <li><b>Swing</b> is preset per tune type &mdash; hornpipes 62%, barndances
           45%, the rest straight &mdash; and you can override it.</li>
       <li><b>Fills every</b> sets the phrase length the fills land on.</li>

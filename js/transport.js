@@ -22,7 +22,7 @@
     this.tune = TRAD.tunes[0];
     this.bpm = this.tune.defaultBpm;
     this.complexity = 0.5;
-    this.simple = false;   // lock to one steady figure, no variation, no fills
+    this.mode = 'full';    // 'full' | 'simple' | 'pulse'
     this.humanize = 0.4;
     this.phraseLength = 4;
     this.countInBars = 1;
@@ -59,7 +59,11 @@
       this._grid = 'C' + 'c'.repeat(this.tune.beatsPerBar - 1);
       this._countIn = true;
       this._countInLeft--;
-    } else if (this.simple) {
+    } else if (this.mode === 'pulse') {
+      this._grid = TRAD.pulseGrid(this.tune);
+      this._lastGrid = this._grid;
+      this._countIn = false;
+    } else if (this.mode === 'simple') {
       // One figure, every bar, so a learner has something steady to lean on.
       this._grid = this.tune.grids.simple[0];
       this._lastGrid = this._grid;
@@ -102,7 +106,9 @@
     if (!voice || vel <= 0) return;
 
     // Humanise: a player is never metronomic, and never hits twice the same.
-    if (this.humanize > 0) {
+    // Pulse mode is the exception — it is asked for precisely when someone
+    // wants a dead-straight reference, so every hit stays identical.
+    if (this.humanize > 0 && this.mode !== 'pulse') {
       time += (Math.random() * 2 - 1) * this.humanize * 0.009;
       vel *= 1 + (Math.random() * 2 - 1) * this.humanize * 0.18;
     }

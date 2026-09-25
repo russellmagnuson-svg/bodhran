@@ -53,9 +53,12 @@ resolution:
 So the classic jig figure "down (skip) up, down (skip) up" is `D-tD-t`: six
 slots for 6/8, hits on 1, 3, 4 and 6.
 
-Each tune type has a `simple` bank holding exactly one grid — the plain steady
-figure for that style, used when **Simple rhythm** is ticked. It is never
-chosen by the weighting; the transport reaches for it directly.
+There are three rhythm modes. **Full** uses the weighted banks below.
+**Simple** locks to the tune's `simple` bank, which holds exactly one grid —
+the plain steady figure for that style — never chosen by the weighting; the
+transport reaches for it directly. **Pulse** ignores the banks entirely and
+generates `TRAD.pulseGrid(tune)`: one bass hit per beat, every one identical,
+with humanising and swing suppressed so it stays a dead-straight reference.
 
 The other four banks — `sparse`, `core`, `busy` and `fills` — drive the
 varying mode. The

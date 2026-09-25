@@ -61,7 +61,7 @@
     transport.tune = tune;
     transport.bpm = +$('bpm').value;
     transport.complexity = +$('complexity').value;
-    transport.simple = $('simple').checked;
+    transport.mode = mode;
     transport.humanize = +$('humanize').value;
     transport.phraseLength = +$('phrase').value;
     transport.countInBars = +$('countin').value;
@@ -122,7 +122,9 @@
 
   /* What to show in the bar display when nothing is playing. */
   function idleGrid() {
-    return $('simple').checked ? tune.grids.simple[0] : tune.grids.core[0];
+    if (mode === 'pulse') return TRAD.pulseGrid(tune);
+    if (mode === 'simple') return tune.grids.simple[0];
+    return tune.grids.core[0];
   }
 
   function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
@@ -212,15 +214,36 @@
 
 
 
-  /* Simple mode overrides the variation controls, so grey them out rather than
-   * leaving sliders on screen that silently do nothing. */
-  function applySimple(on) {
-    if (transport) transport.simple = on;
-    ['complexity', 'phrase'].forEach(function (id) {
-      $(id).disabled = on;
-      $(id).closest('label').classList.toggle('is-off', on);
+  var mode = 'full';
+
+  var MODE_TEXT = {
+    full:   'Patterns change bar to bar, with a fill at the end of each phrase.',
+    simple: 'One steady figure for the style. Same bar every bar, no fills.',
+    pulse:  'Bass drum on every beat and nothing else \u2014 no tak, no accents, ' +
+            'just the pulse to play against.'
+  };
+
+  /* A mode that overrides a control should grey it out rather than leave a
+   * slider on screen doing nothing. Pulse puts every hit on a beat, and swing
+   * only shifts offbeats, so swing is dead there too. */
+  function applyMode(next) {
+    mode = next;
+    if (transport) transport.mode = mode;
+
+    Array.prototype.forEach.call($('modes').children, function (b) {
+      b.setAttribute('aria-checked', String(b.dataset.mode === mode));
     });
-    remember('simple', on);
+    $('mode-desc').textContent = MODE_TEXT[mode];
+
+    var off = { complexity: mode !== 'full', phrase: mode !== 'full',
+                swing: mode === 'pulse', humanize: mode === 'pulse' };
+    Object.keys(off).forEach(function (id) {
+      $(id).disabled = off[id];
+      $(id).closest('label').classList.toggle('is-off', off[id]);
+    });
+
+    remember('mode', mode);
+    if (!transport || !transport.running) renderGrid(idleGrid());
   }
 
   /* ---------- about ---------- */
@@ -330,9 +353,8 @@
       if (transport) transport.swingOverride = +this.value;
     });
 
-    $('simple').addEventListener('change', function () {
-      applySimple(this.checked);
-      if (!transport || !transport.running) renderGrid(idleGrid());
+    Array.prototype.forEach.call($('modes').children, function (b) {
+      b.addEventListener('click', function () { applyMode(b.dataset.mode); });
     });
 
     $('countin').addEventListener('change', function () {
@@ -374,8 +396,9 @@
       }
     });
     if (settings.countin != null) $('countin').value = settings.countin;
-    $('simple').checked = !!settings.simple;
-    applySimple(!!settings.simple);
+    // settings.simple predates the three modes; carry it over.
+    applyMode(settings.mode ||
+              (settings.simple ? 'simple' : 'full'));
     if (settings.droneRoot != null) $('drone-root').value = settings.droneRoot;
 
     var startTune = settings.tune && TRAD.tuneById(settings.tune).id === settings.tune
