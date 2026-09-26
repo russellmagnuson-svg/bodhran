@@ -34,15 +34,47 @@ body {
   gap: 14px;
 }
 
-.head { text-align: center; margin-bottom: 4px; }
+/* One row, left-aligned so it lines up with the panels below: icon, title
+   and version with the tagline under them, About on the right. */
+.head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 2px 2px 6px;
+}
+.logo {
+  flex: 0 0 auto;
+  width: 44px; height: 44px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+}
+.brand { flex: 1 1 auto; min-width: 0; }
 .head h1 {
   margin: 0;
-  font-size: 30px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 9px;
+  font-size: 26px;
+  line-height: 1.15;
   font-weight: 600;
   letter-spacing: -0.01em;
   color: var(--skin);
 }
-.sub { margin: 4px 0 0; color: var(--muted); font-size: 14px; }
+.version {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  line-height: 1.6;
+  color: var(--muted);
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  padding: 0 7px;
+  font-variant-numeric: tabular-nums;
+}
+.version:empty { display: none; }
+.sub { margin: 3px 0 0; color: var(--muted); font-size: 13.5px; line-height: 1.4; }
 
 .panel {
   background: var(--panel);
@@ -315,7 +347,21 @@ input[type=checkbox] { accent-color: var(--amber); width: 16px; height: 16px; }
 }
 
 /* ---------- about ---------- */
-.about-btn { margin-top: 12px; }
+.about-btn {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
+}
+.info-icon { width: 15px; height: 15px; }
+.about-version { margin-top: 18px; }
+
+@media (max-width: 420px) {
+  .head { gap: 11px; }
+  .logo { width: 38px; height: 38px; border-radius: 10px; }
+  .head h1 { font-size: 22px; }
+}
 
 dialog.about {
   width: min(640px, calc(100vw - 32px));

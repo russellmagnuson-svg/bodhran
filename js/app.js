@@ -4,6 +4,13 @@
 
   var $ = function (id) { return document.getElementById(id); };
 
+  /* The app's version, shown in the header and at the foot of the About.
+   * Bump it with every change that gets pushed: the last number for a fix,
+   * the middle one for a new feature. It is also the quickest way to tell
+   * whether a phone is running the latest deploy or an older copy. */
+  var VERSION = '1.0.0';
+  TRAD.VERSION = VERSION;
+
   TRAD.validatePatterns();
 
   var ctx = null, bodhran = null, drone = null, transport = null;
@@ -342,6 +349,8 @@
   function pct(v) { return Math.round(v * 100) + '%'; }
 
   function init() {
+    $('version').textContent = 'v' + VERSION;
+    $('about-version').textContent = 'Version ' + VERSION;
     buildChips();
 
     $('play').addEventListener('click', toggle);

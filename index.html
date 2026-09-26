@@ -19,9 +19,19 @@
 <main class="app">
 
   <header class="head">
-    <h1>Bodhrán</h1>
-    <p class="sub">Rhythmic accompaniment for traditional Irish tunes</p>
-    <button id="about-open" class="ghost-btn about-btn" type="button">About this app</button>
+    <img class="logo" src="icons/icon-192.png" alt="" width="44" height="44">
+    <div class="brand">
+      <h1>Bodhrán <span id="version" class="version"></span></h1>
+      <p class="sub">Rhythmic accompaniment for traditional Irish tunes</p>
+    </div>
+    <button id="about-open" class="ghost-btn about-btn" type="button" aria-label="About this app">
+      <svg class="info-icon" viewBox="0 0 16 16" aria-hidden="true">
+        <circle cx="8" cy="8" r="7" fill="none" stroke="currentColor" stroke-width="1.5"/>
+        <path d="M8 7.2v4.3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+        <circle cx="8" cy="4.8" r="1" fill="currentColor"/>
+      </svg>
+      <span>About</span>
+    </button>
   </header>
 
   <!-- Transport -->
@@ -310,6 +320,8 @@
 
     <p class="hint">Your settings are remembered in this browser, tempo included,
     per tune type.</p>
+
+    <p id="about-version" class="hint about-version"></p>
   </div>
 </dialog>
 

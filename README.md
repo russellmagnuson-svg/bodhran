@@ -189,6 +189,9 @@ npx wrangler pages deploy . --project-name=bodhran
 - `_headers` is already set so HTML, CSS and JS revalidate on each load.
   Without it, a deploy would be invisible behind a stale browser cache, because
   the filenames are not content-hashed.
+- The version shown next to the title (it lives at the top of `js/app.js`)
+  tells you which deploy you are looking at. Bump it with each change you push;
+  if a phone still shows the old number, it has an old copy — reload it.
 - On your phone, open the site in Safari and **Share → Add to Home Screen**. It
   launches full-screen with its own icon.
 - It works with no signal at all. `sw.js` caches the app on first visit and
@@ -228,7 +231,7 @@ patterns sound the way you want.
 | `js/transport.js` | the clock and pattern selection |
 | `js/drone.js`     | root-and-fifth drone pad |
 | `js/midiout.js`   | optional Web MIDI output |
-| `js/app.js`       | UI wiring |
+| `js/app.js`       | UI wiring, and the version number at the top |
 | `sw.js`           | offline caching |
 | `_headers`        | Cloudflare cache rules |
 | `manifest.webmanifest` | home-screen app metadata |
