@@ -219,8 +219,8 @@
   var MODE_TEXT = {
     full:   'Patterns change bar to bar, with a fill at the end of each phrase.',
     simple: 'One steady figure for the style. Same bar every bar, no fills.',
-    pulse:  'Bass drum on every beat and nothing else \u2014 no tak, no accents, ' +
-            'just the pulse to play against.'
+    pulse:  'Low drum only, one hit per beat, weighted where the dance falls. ' +
+            'No tak, nothing to follow but the pulse.'
   };
 
   /* A mode that overrides a control should grey it out rather than leave a

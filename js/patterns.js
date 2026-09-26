@@ -32,6 +32,7 @@
       beatUnit: 'crotchet', defaultBpm: 112, bpmRange: [60, 160], swing: 0,
       blurb: 'Continuous down-up quavers, leaning on 1 and 3.',
       grids: {
+        pulse:  ['DdDd'],
         simple: ['DtdtDtdt'],
         sparse: ['D-d-D-d-', 'Dtdtdtdt'],
         core:   ['DtdtDtdt', 'DtdtDtd-', 'D-dtDtdt', 'Dtd-Dtdt'],
@@ -44,6 +45,7 @@
       beatUnit: 'dotted crotchet', defaultBpm: 120, bpmRange: [60, 160], swing: 0,
       blurb: 'Two lilting groups of three. Down on 1, up on 3.',
       grids: {
+        pulse:  ['Dd'],
         simple: ['D-tD-t'],
         sparse: ['D-tD-t', 'D--D-t'],
         core:   ['DtdDtd', 'D-tDtd', 'DttDtt', 'DtdD-t'],
@@ -56,6 +58,7 @@
       beatUnit: 'dotted crotchet', defaultBpm: 118, bpmRange: [60, 160], swing: 0,
       blurb: 'A jig with a third group tacked on \u2014 three lots of three.',
       grids: {
+        pulse:  ['Ddd'],
         simple: ['D-tD-tD-t'],
         sparse: ['D-tD-tD-t'],
         core:   ['DtdDtdDtd', 'D-tDtdD-t', 'DttD-tDtt'],
@@ -68,6 +71,7 @@
       beatUnit: 'crotchet', defaultBpm: 132, bpmRange: [60, 190], swing: 0,
       blurb: 'Short, punchy bars. Sliabh Luachra bounce \u2014 hit 1 hard.',
       grids: {
+        pulse:  ['Dd'],
         simple: ['Dtdt'],
         sparse: ['D-d-', 'Dtd-'],
         core:   ['DtDt', 'Dtdt', 'DtdT'],
@@ -80,6 +84,7 @@
       beatUnit: 'crotchet', defaultBpm: 88, bpmRange: [60, 130], swing: 0.62,
       blurb: 'Swung quavers and a bit of swagger. Slower than a reel.',
       grids: {
+        pulse:  ['DdDd'],
         simple: ['DtdtDtdt'],
         sparse: ['D-d-D-d-', 'Dtdtdtdt'],
         core:   ['DtdtDtdt', 'DtdtDtd-', 'DtDtDtdt'],
@@ -92,6 +97,7 @@
       beatUnit: 'dotted crotchet', defaultBpm: 128, bpmRange: [60, 175], swing: 0,
       blurb: 'Long rolling 12/8 bars \u2014 a jig that keeps going.',
       grids: {
+        pulse:  ['DdDd'],
         simple: ['D-tD-tD-tD-t'],
         sparse: ['D-tD-tD-tD-t'],
         core:   ['DtdD-tDtdD-t', 'DtdDtdDtdDtd', 'DttD-tDttD-t'],
@@ -104,6 +110,7 @@
       beatUnit: 'crotchet', defaultBpm: 116, bpmRange: [60, 180], swing: 0,
       blurb: 'Three even beats, the weight sitting on the first.',
       grids: {
+        pulse:  ['Ddd'],
         simple: ['Dtdtdt'],
         sparse: ['D-d-d-', 'Dtd-d-'],
         core:   ['Dtdtdt', 'Dtd-dt', 'DtdtdT'],
@@ -116,6 +123,7 @@
       beatUnit: 'crotchet', defaultBpm: 100, bpmRange: [60, 150], swing: 0,
       blurb: 'Every beat weighted. Square and stepping.',
       grids: {
+        pulse:  ['DdDd'],
         simple: ['DtDtDtDt'],
         sparse: ['D-D-D-D-', 'DtD-DtD-'],
         core:   ['DtDtDtDt', 'DtdtDtDt', 'DtD-DtDt'],
@@ -128,6 +136,7 @@
       beatUnit: 'crotchet', defaultBpm: 92, bpmRange: [60, 130], swing: 0.45,
       blurb: 'Lightly swung and in no hurry \u2014 cousin to the hornpipe.',
       grids: {
+        pulse:  ['DdDd'],
         simple: ['Dtdtdtdt'],
         sparse: ['D-d-d-d-', 'Dtd-dtd-'],
         core:   ['Dtdtdtdt', 'Dtdtdtd-', 'Dtd-dtdt'],
@@ -140,6 +149,7 @@
       beatUnit: 'crotchet', defaultBpm: 120, bpmRange: [60, 170], swing: 0,
       blurb: 'Three-time with the weight thrown onto beat 2.',
       grids: {
+        pulse:  ['dDd'],
         simple: ['dtDtdt'],
         sparse: ['d-D-d-', 'dtD-d-'],
         core:   ['dtDtdt', 'dtDtd-', 'ddDtdt'],
@@ -155,11 +165,14 @@
   /* Which synth voice each character uses. */
   var VOICE = { D: 'bass', d: 'bass', T: 'treble', t: 'treble', g: 'ghost' };
 
-  /* One bass hit per beat, every one identical: no tak, no accent pattern,
-   * nothing to follow but the pulse. The grid has exactly one slot per beat,
-   * so it lands on the same beat the tempo is counted in. */
+  /* The bare pulse: one hit per beat, all of them down strokes on the low
+   * drum, no tak anywhere. One character per beat, so it lands on the beat the
+   * tempo is counted in. What it is not is four identical thuds a bar — that
+   * is a disco kick. Even stripped this far, a trad bar has a shape, so the
+   * weight sits where the dance puts it: 1 and 3 in a reel, 1 in a waltz,
+   * 2 in a mazurka. */
   function pulseGrid(tune) {
-    return new Array(tune.beatsPerBar + 1).join('D');
+    return tune.grids.pulse[0];
   }
 
   function byId(id) {

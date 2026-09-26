@@ -64,9 +64,11 @@ keep `T`/`t` off the main beats.
 There are three rhythm modes. **Full** uses the weighted banks below.
 **Simple** locks to the tune's `simple` bank, which holds exactly one grid —
 the plain steady figure for that style — never chosen by the weighting; the
-transport reaches for it directly. **Pulse** ignores the banks entirely and
-generates `TRAD.pulseGrid(tune)`: one bass hit per beat, every one identical,
-with humanising and swing suppressed so it stays a dead-straight reference.
+transport reaches for it directly. **Pulse** uses the `pulse`
+bank, one character per beat: low drum only, no tak, with humanising and swing
+suppressed so it stays a dead-straight reference — but weighted where the dance
+falls (1 and 3 in a reel, 1 in a waltz, 2 in a mazurka) rather than four
+identical thuds a bar, which is a disco kick.
 
 The other four banks — `sparse`, `core`, `busy` and `fills` — drive the
 varying mode. The
