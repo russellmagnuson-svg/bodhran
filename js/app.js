@@ -8,7 +8,7 @@
    * Bump it with every change that gets pushed: the last number for a fix,
    * the middle one for a new feature. It is also the quickest way to tell
    * whether a phone is running the latest deploy or an older copy. */
-  var VERSION = '1.0.1';
+  var VERSION = '1.0.2';
   TRAD.VERSION = VERSION;
 
   TRAD.validatePatterns();
@@ -32,8 +32,20 @@
   function remember(key, value) { settings[key] = value; save(); }
 
   /* ---------- audio graph, built on first interaction ---------- */
+
+  /* Get the audio running again if it has stopped. iOS parks it as
+   * 'interrupted' — not 'suspended' — after a phone call, Siri or an alarm,
+   * and it stays silent until something asks for it back. This used to check
+   * for 'suspended' only, so after an interruption Play could stay silent
+   * until the page was reloaded. */
+  function wakeAudio() {
+    if (ctx && ctx.state !== 'running' && ctx.state !== 'closed') {
+      ctx.resume().catch(function () { /* needs a tap; Play will do it */ });
+    }
+  }
+
   function ensureAudio() {
-    if (ctx) { if (ctx.state === 'suspended') ctx.resume(); return; }
+    if (ctx) { wakeAudio(); return; }
 
     // On iPhone, web audio follows the ring/silent switch by default, so a
     // phone on silent — which is most phones at a session — plays nothing.
@@ -231,8 +243,10 @@
   }
   // The browser drops the lock whenever the page is hidden; take it back when
   // the page comes back if the drum is still going.
+  // Coming back to the page is also when to wake audio an interruption parked.
   document.addEventListener('visibilitychange', function () {
     if (document.visibilityState === 'visible' && transport && transport.running) {
+      wakeAudio();
       holdScreen();
     }
   });
@@ -418,7 +432,15 @@
     });
 
     document.addEventListener('keydown', function (e) {
-      if (/^(INPUT|SELECT|TEXTAREA)$/.test(e.target.tagName)) return;
+      // Leave keys alone where they already mean something: typing in a box,
+      // ticking a checkbox, choosing from a menu, arrows on a slider. But a
+      // slider has no use for Space, so after nudging the tempo Space still
+      // starts and stops the drum — it used to do nothing until you clicked
+      // somewhere else first.
+      var t = e.target;
+      var slider = t.tagName === 'INPUT' && t.type === 'range';
+      if (/^(INPUT|SELECT|TEXTAREA)$/.test(t.tagName) &&
+          !(slider && e.code === 'Space')) return;
       if ($('about').open) return;   // dialog owns the keyboard while it is up
       if (e.code === 'Space') { e.preventDefault(); toggle(); }
       else if (e.key === 'ArrowRight') { e.preventDefault(); setBpm(+$('bpm').value + 1); }
@@ -429,6 +451,12 @@
     wireAbout();
     restore();
     setupMidi();
+
+    // Started up properly. The offline copy only refreshes itself after a
+    // clean start like this, so it never keeps a set of files that fails.
+    if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+      navigator.serviceWorker.controller.postMessage({ type: 'started' });
+    }
   }
 
   function restore() {

@@ -196,9 +196,14 @@ npx wrangler pages deploy . --project-name=bodhran
   if a phone still shows the old number, it has an old copy — reload it.
 - On your phone, open the site in Safari and **Share → Add to Home Screen**. It
   launches full-screen with its own icon.
-- It works with no signal at all. `sw.js` caches the app on first visit and
-  serves from cache whenever the network is slow or absent — which is most pub
-  basements. Online you still always get the current deploy.
+- It works with no signal at all. `sw.js` keeps an offline copy of the app
+  and uses it when the network is slow or absent — most pub basements. It
+  never mixes old and new files in one page load: whether the page comes from
+  the network (with a 2.5s limit) decides where *every* file for that load
+  comes from. And the offline copy is only ever replaced as a complete set,
+  downloaded fresh after a page has started up properly online. A newer
+  `app.js` running with an older drum file can fail on start-up, which is
+  silence, so this matters more than it sounds.
 - Deleting `sw.js`, the `icons/` folder, `manifest.webmanifest` and the two
   tags that reference them in `index.html` removes all of that cleanly if you
   would rather not have it.

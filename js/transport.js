@@ -167,7 +167,10 @@
   Transport.prototype.start = function () {
     if (this.running) return;
     var self = this;
-    if (this.ctx.state === 'suspended') this.ctx.resume();
+    // Any state but running: iOS uses 'interrupted' after a call or Siri.
+    if (this.ctx.state !== 'running' && this.ctx.state !== 'closed') {
+      this.ctx.resume().catch(function () {});
+    }
 
     this.running = true;
     this._bar = 0;
