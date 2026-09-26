@@ -8,7 +8,7 @@
    * Bump it with every change that gets pushed: the last number for a fix,
    * the middle one for a new feature. It is also the quickest way to tell
    * whether a phone is running the latest deploy or an older copy. */
-  var VERSION = '1.0.0';
+  var VERSION = '1.0.1';
   TRAD.VERSION = VERSION;
 
   TRAD.validatePatterns();
@@ -349,8 +349,10 @@
   function pct(v) { return Math.round(v * 100) + '%'; }
 
   function init() {
-    $('version').textContent = 'v' + VERSION;
-    $('about-version').textContent = 'Version ' + VERSION;
+    // Only ever decoration: an old cached page with this newer script has no
+    // version slots, and that must not stop the rest of init — Play included.
+    if ($('version')) $('version').textContent = 'v' + VERSION;
+    if ($('about-version')) $('about-version').textContent = 'Version ' + VERSION;
     buildChips();
 
     $('play').addEventListener('click', toggle);

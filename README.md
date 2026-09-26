@@ -18,8 +18,10 @@ Use `serve.py` rather than plain `python3 -m http.server`. The plain server
 sends no cache headers, so the browser guesses how long to keep each file and
 can go on running an old copy of a script you have just edited — an edit to
 `js/patterns.js` then appears to do nothing. `serve.py` tells the browser not
-to cache. If you ran the app with the plain server before, do one hard reload
-(**⌘⇧R**) to clear what it already kept.
+to cache. If you ran the app with the plain server before, do one reload that
+bypasses the cache to clear what it already kept: **⌘⇧R** in Chrome or Edge,
+**⌥⌘R** in Safari (in Safari ⌘⇧R opens Reader instead). Otherwise the browser
+can mix old and new files, which can stop the app starting at all.
 
 You can also just double-click `index.html` — the scripts are plain
 `<script>` tags rather than ES modules precisely so that works.
