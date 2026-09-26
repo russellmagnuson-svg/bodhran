@@ -47,6 +47,9 @@ against the real code:
 - **MIDI** — one drum note; velocity tracks how hard the stroke is
 - **The app** — version shown; each tune keeps its tempo; Space after a slider;
   modes grey out the right controls; Space ignored while About is open
+- **Phone layout** (in a phone-sized copy of the app) — the rhythm choice is on
+  the first screen; Play sits beside the tempo; the pinned Play/Stop bar appears
+  when scrolled down, works, and never covers the page
 - **Offline copy** — its file list covers everything the page loads, and every
   file on it exists
 

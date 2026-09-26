@@ -28,7 +28,7 @@ body {
 .app {
   max-width: 720px;
   margin: 0 auto;
-  padding: 28px 16px 48px;
+  padding: 28px 16px calc(104px + env(safe-area-inset-bottom));
   display: flex;
   flex-direction: column;
   gap: 14px;
@@ -341,9 +341,13 @@ input[type=checkbox] { accent-color: var(--amber); width: 16px; height: 16px; }
   border-radius: 5px; padding: 1px 5px;
 }
 
+/* Phones: Play and the tempo share one row instead of Play sitting alone
+   above it, which pushed everything else down the page. */
 @media (max-width: 420px) {
-  .play { width: 88px; height: 88px; }
-  #bpm-num { font-size: 32px; }
+  .transport { flex-wrap: nowrap; gap: 14px; }
+  .play { width: 78px; height: 78px; }
+  .tempo { flex: 1 1 0; min-width: 0; }
+  #bpm-num { font-size: 32px; width: 2.3em; }
 }
 
 /* ---------- about ---------- */
@@ -503,10 +507,65 @@ dialog.about::backdrop {
   color: #1a1208;
   font-weight: 600;
 }
-.mode-desc { margin: 10px 0 16px; min-height: 2.6em; }
+.mode-desc { margin: 10px 0 0; min-height: 2.6em; }
 
 /* a control that simple mode has taken over */
 .sliders label.is-off { opacity: 0.38; }
 .sliders label.is-off input[type=range] { cursor: not-allowed; }
 
 .inline-hint { font-size: 12px; color: var(--muted); }
+
+/* ---------- pinned bar ---------- */
+.mini {
+  position: fixed;
+  left: 50%;
+  bottom: 0;
+  width: min(720px, 100%);
+  transform: translate(-50%, 110%);
+  visibility: hidden;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
+  background: rgba(30, 26, 23, 0.96);
+  border-top: 1px solid var(--line);
+  backdrop-filter: blur(6px);
+  z-index: 10;
+  transition: transform 0.2s ease, visibility 0.2s;
+}
+.mini.show { transform: translate(-50%, 0); visibility: visible; }
+.mini-play {
+  flex: 0 0 auto;
+  width: 48px; height: 48px;
+  border-radius: 50%;
+  border: 2px solid var(--amber-dim);
+  background: #1a1512;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  transition: border-color .15s, box-shadow .15s;
+}
+.mini-play.playing { border-color: var(--amber); }
+.mini-play.hit { box-shadow: 0 0 0 5px rgba(224,160,74,0.16); }
+.mini-play .play-icon {
+  width: 0; height: 0;
+  border-left: 14px solid var(--amber);
+  border-top: 9px solid transparent;
+  border-bottom: 9px solid transparent;
+  margin-left: 4px;
+}
+.mini-play.playing .play-icon {
+  border: 0; margin-left: 0;
+  width: 13px; height: 15px;
+  background: var(--amber);
+  -webkit-mask: linear-gradient(#000 0 0) 0/4px 100% no-repeat,
+                linear-gradient(#000 0 0) 100%/4px 100% no-repeat;
+          mask: linear-gradient(#000 0 0) 0/4px 100% no-repeat,
+                linear-gradient(#000 0 0) 100%/4px 100% no-repeat;
+}
+.mini-info {
+  flex: 1 1 auto; min-width: 0;
+  display: flex; flex-direction: column; line-height: 1.25;
+}
+.mini-tune { font-size: 12px; color: var(--muted); }
+.mini-tempo { font-size: 14px; color: var(--muted); }
+.mini-tempo b { font-size: 18px; color: var(--text); font-variant-numeric: tabular-nums; }

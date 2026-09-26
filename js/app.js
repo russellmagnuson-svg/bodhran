@@ -8,7 +8,7 @@
    * Bump it with every change that gets pushed: the last number for a fix,
    * the middle one for a new feature. It is also the quickest way to tell
    * whether a phone is running the latest deploy or an older copy. */
-  var VERSION = '1.0.3';
+  var VERSION = '1.1.0';
   TRAD.VERSION = VERSION;
 
   TRAD.validatePatterns();
@@ -151,6 +151,7 @@
     $('bpm-num').value = v;
     if (transport) transport.bpm = v;
     remember('bpm_' + tune.id, v);
+    syncMini();
   }
 
   var taps = [];
@@ -207,10 +208,27 @@
 
   var flashTimer = null;
   function flashPlay() {
-    var b = $('play');
-    b.classList.add('hit');
+    var b = $('play'), m = $('mini-play');
+    b.classList.add('hit'); m.classList.add('hit');
     clearTimeout(flashTimer);
-    flashTimer = setTimeout(function () { b.classList.remove('hit'); }, 110);
+    flashTimer = setTimeout(function () {
+      b.classList.remove('hit'); m.classList.remove('hit');
+    }, 110);
+  }
+
+  /* ---------- pinned bar ---------- */
+  // Appears once the main Play button has scrolled out of sight, so on a phone
+  // you can stop, or nudge the tempo, from anywhere down the page.
+  function updateMini() {
+    var gone = document.querySelector('.transport').getBoundingClientRect().bottom < 0;
+    $('mini').classList.toggle('show', gone);
+  }
+  function syncMini() {
+    var on = !!(transport && transport.running);
+    $('mini-tune').textContent = tune.name;
+    $('mini-bpm').textContent = $('bpm').value;
+    $('mini-play').classList.toggle('playing', on);
+    $('mini-play').setAttribute('aria-pressed', String(on));
   }
 
   /* ---------- screen wake lock ---------- */
@@ -246,6 +264,7 @@
     b.classList.toggle('playing', transport.running);
     b.setAttribute('aria-pressed', String(transport.running));
     b.querySelector('.play-label').textContent = transport.running ? 'Stop' : 'Play';
+    syncMini();
     if (!transport.running) {
       $('bar-count').textContent = '—';
       renderGrid(idleGrid());
@@ -362,6 +381,12 @@
     $('bpm').addEventListener('input', function () { setBpm(+this.value); });
     $('bpm-num').addEventListener('change', function () { setBpm(+this.value); });
 
+    $('mini-play').addEventListener('click', toggle);
+    $('mini-up').addEventListener('click', function () { setBpm(+$('bpm').value + 5); });
+    $('mini-down').addEventListener('click', function () { setBpm(+$('bpm').value - 5); });
+    addEventListener('scroll', updateMini, { passive: true });
+    addEventListener('resize', updateMini);
+
     bindSlider('complexity', 'complexity-out', function (v) {
       return v < 0.2 ? 'sparse' : v < 0.45 ? 'steady' : v < 0.7 ? 'even'
            : v < 0.88 ? 'busy' : 'flat out';
@@ -437,6 +462,7 @@
     wireAbout();
     restore();
     setupMidi();
+    updateMini();
 
     // Started up properly. The offline copy only refreshes itself after a
     // clean start like this, so it never keeps a set of files that fails.

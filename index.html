@@ -67,6 +67,18 @@
     <p id="tune-blurb" class="blurb"></p>
   </section>
 
+  <!-- Rhythm: one of the three choices made before playing, so it sits on the
+       first screen of a phone rather than below the bar display -->
+  <section class="panel">
+    <h2>Rhythm</h2>
+    <div id="modes" class="modes" role="radiogroup" aria-label="Rhythm">
+      <button class="mode" type="button" role="radio" data-mode="full" aria-checked="true">Full</button>
+      <button class="mode" type="button" role="radio" data-mode="simple" aria-checked="false">Simple</button>
+      <button class="mode" type="button" role="radio" data-mode="pulse" aria-checked="false">Pulse</button>
+    </div>
+    <p id="mode-desc" class="blurb mode-desc"></p>
+  </section>
+
   <!-- What you're hearing -->
   <section class="panel">
     <h2>This bar
@@ -83,12 +95,6 @@
   <!-- Feel -->
   <section class="panel">
     <h2>Feel</h2>
-    <div id="modes" class="modes" role="radiogroup" aria-label="Rhythm">
-      <button class="mode" type="button" role="radio" data-mode="full" aria-checked="true">Full</button>
-      <button class="mode" type="button" role="radio" data-mode="simple" aria-checked="false">Simple</button>
-      <button class="mode" type="button" role="radio" data-mode="pulse" aria-checked="false">Pulse</button>
-    </div>
-    <p id="mode-desc" class="blurb mode-desc"></p>
     <div class="sliders">
       <label>Busyness
         <input id="complexity" type="range" min="0" max="1" step="0.01" value="0.5">
@@ -209,6 +215,21 @@
       </details>
     </div>
   </section>
+
+  <!-- Pinned to the bottom of the screen once the main Play button has
+       scrolled out of sight, so stopping never means scrolling back up. -->
+  <div id="mini" class="mini">
+    <button id="mini-play" class="mini-play" type="button" aria-label="Start or stop"
+            aria-pressed="false">
+      <span class="play-icon" aria-hidden="true"></span>
+    </button>
+    <div class="mini-info">
+      <span id="mini-tune" class="mini-tune">Reel</span>
+      <span class="mini-tempo"><b id="mini-bpm">112</b> bpm</span>
+    </div>
+    <button id="mini-down" class="ghost-btn" type="button" aria-label="Slower">−5</button>
+    <button id="mini-up" class="ghost-btn" type="button" aria-label="Faster">+5</button>
+  </div>
 
   <footer class="foot">
     <p><b>Space</b> play/stop · <b>←/→</b> tempo · <b>T</b> tap tempo</p>

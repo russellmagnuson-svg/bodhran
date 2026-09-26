@@ -122,12 +122,14 @@
   /* ---------- the real app, in a hidden frame ----------
    * Each check gets a fresh copy of the app. Settings are saved first and put
    * back afterwards, so running the checks never changes your own tempos. */
-  function withApp(fn) {
+  function withApp(fn, size) {
+    size = size || { w: 800, h: 900 };
     var saved = localStorage.getItem('bodhran.settings');
     localStorage.removeItem('bodhran.settings');
     var frame = document.createElement('iframe');
     frame.src = '../index.html';
-    frame.style.cssText = 'position:absolute;left:-10000px;top:0;width:800px;height:900px;border:0';
+    frame.style.cssText = 'position:absolute;left:-10000px;top:0;border:0;width:' +
+                          size.w + 'px;height:' + size.h + 'px';
     document.body.appendChild(frame);
     return new Promise(function (resolve, reject) {
       var t = setTimeout(function () { reject(new Error('the app did not load')); }, 10000);
@@ -624,6 +626,74 @@
         doc.getElementById('about').close();
         expect(!playing, 'the drum started behind the About');
       });
+    });
+
+  /* ================================================================
+   * Phone layout — checked in a phone-sized copy of the app (375 x 812)
+   * ================================================================ */
+
+  var PHONE = { w: 375, h: 812 };
+  function box(el) { return el.getBoundingClientRect(); }
+
+  check('Phone layout', 'The rhythm choice is on the first screen',
+    'Full, Simple or Pulse is one of the three choices made before playing, so it should not need scrolling to on a phone.',
+    function () {
+      return withApp(function (win, doc) {
+        var b = box(doc.getElementById('modes'));
+        expect(b.bottom <= win.innerHeight, 'rhythm choice ends at ' + Math.round(b.bottom) +
+               'px, below the first screen (' + win.innerHeight + 'px)');
+        expect(doc.documentElement.scrollWidth <= win.innerWidth, 'page scrolls sideways on a phone');
+      }, PHONE);
+    });
+
+  check('Phone layout', 'Play sits beside the tempo',
+    'Play alone on its own row wasted space and pushed everything down the page.',
+    function () {
+      return withApp(function (win, doc) {
+        var play = box(doc.getElementById('play')), tempo = box(doc.querySelector('.tempo'));
+        expect(play.right <= tempo.left, 'Play is not to the left of the tempo');
+        expect(play.top < tempo.bottom && play.bottom > tempo.top, 'Play and the tempo are not on the same row');
+      }, PHONE);
+    });
+
+  check('Phone layout', 'Play/Stop stays reachable when scrolled down',
+    'Scrolled down to the Drum or Drone settings, stopping used to mean scrolling back up.',
+    function () {
+      return withApp(function (win, doc) {
+        var mini = doc.getElementById('mini');
+        // Read where the bar ends up, not where its slide-in animation starts:
+        // at the first instant it is still officially hidden and off-screen,
+        // and in a background tab the animation never advances at all.
+        mini.style.transition = 'none';
+        function shown() { return mini.classList.contains('show') && win.getComputedStyle(mini).visibility === 'visible'; }
+        function scrollTo(y) { win.scrollTo(0, y); win.dispatchEvent(new win.Event('scroll')); }
+
+        scrollTo(0);
+        var atTop = shown();
+        scrollTo(doc.documentElement.scrollHeight);
+        var atBottom = shown();
+        var bar = box(mini), foot = box(doc.querySelector('.foot'));
+
+        doc.getElementById('mini-play').click();
+        var started = isPlaying(doc) && doc.getElementById('mini-play').classList.contains('playing');
+        var before = +doc.getElementById('bpm-num').value;
+        doc.getElementById('mini-up').click();
+        var after = +doc.getElementById('bpm-num').value;
+        var readout = +doc.getElementById('mini-bpm').textContent;
+        doc.getElementById('mini-play').click();
+        var stopped = !isPlaying(doc);
+        scrollTo(0);
+        var hiddenAgain = !shown();
+
+        expect(!atTop, 'the pinned bar shows even though Play is on screen');
+        expect(atBottom, 'the pinned bar does not appear when Play scrolls away');
+        expect(bar.bottom <= win.innerHeight + 1, 'the pinned bar is off the bottom of the screen');
+        expect(foot.bottom <= bar.top + 1, 'the pinned bar covers the bottom of the page');
+        expect(started, 'its Play did not start the drum');
+        expect(after === before + 5 && readout === after, 'its +5 went ' + before + ' → ' + after + ', showing ' + readout);
+        expect(stopped, 'its Stop did not stop the drum');
+        expect(hiddenAgain, 'the pinned bar stays after scrolling back up');
+      }, PHONE);
     });
 
   /* ================================================================
