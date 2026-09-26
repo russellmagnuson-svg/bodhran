@@ -20,7 +20,7 @@
  *   d  dum, unaccented
  *   T  accented "tak" – an up stroke, between the beats (same skin, lighter)
  *   t  tak, unaccented
- *   g  ghost                 – a brush, felt more than heard
+ *   g  ghost                 – the tipper barely touching the skin
  *   -  rest
  */
 (function (TRAD) {

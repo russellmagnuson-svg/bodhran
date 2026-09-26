@@ -43,10 +43,11 @@ Three reasons, and the third is the one that decided it:
 There are no audio samples. Every bodhrán hit is synthesised in
 [`js/bodhran.js`](js/bodhran.js) from oscillators and filtered noise — a
 pitched membrane thump that drops in pitch as the skin relaxes, an inharmonic
-second mode, and a noise transient for the tipper striking the skin. Down and
-up strokes share that one skin model and differ only in the stroke: the up
-stroke is lighter, with less fundamental, less pitch bend, a shorter ring and
-relatively more stick. That means
+second mode, and a noise transient for the tipper striking the skin. Down
+strokes, up strokes and ghost notes all share that one skin model and differ
+only in the stroke: the up stroke is lighter, with less fundamental, less pitch
+bend, a shorter ring and relatively more stick; a ghost is lighter again, a
+faint thump and a soft tick about 22dB under a down stroke. That means
 nothing to download or license, and the drum can be re-tuned live.
 
 Rhythms live in [`js/patterns.js`](js/patterns.js) as **grid strings**. Each
@@ -59,7 +60,7 @@ resolution:
 | `d`  | dum, unaccented |
 | `T`  | accented "tak" — an up stroke, between the beats |
 | `t`  | tak, unaccented |
-| `g`  | ghost — a brush, felt more than heard |
+| `g`  | ghost — the tipper barely touching the skin, felt more than heard |
 | `-`  | rest |
 
 So the classic jig figure "down (skip) up, down (skip) up" is `D-tD-t`: six

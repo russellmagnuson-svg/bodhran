@@ -7,8 +7,8 @@
  *   1. a pitched membrane thump that drops in pitch as the skin relaxes
  *   2. an inharmonic second mode, shorter and higher
  *   3. a noise transient — the tipper itself striking goatskin
- * Down and up strokes use the same model with different stroke settings,
- * because they are the same skin.
+ * Down strokes, up strokes and ghost notes all use the same model with
+ * different stroke settings, because they are all the same skin.
  */
 (function (TRAD) {
   'use strict';
@@ -135,6 +135,20 @@
     stickHz: 2000, stickQ: 1.1, stick: 0.45, stickLen: 0.012,
     lpBase: 1300
   };
+  /* A ghost is the tipper barely touching the same skin: felt more than
+   * heard. It used to be a burst of high hiss with no skin in it at all. Now
+   * it is a faint thump with almost no pitch bend and a soft tick, at the
+   * same overall loudness the old ghost had. */
+  var GHOST = {
+    pitch: 1.00,
+    glide: 1.15, glideTime: 0.02,
+    body: 0.45,
+    mode2: 0.20, mode2Decay: 0.04,
+    len: 0.07, lenVel: 0.04,
+    stickHz: 2200, stickQ: 1.2, stick: 0.50, stickLen: 0.008,
+    lpBase: 1300,
+    level: 0.78              // puts it where the old ghost sat, ~22dB under a dum
+  };
 
   Bodhran.prototype._skin = function (time, vel, s) {
     var ctx = this.ctx;
@@ -143,7 +157,7 @@
 
     var amp = ctx.createGain();
     amp.gain.setValueAtTime(0.0001, time);
-    amp.gain.exponentialRampToValueAtTime(vel, time + 0.003);
+    amp.gain.exponentialRampToValueAtTime(vel * (s.level || 1), time + 0.003);
     amp.gain.exponentialRampToValueAtTime(0.0001, time + dur);
 
     var lp = ctx.createBiquadFilter();
@@ -176,7 +190,8 @@
     o2.start(time); o2.stop(time + s.mode2Decay + 0.04);
 
     // The stick meeting the skin.
-    this._noiseBurst(time, s.stickLen, s.stickHz, s.stickQ, vel * s.stick);
+    this._noiseBurst(time, s.stickLen, s.stickHz, s.stickQ,
+                     vel * (s.level || 1) * s.stick);
   };
 
   /* The "dum" — down stroke, on the beat. */
@@ -187,10 +202,9 @@
    * note settings and saved preferences are keyed on.) */
   Bodhran.prototype._treble = function (time, vel) { this._skin(time, vel, UP); };
 
-  /* Ghost note — the brush between strokes that makes the rhythm breathe. */
-  Bodhran.prototype._ghost = function (time, vel) {
-    this._noiseBurst(time, 0.022, 3200, 1.5, vel * 0.62, 1100);
-  };
+  /* Ghost note — the tipper barely touching the skin between strokes, the
+   * thing that keeps the rhythm breathing. Same skin as the other two. */
+  Bodhran.prototype._ghost = function (time, vel) { this._skin(time, vel, GHOST); };
 
   /* Count-in click — deliberately not a bodhrán, so it stands apart. */
   Bodhran.prototype.click = function (time, vel) {
