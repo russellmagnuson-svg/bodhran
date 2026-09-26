@@ -94,8 +94,18 @@ every single bar would be exhausting to play along with.
 
 Add a string to the right bank. The only rule is that its length must divide
 evenly by the tune's `beatsPerBar`, so a jig pattern is 6 or 12 characters, a
-reel 8 or 16. Every style runs from 60 bpm up, so slow practice works anywhere. `TRAD.validatePatterns()` runs on page load and reports any grid
-that breaks the rule in the browser console.
+reel 8 or 16. `TRAD.validatePatterns()` runs on page load and reports any grid
+that breaks the rule in the browser console. Every style runs from 60 bpm up,
+so slow practice works anywhere.
+
+To mix quavers and triplets in one bar, give each beat 6 slots — in 4/4 that is
+24 characters. A quaver then falls every 3 slots (`D--t--`) and a triplet note
+every 2 (`D-t-d-`). The reel's triplet fills are built this way; the same trick
+works for any duple-time style.
+
+Fills are only ever played on the last bar of a phrase. The picker repeats the
+previous bar's pattern some of the time so the drum does not change every bar,
+but it never repeats a fill, so a fill cannot spill onto the next phrase.
 
 ### Timing
 

@@ -37,7 +37,15 @@
         sparse: ['D-d-D-d-', 'Dtdtdtdt'],
         core:   ['DtdtDtdt', 'DtdtDtd-', 'D-dtDtdt', 'Dtd-Dtdt'],
         busy:   ['Dgt-dgt-Dgt-dtdt', 'Dtdgdtd-Dtdgdtdt', 'DtdtDtdtDtdgdtdt'],
-        fills:  ['D-t-dgt-D-t-dtDt', 'DtdtDtdtD-t-dtTt', 'Dgt-dgt-DtdtdtDt']
+        fills:  ['D-t-dgt-D-t-dtDt', 'DtdtDtdtD-t-dtTt', 'Dgt-dgt-DtdtdtDt',
+                 // Triplets: three strokes in the time of one beat, the
+                 // reel's signature ornament. 24 slots a bar gives 6 per beat,
+                 // so a quaver falls every 3 slots (D--t--) and a triplet note
+                 // every 2 (D-t-d-). Down-up-down, starting on the beat.
+                 'D--t--d--t--D--t--d-t-d-',   // on 4, leading into the next bar
+                 'D--t--d-t-d-D--t--d--t--',   // on 2
+                 'D--t--d-t-d-D--t--d-t-d-',   // on 2 and 4
+                 'D--t--d--t--D-t-d-d-t-d-']   // on 3 and 4, a roll into the next bar
       }
     },
     {
@@ -214,7 +222,12 @@
     if (phraseEnd && g.fills.length && rng() < 0.2 + 0.55 * complexity) {
       return g.fills[(rng() * g.fills.length) | 0];
     }
-    if (lastGrid && !phraseEnd && rng() < 0.45) return lastGrid;
+    // Repeating last bar's pattern keeps it from twitching, but never repeat a
+    // fill: it belongs at the end of a phrase, and carrying it on puts it on
+    // bar 1 of the next one, where the drum should land and settle. (It used
+    // to: a third of phrases opened with the previous phrase's fill.)
+    if (lastGrid && !phraseEnd && g.fills.indexOf(lastGrid) === -1 &&
+        rng() < 0.45) return lastGrid;
 
     var weights = [
       { bank: g.sparse, w: Math.max(0, 1 - 2 * complexity) },
