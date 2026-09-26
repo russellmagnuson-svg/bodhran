@@ -7,6 +7,8 @@
  *   1. a pitched membrane thump that drops in pitch as the skin relaxes
  *   2. an inharmonic second mode, shorter and higher
  *   3. a noise transient — the tipper itself striking goatskin
+ * Down and up strokes use the same model with different stroke settings,
+ * because they are the same skin.
  */
 (function (TRAD) {
   'use strict';
@@ -108,11 +110,36 @@
     src.stop(time + dur + 0.05);
   };
 
-  /* The low "dum" — tipper butt into the centre of the skin. */
-  Bodhran.prototype._bass = function (time, vel) {
+  /* Both strokes land on the same goatskin, so they share one model and only
+   * the stroke differs. The up stroke used to be a separate, brighter drum
+   * pitched 1.66 octaves above the down stroke, which made the pair sound like
+   * a kick and a snare. On a real bodhrán the up stroke is the same skin hit
+   * more lightly and at a glance: less fundamental, less of the pitch bend a
+   * hard strike gives the skin, a shorter ring, and relatively more click from
+   * the stick. Changes of pitch come from the back hand, not the stroke. */
+  var DOWN = {
+    pitch: 1.00,             // multiple of the skin's tuning
+    glide: 1.9, glideTime: 0.055,   // pitch bend as the struck skin relaxes
+    body: 0.9,               // fundamental
+    mode2: 0.34, mode2Decay: 0.11,  // inharmonic second mode
+    len: 0.30, lenVel: 0.16, // ring length, and how much velocity adds
+    stickHz: 1500, stickQ: 1.0, stick: 0.30, stickLen: 0.014,
+    lpBase: 900
+  };
+  var UP = {
+    pitch: 1.02,
+    glide: 1.35, glideTime: 0.035,
+    body: 0.55,
+    mode2: 0.42, mode2Decay: 0.07,
+    len: 0.14, lenVel: 0.10,
+    stickHz: 2000, stickQ: 1.1, stick: 0.45, stickLen: 0.012,
+    lpBase: 1300
+  };
+
+  Bodhran.prototype._skin = function (time, vel, s) {
     var ctx = this.ctx;
-    var f0 = this.tuning * (0.985 + Math.random() * 0.03);
-    var dur = 0.30 + 0.16 * vel;
+    var f0 = this.tuning * s.pitch * (0.985 + Math.random() * 0.03);
+    var dur = s.len + s.lenVel * vel;
 
     var amp = ctx.createGain();
     amp.gain.setValueAtTime(0.0001, time);
@@ -121,7 +148,7 @@
 
     var lp = ctx.createBiquadFilter();
     lp.type = 'lowpass';
-    lp.frequency.value = 900 + this.tone * 2600;
+    lp.frequency.value = s.lpBase + this.tone * 2600;
     lp.Q.value = 0.7;
 
     amp.connect(lp);
@@ -130,10 +157,10 @@
     // Fundamental, swooping down as the skin settles.
     var o1 = ctx.createOscillator();
     o1.type = 'sine';
-    o1.frequency.setValueAtTime(f0 * 1.9, time);
-    o1.frequency.exponentialRampToValueAtTime(f0, time + 0.055);
+    o1.frequency.setValueAtTime(f0 * s.glide, time);
+    o1.frequency.exponentialRampToValueAtTime(f0, time + s.glideTime);
     var g1 = ctx.createGain();
-    g1.gain.value = 0.9;
+    g1.gain.value = s.body;
     o1.connect(g1); g1.connect(amp);
     o1.start(time); o1.stop(time + dur + 0.02);
 
@@ -143,36 +170,22 @@
     o2.frequency.setValueAtTime(f0 * 2.9, time);
     o2.frequency.exponentialRampToValueAtTime(f0 * 1.55, time + 0.05);
     var g2 = ctx.createGain();
-    g2.gain.setValueAtTime(0.34, time);
-    g2.gain.exponentialRampToValueAtTime(0.001, time + 0.11);
+    g2.gain.setValueAtTime(s.mode2, time);
+    g2.gain.exponentialRampToValueAtTime(0.001, time + s.mode2Decay);
     o2.connect(g2); g2.connect(amp);
-    o2.start(time); o2.stop(time + 0.15);
+    o2.start(time); o2.stop(time + s.mode2Decay + 0.04);
 
-    this._noiseBurst(time, 0.014, 1500, 1.0, vel * 0.30);
+    // The stick meeting the skin.
+    this._noiseBurst(time, s.stickLen, s.stickHz, s.stickQ, vel * s.stick);
   };
 
-  /* The "tak" — tip of the tipper up near the rim. */
-  Bodhran.prototype._treble = function (time, vel) {
-    var ctx = this.ctx;
-    var f0 = this.tuning * (3.2 + Math.random() * 0.45);
-    var dur = 0.055 + 0.035 * vel;
+  /* The "dum" — down stroke, on the beat. */
+  Bodhran.prototype._bass = function (time, vel) { this._skin(time, vel, DOWN); };
 
-    var amp = ctx.createGain();
-    amp.gain.setValueAtTime(0.0001, time);
-    amp.gain.exponentialRampToValueAtTime(vel * 0.5, time + 0.002);
-    amp.gain.exponentialRampToValueAtTime(0.0001, time + dur);
-    amp.connect(this.master);
-
-    var o = ctx.createOscillator();
-    o.type = 'sine';
-    o.frequency.setValueAtTime(f0 * 1.4, time);
-    o.frequency.exponentialRampToValueAtTime(f0, time + 0.03);
-    o.connect(amp);
-    o.start(time); o.stop(time + dur + 0.02);
-
-    this._noiseBurst(time, 0.05 + 0.03 * vel, 2400 + this.tone * 1400, 1.3,
-                     vel * 0.5, 700);
-  };
+  /* The "tak" — up stroke, between the beats. Same skin, lighter stroke.
+   * (The voice is still called 'treble' internally: it is the name the MIDI
+   * note settings and saved preferences are keyed on.) */
+  Bodhran.prototype._treble = function (time, vel) { this._skin(time, vel, UP); };
 
   /* Ghost note — the brush between strokes that makes the rhythm breathe. */
   Bodhran.prototype._ghost = function (time, vel) {

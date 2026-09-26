@@ -43,7 +43,10 @@ Three reasons, and the third is the one that decided it:
 There are no audio samples. Every bodhrán hit is synthesised in
 [`js/bodhran.js`](js/bodhran.js) from oscillators and filtered noise — a
 pitched membrane thump that drops in pitch as the skin relaxes, an inharmonic
-second mode, and a noise transient for the tipper striking the skin. That means
+second mode, and a noise transient for the tipper striking the skin. Down and
+up strokes share that one skin model and differ only in the stroke: the up
+stroke is lighter, with less fundamental, less pitch bend, a shorter ring and
+relatively more stick. That means
 nothing to download or license, and the drum can be re-tuned live.
 
 Rhythms live in [`js/patterns.js`](js/patterns.js) as **grid strings**. Each
@@ -52,10 +55,10 @@ resolution:
 
 | Char | Meaning |
 |------|---------|
-| `D`  | accented bass "dum" — butt of the tipper into the middle of the skin |
-| `d`  | bass, unaccented |
-| `T`  | accented treble "tak" — tip of the tipper up near the rim |
-| `t`  | treble, unaccented |
+| `D`  | accented "dum" — a down stroke, on the beat |
+| `d`  | dum, unaccented |
+| `T`  | accented "tak" — an up stroke, between the beats |
+| `t`  | tak, unaccented |
 | `g`  | ghost — a brush, felt more than heard |
 | `-`  | rest |
 

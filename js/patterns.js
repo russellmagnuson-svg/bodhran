@@ -16,10 +16,10 @@
  * Grid length must divide evenly by beatsPerBar.
  *
  * Characters:
- *   D  accented bass  "dum"  – butt of the tipper into the middle of the skin
- *   d  bass, unaccented
- *   T  accented treble "tak" – tip of the tipper up near the rim
- *   t  treble, unaccented
+ *   D  accented "dum" – a down stroke, on the beat
+ *   d  dum, unaccented
+ *   T  accented "tak" – an up stroke, between the beats (same skin, lighter)
+ *   t  tak, unaccented
  *   g  ghost                 – a brush, felt more than heard
  *   -  rest
  */
