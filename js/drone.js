@@ -14,8 +14,13 @@
     this.ctx = ctx;
     this.destination = destination;
     this.voices = [];
+    this.group = null;   // the gain node the current voices feed
+    this.level = 0.18;
+    // `out` carries only the level control. Fading a drone in or out happens
+    // on each voice group's own gain, so an outgoing group can fade while an
+    // incoming one rises, without the two fighting over one parameter.
     this.out = ctx.createGain();
-    this.out.gain.value = 0;
+    this.out.gain.value = this.level;
 
     var lp = ctx.createBiquadFilter();
     lp.type = 'lowpass';
@@ -33,22 +38,29 @@
 
     this.out.connect(lp);
     lp.connect(destination);
-    this.level = 0.18;
   }
 
   Drone.prototype.setLevel = function (v) {
     this.level = v;
-    if (this.voices.length) {
-      this.out.gain.setTargetAtTime(v, this.ctx.currentTime, 0.1);
-    }
+    this.out.gain.setTargetAtTime(v, this.ctx.currentTime, 0.1);
   };
 
+  /* Fade the current voices out on their own gain, then stop them once they
+   * are silent. Previously this faded the shared output instead — and the
+   * start() that follows a root change immediately faded it back up, so the
+   * old drone kept sounding at full strength under the new one for 1.5s and
+   * then cut off with a click. */
   Drone.prototype.stop = function () {
-    var ctx = this.ctx;
-    var voices = this.voices;
+    var group = this.group;
+    if (!group) return;
+    var t = this.ctx.currentTime;
+    group.gain.cancelScheduledValues(t);
+    group.gain.setValueAtTime(group.gain.value, t);
+    group.gain.setTargetAtTime(0, t, 0.12);
+    // A 0.12s time constant is ~70dB down after 1s: silent before the stop.
+    this.voices.forEach(function (o) { o.stop(t + 1.0); });
     this.voices = [];
-    this.out.gain.setTargetAtTime(0, ctx.currentTime, 0.25);
-    voices.forEach(function (o) { o.stop(ctx.currentTime + 1.5); });
+    this.group = null;
   };
 
   /* rootMidi: MIDI note number for the root, e.g. 50 = D3. */
@@ -56,6 +68,9 @@
     this.stop();
     var ctx = this.ctx;
     var self = this;
+    var group = ctx.createGain();
+    group.gain.value = 0;
+    group.connect(this.out);
     // Root an octave down, the root, and the fifth above it.
     var intervals = [-12, 0, 7];
     intervals.forEach(function (semis, i) {
@@ -67,12 +82,13 @@
         var g = ctx.createGain();
         g.gain.value = (i === 2 ? 0.12 : 0.2) / 2;
         o.connect(g);
-        g.connect(self.out);
+        g.connect(group);
         o.start();
         self.voices.push(o);
       });
     });
-    this.out.gain.setTargetAtTime(this.level, ctx.currentTime, 0.4);
+    group.gain.setTargetAtTime(1, ctx.currentTime, 0.4);
+    this.group = group;
   };
 
   TRAD.Drone = Drone;

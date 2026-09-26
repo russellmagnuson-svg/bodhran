@@ -13,6 +13,7 @@
 
   var LOOKAHEAD_MS = 25;      // how often the scheduler wakes up
   var SCHEDULE_AHEAD = 0.12;  // how far ahead of the clock it schedules
+  var LATE = 0.05;            // a slot this far in the past is skipped, not played
 
   function Transport(ctx, bodhran, midi) {
     this.ctx = ctx;
@@ -121,22 +122,45 @@
                        bar: this._bar, countIn: false });
   };
 
+  Transport.prototype._slotTime = function () {
+    return this._barStart + (this._slot / this._grid.length) * this._barDur;
+  };
+
+  Transport.prototype._advance = function () {
+    this._slot++;
+    if (this._slot >= this._grid.length) {
+      this._barStart += this._barDur;
+      this._slot = 0;
+      this._bar++;
+      this._startBar();
+    }
+  };
+
   Transport.prototype._tick = function () {
-    var horizon = this.ctx.currentTime + SCHEDULE_AHEAD;
+    var now = this.ctx.currentTime;
+
+    // If the main thread stalled — a GC pause, a slow phone, a busy tab — slots
+    // will have gone by unplayed. Scheduling them now would clamp every one to
+    // the same instant and stack them into a single loud crash (a 3s stall
+    // piled 10 hits together). Skip them silently instead and rejoin in time:
+    // the audio clock kept running, so the beat carries on where it would be.
+    var skipped = 0;
+    while (this.running && this._slotTime() < now - LATE && skipped++ < 4096) {
+      this._advance();
+    }
+    if (this._slotTime() < now - LATE) {
+      // Absurdly far behind; stop counting and start a fresh bar.
+      this._barStart = now + 0.05;
+      this._slot = 0;
+      this._startBar();
+    }
+
+    var horizon = now + SCHEDULE_AHEAD;
     var guard = 0;
     while (this.running && guard++ < 256) {
-      var slotTime = this._barStart + (this._slot / this._grid.length) * this._barDur;
-      if (slotTime >= horizon) break;
-
+      if (this._slotTime() >= horizon) break;
       this._scheduleSlot(this._slot);
-      this._slot++;
-
-      if (this._slot >= this._grid.length) {
-        this._barStart += this._barDur;
-        this._slot = 0;
-        this._bar++;
-        this._startBar();
-      }
+      this._advance();
     }
   };
 

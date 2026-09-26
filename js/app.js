@@ -27,6 +27,13 @@
   /* ---------- audio graph, built on first interaction ---------- */
   function ensureAudio() {
     if (ctx) { if (ctx.state === 'suspended') ctx.resume(); return; }
+
+    // On iPhone, web audio follows the ring/silent switch by default, so a
+    // phone on silent — which is most phones at a session — plays nothing.
+    // Declaring this as playback audio (Safari 17+) makes it ignore the switch.
+    if (navigator.audioSession) {
+      try { navigator.audioSession.type = 'playback'; } catch (e) {}
+    }
     var AC = window.AudioContext || window.webkitAudioContext;
     ctx = new AC({ latencyHint: 'interactive' });
 
@@ -94,7 +101,7 @@
     });
   }
 
-  function selectTune(id, keepTempo) {
+  function selectTune(id) {
     tune = TRAD.tuneById(id);
     remember('tune', id);
 
@@ -107,8 +114,11 @@
     var bpmEl = $('bpm');
     bpmEl.min = tune.bpmRange[0];
     bpmEl.max = tune.bpmRange[1];
-    if (!keepTempo) setBpm(tune.defaultBpm);
-    else setBpm(clamp(+bpmEl.value, tune.bpmRange[0], tune.bpmRange[1]));
+    // Come back to the tempo you last used for this tune type; the default is
+    // only for the first visit. (setBpm saves as it goes, so going straight to
+    // the default here used to overwrite the tempo it should have restored.)
+    var saved = settings['bpm_' + id];
+    setBpm(saved != null ? saved : tune.defaultBpm);
 
     swingTouched = false;
     $('swing').value = tune.swing;
@@ -198,10 +208,33 @@
     flashTimer = setTimeout(function () { b.classList.remove('hit'); }, 110);
   }
 
+  /* ---------- screen wake lock ---------- */
+  // A locked phone screen stops the audio, so hold the screen on while playing.
+  var wakeLock = null;
+  function holdScreen() {
+    if (wakeLock || !navigator.wakeLock) return;
+    navigator.wakeLock.request('screen').then(function (lock) {
+      wakeLock = lock;
+      lock.addEventListener('release', function () { wakeLock = null; });
+    }).catch(function () { /* refused or unsupported; nothing to do */ });
+  }
+  function releaseScreen() {
+    if (wakeLock) wakeLock.release();
+    wakeLock = null;
+  }
+  // The browser drops the lock whenever the page is hidden; take it back when
+  // the page comes back if the drum is still going.
+  document.addEventListener('visibilitychange', function () {
+    if (document.visibilityState === 'visible' && transport && transport.running) {
+      holdScreen();
+    }
+  });
+
   /* ---------- play / stop ---------- */
   function toggle() {
     ensureAudio();
     transport.toggle();
+    if (transport.running) holdScreen(); else releaseScreen();
     var b = $('play');
     b.classList.toggle('playing', transport.running);
     b.setAttribute('aria-pressed', String(transport.running));
@@ -403,11 +436,7 @@
 
     var startTune = settings.tune && TRAD.tuneById(settings.tune).id === settings.tune
       ? settings.tune : TRAD.tunes[0].id;
-    // Read the saved tempo before selectTune runs: it calls setBpm(default),
-    // and setBpm remembers, which would clobber the value we want back.
-    var savedBpm = settings['bpm_' + startTune];
     selectTune(startTune);
-    if (savedBpm != null) setBpm(savedBpm);
   }
 
   /* ---------- MIDI ---------- */
