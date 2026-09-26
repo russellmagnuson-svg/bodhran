@@ -229,5 +229,23 @@
     else if (voice === 'click') this.click(time, vel);
   };
 
+  /* The master output everything feeds: drum, room and drone. It ends in a
+   * limiter on the sum, because the drum's own compressor sits before the room
+   * send and cannot see the total — without it, volume at maximum clipped.
+   * Shared by the app and by tests/, so the tests check the real chain. */
+  TRAD.makeOutput = function (ctx) {
+    var out = ctx.createGain();
+    out.gain.value = 1;
+    var limiter = ctx.createDynamicsCompressor();
+    limiter.threshold.value = -3;
+    limiter.knee.value = 0;
+    limiter.ratio.value = 20;
+    limiter.attack.value = 0.001;
+    limiter.release.value = 0.1;
+    out.connect(limiter);
+    limiter.connect(ctx.destination);
+    return out;
+  };
+
   TRAD.Bodhran = Bodhran;
 })(window.TRAD = window.TRAD || {});

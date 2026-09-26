@@ -28,6 +28,36 @@ You can also just double-click `index.html` — the scripts are plain
 
 **Keys:** `Space` play/stop · `←`/`→` tempo · `T` tap tempo.
 
+## Checks
+
+Open <http://localhost:8777/tests/> (or `/tests/` on the live site) and press
+**Run checks**. In about ten seconds it checks the rules the app has settled on,
+against the real code:
+
+- **Patterns** — every pattern fits its meter; no tak on a main beat; Pulse is
+  the low drum only; every style reaches 60 bpm; triplet fills are well formed
+- **Choosing patterns** — fills only on the last bar of a phrase; Busyness
+  behaves at both ends
+- **Timing** — quavers and triplets land exactly; tempo changes wait for the
+  next bar; a frozen page never stacks strokes; Pulse is dead straight; Simple
+  never wanders; the count-in is one bar
+- **Sound** — dum, tak and ghost are the same skin; stroke levels; no clipping
+  at maximum volume and room; taks audible at the fastest tempos; changing the
+  drone's root leaves nothing behind
+- **MIDI** — one drum note; velocity tracks how hard the stroke is
+- **The app** — version shown; each tune keeps its tempo; Space after a slider;
+  modes grey out the right controls; Space ignored while About is open
+- **Offline copy** — its file list covers everything the page loads, and every
+  file on it exists
+
+Your saved settings are put back afterwards. Each check says which rule it
+protects and why, so a failure tells you what broke. Most of these rules were
+broken at some point and only noticed because somebody measured.
+
+Some checks pin a deliberate choice — how loud a ghost is, which MIDI note the
+drum uses. Change one of those on purpose and its check will fail; update the
+number in `tests/tests.js` as part of the same change.
+
 ## Why a web app first
 
 Three reasons, and the third is the one that decided it:
@@ -243,3 +273,4 @@ patterns sound the way you want.
 | `_headers`        | Cloudflare cache rules |
 | `manifest.webmanifest` | home-screen app metadata |
 | `serve.py`        | local server that turns caching off, for editing |
+| `tests/`          | the checks page: open it and press Run |

@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bodhrán checks</title>
+<style>
+  :root {
+    --bg: #141110; --panel: #1e1a17; --line: #3a3029; --text: #f0e8df;
+    --muted: #a2938a; --amber: #e0a04a; --pass: #7fb4a8; --fail: #e0705a;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 14px/1.5 ui-sans-serif, -apple-system, "SF Pro Text", sans-serif;
+  }
+  main { max-width: 760px; margin: 0 auto; padding: 24px 16px 48px; }
+  h1 { margin: 0; font-size: 22px; color: #c9a473; }
+  .intro { color: var(--muted); margin: 6px 0 16px; }
+  .bar { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 18px; }
+  button {
+    background: var(--amber); color: #1a1208; border: 0; border-radius: 8px;
+    padding: 9px 18px; font: inherit; font-weight: 600; cursor: pointer;
+  }
+  button:disabled { opacity: 0.5; cursor: default; }
+  #summary { color: var(--muted); }
+  #summary.pass { color: var(--pass); font-weight: 600; }
+  #summary.fail { color: var(--fail); font-weight: 600; }
+  h2 {
+    font-size: 12px; text-transform: uppercase; letter-spacing: 0.09em;
+    color: var(--muted); margin: 22px 0 8px;
+  }
+  .check {
+    display: grid; grid-template-columns: 22px 1fr; gap: 2px 8px;
+    padding: 9px 12px; background: var(--panel); border: 1px solid var(--line);
+    border-radius: 10px; margin-bottom: 6px;
+  }
+  .icon { font-weight: 700; }
+  .check.pass .icon { color: var(--pass); }
+  .check.fail .icon { color: var(--fail); }
+  .check.run .icon { color: var(--amber); }
+  .name { font-weight: 600; }
+  .why, .detail { grid-column: 2; font-size: 12.5px; color: var(--muted); }
+  .check.fail .detail { color: var(--fail); white-space: pre-wrap; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Bodhrán checks</h1>
+  <p class="intro">Checks the rules the app has settled on against the real
+  code: the patterns, the timing, the sound, MIDI, the controls and the offline
+  copy. Takes about half a minute. Your saved settings are put back afterwards.</p>
+  <div class="bar">
+    <button id="run" type="button">Run checks</button>
+    <span id="summary">Not run yet.</span>
+  </div>
+  <div id="results"></div>
+</main>
+
+<script src="../js/patterns.js"></script>
+<script src="../js/bodhran.js"></script>
+<script src="../js/drone.js"></script>
+<script src="../js/midiout.js"></script>
+<script src="../js/transport.js"></script>
+<script src="tests.js"></script>
+</body>
+</html>

@@ -8,7 +8,7 @@
    * Bump it with every change that gets pushed: the last number for a fix,
    * the middle one for a new feature. It is also the quickest way to tell
    * whether a phone is running the latest deploy or an older copy. */
-  var VERSION = '1.0.2';
+  var VERSION = '1.0.3';
   TRAD.VERSION = VERSION;
 
   TRAD.validatePatterns();
@@ -56,21 +56,7 @@
     var AC = window.AudioContext || window.webkitAudioContext;
     ctx = new AC({ latencyHint: 'interactive' });
 
-    var out = ctx.createGain();
-    out.gain.value = 1;
-
-    // Catch-all limiter on the sum of drum + reverb + drone. The drum has its
-    // own compressor, but that sits before the reverb send, so it cannot see
-    // the total — without this, volume at maximum clips audibly.
-    var limiter = ctx.createDynamicsCompressor();
-    limiter.threshold.value = -3;
-    limiter.knee.value = 0;
-    limiter.ratio.value = 20;
-    limiter.attack.value = 0.001;
-    limiter.release.value = 0.1;
-
-    out.connect(limiter);
-    limiter.connect(ctx.destination);
+    var out = TRAD.makeOutput(ctx);   // ends in the limiter that stops clipping
 
     bodhran = new TRAD.Bodhran(ctx, out);
     drone = new TRAD.Drone(ctx, out);
