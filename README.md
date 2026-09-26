@@ -122,8 +122,13 @@ Reaper) over a virtual MIDI bus:
    **Device is online**, and make sure there is at least one bus.
 3. Reload this app in **Chrome or Edge** and allow MIDI when prompted.
 4. Pick the IAC bus under *Send to GarageBand*, tick **Send MIDI**, hit play.
-5. In GarageBand, make a **Software Instrument** track with a drum kit. Adjust
-   the dum/tak note numbers until they land on sounds you like.
+5. In GarageBand, make a **Software Instrument** track with a drum kit.
+
+Every stroke goes to one drum note (default 41, the low floor tom in a General
+MIDI kit), because every stroke on a bodhrán lands on one skin. Dum, tak and
+ghost are told apart only by velocity — and since sampled kits change timbre
+with velocity, a light stroke sounds lighter rather than just quieter. If your
+kit has a frame drum or a deeper tom, set **Drum note** to that.
 
 Safari does not implement Web MIDI, so that panel stays disabled there. The
 synthesised drum still works fine in Safari.

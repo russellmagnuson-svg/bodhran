@@ -480,25 +480,19 @@
         this.value = midi.channel;
         remember('midiChannel', midi.channel);
       });
-      $('midi-bass').addEventListener('change', function () {
-        midi.notes.bass = clamp(+this.value, 0, 127);
-        this.value = midi.notes.bass;
-        remember('midiBass', midi.notes.bass);
-      });
-      $('midi-treble').addEventListener('change', function () {
-        midi.notes.treble = midi.notes.ghost = clamp(+this.value, 0, 127);
-        this.value = midi.notes.treble;
-        remember('midiTreble', midi.notes.treble);
+      $('midi-note').addEventListener('change', function () {
+        midi.note = clamp(+this.value, 0, 127);
+        this.value = midi.note;
+        remember('midiNote', midi.note);
       });
 
       if (settings.midiChannel) {
         $('midi-channel').value = midi.channel = settings.midiChannel;
       }
-      if (settings.midiBass) { $('midi-bass').value = midi.notes.bass = settings.midiBass; }
-      if (settings.midiTreble) {
-        $('midi-treble').value = settings.midiTreble;
-        midi.notes.treble = midi.notes.ghost = settings.midiTreble;
-      }
+      // midiBass is the old per-stroke setting; if someone picked a dum drum
+      // before, keep it as the one drum rather than silently dropping it.
+      var savedNote = settings.midiNote != null ? settings.midiNote : settings.midiBass;
+      if (savedNote != null) { $('midi-note').value = midi.note = savedNote; }
     }).catch(function (err) {
       // Chrome gates Web MIDI behind a permission prompt; a denied or dismissed
       // prompt lands here, as does MIDI being blocked by policy.

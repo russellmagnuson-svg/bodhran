@@ -12,7 +12,13 @@
     this.port = null;
     this.enabled = false;
     this.channel = 10;          // GM percussion
-    this.notes = { bass: 36, treble: 37, ghost: 37 };  // kick + side stick: in every kit
+    // Every stroke goes to one drum, the way every stroke on a bodhrán lands
+    // on one skin; dum, tak and ghost differ only in velocity. Sampled kits
+    // change timbre with velocity too, so a light stroke sounds lighter, not
+    // just quieter. 41 is the low floor tom in a General MIDI kit: the
+    // closest standard drum to a bodhrán in size and pitch. (This used to be
+    // a kick for the dum and a side stick for the tak: two different drums.)
+    this.note = 41;
   }
 
   MidiOut.prototype.available = function () {
@@ -52,8 +58,7 @@
 
   MidiOut.prototype.send = function (ctx, voice, audioTime, vel) {
     if (!this.enabled || !this.port) return;
-    var note = this.notes[voice];
-    if (note == null) return;
+    var note = this.note;
     var status = 0x90 | ((this.channel - 1) & 0x0f);
     var velocity = Math.max(1, Math.min(127, Math.round(vel * 127)));
     var at = this._perfTime(ctx, audioTime);

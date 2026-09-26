@@ -462,3 +462,5 @@ dialog.about::backdrop {
 /* a control that simple mode has taken over */
 .sliders label.is-off { opacity: 0.38; }
 .sliders label.is-off input[type=range] { cursor: not-allowed; }
+
+.inline-hint { font-size: 12px; color: var(--muted); }

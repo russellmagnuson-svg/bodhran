@@ -175,12 +175,10 @@
         </label>
       </div>
       <div class="row">
-        <label class="inline">dum note
-          <input id="midi-bass" type="number" min="0" max="127" value="36" class="num">
+        <label class="inline">Drum note
+          <input id="midi-note" type="number" min="0" max="127" value="41" class="num">
         </label>
-        <label class="inline">tak note
-          <input id="midi-treble" type="number" min="0" max="127" value="37" class="num">
-        </label>
+        <span class="inline-hint">41 is the low floor tom in a standard kit</span>
       </div>
       <details class="how">
         <summary>How to hook this up to GarageBand</summary>
@@ -191,8 +189,10 @@
           <li>Reload this page, then pick the IAC bus in <b>Port</b> above.</li>
           <li>In GarageBand, create a <b>Software Instrument</b> track with a
               drum kit. It listens to incoming MIDI on the selected track.</li>
-          <li>Tick <b>Send MIDI</b> and press play. Adjust the note numbers
-              above until they land on sounds you like in the kit.</li>
+          <li>Tick <b>Send MIDI</b> and press play. Every stroke goes to the
+              one drum note: dum, tak and ghost are told apart by how hard
+              they hit, as on a real bodhr&aacute;n. If your kit has a frame
+              drum or a deeper tom, change <b>Drum note</b> to that.</li>
         </ol>
         <p class="note">Web MIDI works in Chrome and Edge. Safari does not
            support it, so this panel stays disabled there.</p>
@@ -292,8 +292,10 @@
 
     <h3>Sending it to GarageBand</h3>
     <p>The app can drive a software instrument in GarageBand, Logic or Ableton
-    over a virtual MIDI bus, with the setup steps in that panel. Needs Chrome or
-    Edge &mdash; Safari has no Web MIDI. The built-in drum works everywhere.</p>
+    over a virtual MIDI bus, with the setup steps in that panel. Every stroke
+    goes to one drum and is told apart by how hard it hits, the same as here.
+    Needs Chrome or Edge &mdash; Safari has no Web MIDI. The built-in drum works
+    everywhere.</p>
 
     <h3>On your phone</h3>
     <p>Open it in Safari and <b>Share &rarr; Add to Home Screen</b> and it runs
