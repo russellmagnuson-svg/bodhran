@@ -6,11 +6,20 @@ hornpipes, slides, waltzes, marches, barndances and mazurkas.
 
 ## Run it
 
+From this folder:
+
 ```bash
-python3 -m http.server 8777 --directory irish-trad-accompanist
+python3 serve.py
 ```
 
 Then open <http://localhost:8777>. No build step, no dependencies, no npm.
+
+Use `serve.py` rather than plain `python3 -m http.server`. The plain server
+sends no cache headers, so the browser guesses how long to keep each file and
+can go on running an old copy of a script you have just edited — an edit to
+`js/patterns.js` then appears to do nothing. `serve.py` tells the browser not
+to cache. If you ran the app with the plain server before, do one hard reload
+(**⌘⇧R**) to clear what it already kept.
 
 You can also just double-click `index.html` — the scripts are plain
 `<script>` tags rather than ES modules precisely so that works.
@@ -204,3 +213,4 @@ patterns sound the way you want.
 | `sw.js`           | offline caching |
 | `_headers`        | Cloudflare cache rules |
 | `manifest.webmanifest` | home-screen app metadata |
+| `serve.py`        | local server that turns caching off, for editing |
