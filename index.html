@@ -146,6 +146,10 @@
         <input id="tone" type="range" min="0" max="1" step="0.01" value="0.5">
         <output id="tone-out">balanced</output>
       </label>
+      <label>Back hand
+        <input id="backhand" type="range" min="0" max="1" step="0.01" value="0">
+        <output id="backhand-out">off</output>
+      </label>
       <label>Room
         <input id="room" type="range" min="0" max="0.6" step="0.01" value="0.16">
         <output id="room-out">16%</output>
@@ -333,6 +337,17 @@
     more click, and a ghost is the tipper barely touching it. That is also why
     <b>Tuning</b>, <b>Tone</b> and <b>Room</b> can change the drum while it is
     still playing.</p>
+
+    <h3>The back hand</h3>
+    <p>A player's other hand sits inside the frame, pressing on the skin: the
+    harder it presses, the higher the note and the shorter the ring.
+    <b>Back hand</b> brings that in. The hand moves slowly while the tipper
+    does the fast work, so it follows one arc per phrase: open at the top,
+    pressing in through the middle, letting go across the last bar so the
+    fill falls in pitch into the next phrase. In Full mode each phrase presses
+    a little differently. It is off in <b>Pulse</b>, the last stroke of a
+    <b>Finish</b> is always open, and the pitch cannot go over MIDI &mdash; a
+    GarageBand drum hears the strokes, not the hand.</p>
 
     <h3>Drone</h3>
     <p>An optional root-and-fifth pad. Useful for tuning against, and for

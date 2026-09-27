@@ -55,8 +55,8 @@
     var ctx = { currentTime: 0, state: 'running',
                 resume: function () { return Promise.resolve(); } };
     var hits = [], bars = [];
-    var drum = { hit: function (voice, time, vel) {
-      hits.push({ voice: voice, time: time, vel: vel });
+    var drum = { hit: function (voice, time, vel, press) {
+      hits.push({ voice: voice, time: time, vel: vel, press: press || 0 });
     } };
     var tr = new TRAD.Transport(ctx, drum, null);
     tr.humanize = 0;
@@ -94,11 +94,11 @@
     fn(oc);
     return oc.startRendering();
   }
-  function soloHit(voice, vel) {
+  function soloHit(voice, vel, press) {
     return render(1.0, 1, function (oc) {
       var b = new TRAD.Bodhran(oc, oc.destination);
       b.setRoom(0);
-      b.hit(voice, 0.02, vel);
+      b.hit(voice, 0.02, vel, press);
     }).then(function (buf) { return buf.getChannelData(0); });
   }
   function peak(d) { var p = 0; for (var i = 0; i < d.length; i++) p = Math.max(p, Math.abs(d[i])); return p; }
@@ -108,9 +108,9 @@
     for (var i = s; i < e; i++) { var q0 = k * q1 - q2 + d[i]; q2 = q1; q1 = q0; }
     return Math.sqrt(Math.max(0, q1 * q1 + q2 * q2 - k * q1 * q2));
   }
-  function pitchOf(d) {
+  function pitchOf(d, t0, t1) {
     var best = 0, bf = 0;
-    for (var f = 40; f <= 500; f += 2) { var m = goertzel(d, f, 0.045, 0.14); if (m > best) { best = m; bf = f; } }
+    for (var f = 40; f <= 500; f += 2) { var m = goertzel(d, f, t0 || 0.045, t1 || 0.14); if (m > best) { best = m; bf = f; } }
     return bf;
   }
   function rms(d, a, z) {
@@ -453,6 +453,51 @@
     return { run: r, last: last, ended: ended, barOf: function (t) { return Math.round((t - 0.08) / 2 - 1); } };
   }
 
+  function pressRun(setup, seconds) {
+    var r = fakeRun(function (tr) {
+      tr.tune = TRAD.tuneById('reel'); tr.mode = 'simple'; tr.bpm = 120; tr.phraseLength = 4; tr.backHand = 1;
+      if (setup) setup(tr);
+    });
+    r.advance(seconds || 16.5); r.done();
+    return r;
+  }
+
+  check('Back hand', 'It follows one arc through each phrase',
+    'The hand moves slowly while the tipper does the fast work: open at the top of the phrase, in through the middle, letting go across the last bar.',
+    function () {
+      var r = pressRun(), bar = 2, t0 = r.hits[0].time;
+      function at(b, beat) {          // the stroke on this beat of drum bar b (from 0)
+        var t = t0 + b * bar + beat * (bar / 4);
+        return r.hits.filter(function (h) { return Math.abs(h.time - t) < 1e-6; })[0].press;
+      }
+      var steps = r.hits.slice(1).map(function (h, i) { return Math.abs(h.press - r.hits[i].press); });
+      var most = Math.max.apply(null, r.hits.map(function (h) { return h.press; }));
+      expect(at(0, 0) === 0 && at(4, 0) === 0, 'not open at the top of the phrase: ' + round(at(0, 0), 2) + ', ' + round(at(4, 0), 2));
+      expect(at(2, 3) > 0.9 && most <= 1, 'bar 3 presses only ' + round(at(2, 3), 2) + ' at its hardest point');
+      expect(at(3, 0) > at(3, 2) && at(3, 2) > at(3, 3), 'the last bar does not let go: ' + [0, 2, 3].map(function (b) { return round(at(3, b), 2); }).join(', '));
+      expect(Math.max.apply(null, steps) < 0.25, 'the hand jumped by ' + round(Math.max.apply(null, steps), 2) + ' between two strokes');
+    });
+
+  check('Back hand', 'Off means off, and never in Pulse or on the last stroke',
+    'Pulse is a plain reference; the count-in is not the drum; the last stroke of a Finish rings out open.',
+    function () {
+      var off = pressRun(function (tr) { tr.backHand = 0; });
+      var pulse = pressRun(function (tr) { tr.mode = 'pulse'; });
+      var withCount = pressRun(function (tr) { tr.countInBars = 1; });
+      var clicksPressed = withCount.hits.filter(function (h) { return h.voice === 'click' && h.press; }).length;
+      var fin = fakeRun(function (tr) {
+        tr.tune = TRAD.tuneById('reel'); tr.mode = 'simple'; tr.bpm = 120; tr.phraseLength = 4; tr.backHand = 1;
+      });
+      fin.advance(2.5); fin.tr.finish(); fin.advance(10);
+      var last = fin.hits[fin.hits.length - 1];
+      expect(off.hits.every(function (h) { return h.press === 0; }), 'the hand pressed with Back hand off');
+      expect(pulse.hits.every(function (h) { return h.press === 0; }), 'the hand pressed in Pulse');
+      expect(clicksPressed === 0, 'the count-in clicks were pressed');
+      expect(withCount.hits.filter(function (h) { return h.voice !== 'click'; })[0].press === 0,
+             'the first bar after the count-in is not open at the top of the phrase');
+      expect(!fin.tr.running && last.press === 0, 'the last stroke of a Finish was pressed at ' + round(last.press, 2));
+    });
+
   check('Finish', 'The last stroke lands on beat 1 of the phrase’s last bar',
     'A tune’s final note comes at the start of its last bar, so the drum hits it with you and lets it ring, then stops.',
     function () {
@@ -581,6 +626,25 @@
         var tak = db(peak(r[1]), peak(r[0])), ghost = db(peak(r[2]), peak(r[0]));
         expect(tak > -15 && tak < -9, 'tak is ' + round(tak) + ' dB (expected about -12)');
         expect(ghost > -25.5 && ghost < -18.5, 'ghost is ' + round(ghost) + ' dB (expected about -22)');
+      });
+    });
+
+  check('Sound', 'The back hand raises the pitch and shortens the ring',
+    'Pressing on the skin from inside tightens it: a higher note, rung shorter. At full pressure about a fourth up.',
+    function () {
+      function ringEnd(d) {           // when the stroke falls 40 dB under its peak
+        var p = peak(d), i = d.length - 1;
+        while (i > 0 && Math.abs(d[i]) < p / 100) i--;
+        return i / SR;
+      }
+      return Promise.all([soloHit('bass', 1, 0), soloHit('bass', 1, 1), soloHit('treble', 0.46, 1)]).then(function (r) {
+        // Measured once the opening swoop has settled: a shorter ring weighs
+        // the swoop more, which reads as two semitones too many.
+        var open = pitchOf(r[0], 0.09, 0.2), pressed = pitchOf(r[1], 0.09, 0.2), up = pitchOf(r[2], 0.09, 0.2);
+        var semis = 12 * Math.log2(pressed / open);
+        expect(semis > 4 && semis < 6, 'full pressure moves the pitch ' + round(semis) + ' semitones (' + open + ' → ' + pressed + ' Hz)');
+        expect(ringEnd(r[1]) < ringEnd(r[0]) * 0.75, 'pressed rings ' + round(ringEnd(r[1]), 2) + ' s, open ' + round(ringEnd(r[0]), 2) + ' s');
+        expect(up / pressed > 0.9 && up / pressed < 1.1, 'the up stroke does not feel the hand: ' + up + ' Hz against ' + pressed + ' Hz');
       });
     });
 
@@ -774,14 +838,14 @@
       return withApp(function (win, doc) {
         function mode(m) { doc.querySelector('.mode[data-mode="' + m + '"]').click(); }
         function off() {
-          return ['complexity', 'phrase', 'swing', 'humanize'].filter(function (id) { return doc.getElementById(id).disabled; }).join(',');
+          return ['complexity', 'phrase', 'swing', 'humanize', 'backhand'].filter(function (id) { return doc.getElementById(id).disabled; }).join(',');
         }
         mode('full');   var full = off();
         mode('simple'); var simple = off();
         mode('pulse');  var pulse = off();
         expect(full === '', 'Full greys out: ' + full);
         expect(simple === 'complexity,phrase', 'Simple greys out: ' + simple);
-        expect(pulse === 'complexity,phrase,swing,humanize', 'Pulse greys out: ' + pulse);
+        expect(pulse === 'complexity,phrase,swing,humanize,backhand', 'Pulse greys out: ' + pulse);
       });
     });
 

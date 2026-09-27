@@ -165,10 +165,17 @@
     level: 0.78              // puts it where the old ghost sat, ~22dB under a dum
   };
 
-  Bodhran.prototype._skin = function (time, vel, s) {
+  /* The back hand pressing on the skin from inside: at full pressure the
+   * pitch rises about a fourth, and the skin, held, rings shorter and with
+   * less boom. Every stroke feels it, because it is one skin under one hand. */
+  var PRESS_SEMITONES = 5;
+
+  Bodhran.prototype._skin = function (time, vel, s, press) {
     var ctx = this.ctx;
-    var f0 = this.tuning * s.pitch * (0.985 + Math.random() * 0.03);
-    var dur = s.len + s.lenVel * vel;
+    var p = press > 0 ? Math.min(1, press) : 0;
+    var f0 = this.tuning * s.pitch * (0.985 + Math.random() * 0.03) *
+             Math.pow(2, p * PRESS_SEMITONES / 12);
+    var dur = (s.len + s.lenVel * vel) * (1 - 0.45 * p);
     var out = this._strokeOut(time);
 
     var amp = ctx.createGain();
@@ -190,7 +197,7 @@
     o1.frequency.setValueAtTime(f0 * s.glide, time);
     o1.frequency.exponentialRampToValueAtTime(f0, time + s.glideTime);
     var g1 = ctx.createGain();
-    g1.gain.value = s.body;
+    g1.gain.value = s.body * (1 - 0.2 * p);
     o1.connect(g1); g1.connect(amp);
     o1.start(time); o1.stop(time + dur + 0.02);
 
@@ -211,16 +218,16 @@
   };
 
   /* The "dum" — down stroke, on the beat. */
-  Bodhran.prototype._bass = function (time, vel) { this._skin(time, vel, DOWN); };
+  Bodhran.prototype._bass = function (time, vel, press) { this._skin(time, vel, DOWN, press); };
 
   /* The "tak" — up stroke, between the beats. Same skin, lighter stroke.
    * (The voice is still called 'treble' internally: it is the name the MIDI
    * note settings and saved preferences are keyed on.) */
-  Bodhran.prototype._treble = function (time, vel) { this._skin(time, vel, UP); };
+  Bodhran.prototype._treble = function (time, vel, press) { this._skin(time, vel, UP, press); };
 
   /* Ghost note — the tipper barely touching the skin between strokes, the
    * thing that keeps the rhythm breathing. Same skin as the other two. */
-  Bodhran.prototype._ghost = function (time, vel) { this._skin(time, vel, GHOST); };
+  Bodhran.prototype._ghost = function (time, vel, press) { this._skin(time, vel, GHOST, press); };
 
   /* Count-in click — deliberately not a bodhrán, so it stands apart. */
   Bodhran.prototype.click = function (time, vel) {
@@ -237,11 +244,12 @@
     o.start(time); o.stop(time + 0.06);
   };
 
-  Bodhran.prototype.hit = function (voice, time, vel) {
+  /* press: how hard the back hand is pressing, 0 (open skin) to 1. */
+  Bodhran.prototype.hit = function (voice, time, vel, press) {
     if (vel <= 0) return;
-    if (voice === 'bass') this._bass(time, vel);
-    else if (voice === 'treble') this._treble(time, vel);
-    else if (voice === 'ghost') this._ghost(time, vel);
+    if (voice === 'bass') this._bass(time, vel, press);
+    else if (voice === 'treble') this._treble(time, vel, press);
+    else if (voice === 'ghost') this._ghost(time, vel, press);
     else if (voice === 'click') this.click(time, vel);
   };
 

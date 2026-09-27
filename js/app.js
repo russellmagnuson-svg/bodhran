@@ -8,7 +8,7 @@
    * Bump it with every change that gets pushed: the last number for a fix,
    * the middle one for a new feature. It is also the quickest way to tell
    * whether a phone is running the latest deploy or an older copy. */
-  var VERSION = '1.2.0';
+  var VERSION = '1.3.0';
   TRAD.VERSION = VERSION;
 
   TRAD.validatePatterns();
@@ -76,6 +76,7 @@
     transport.complexity = +$('complexity').value;
     transport.mode = mode;
     transport.humanize = +$('humanize').value;
+    transport.backHand = +$('backhand').value;
     transport.phraseLength = +$('phrase').value;
     transport.countInBars = +$('countin').value;
     transport.swingOverride = swingOverride();
@@ -330,7 +331,8 @@
     $('mode-desc').textContent = MODE_TEXT[mode];
 
     var off = { complexity: mode !== 'full', phrase: mode !== 'full',
-                swing: mode === 'pulse', humanize: mode === 'pulse' };
+                swing: mode === 'pulse', humanize: mode === 'pulse',
+                backhand: mode === 'pulse' };
     Object.keys(off).forEach(function (id) {
       $(id).disabled = off[id];
       $(id).closest('label').classList.toggle('is-off', off[id]);
@@ -447,6 +449,10 @@
            : v < 0.88 ? 'open' : 'bright';
     }, function (v) { if (bodhran) bodhran.tone = v; });
 
+    bindSlider('backhand', 'backhand-out', function (v) {
+      return v === 0 ? 'off' : v < 0.35 ? 'light' : v < 0.7 ? 'moderate' : 'a lot';
+    }, function (v) { if (transport) transport.backHand = v; });
+
     bindSlider('room', 'room-out', pct,
       function (v) { if (bodhran) bodhran.setRoom(v); });
 
@@ -510,8 +516,8 @@
   }
 
   function restore() {
-    ['complexity', 'humanize', 'phrase', 'level', 'tuning', 'tone', 'room',
-     'drone-level'].forEach(function (id) {
+    ['complexity', 'humanize', 'phrase', 'level', 'tuning', 'tone', 'backhand',
+     'room', 'drone-level'].forEach(function (id) {
       if (settings[id] != null) {
         $(id).value = settings[id];
         $(id).dispatchEvent(new Event('input'));

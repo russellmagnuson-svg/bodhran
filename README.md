@@ -43,9 +43,13 @@ against the real code:
   next bar, and so do tune changes; phrases count from the first bar the drum
   plays, not the count-in; a frozen page never stacks strokes; Pulse is dead straight; Simple
   never wanders; the count-in is one bar
-- **Sound** — dum, tak and ghost are the same skin; stroke levels; no clipping
+- **Sound** — dum, tak and ghost are the same skin; stroke levels; the back
+  hand raises the pitch and shortens the ring; no clipping
   at maximum volume and room; taks audible at the fastest tempos; nothing
   sounds after Stop; changing the drone's root leaves nothing behind
+- **Back hand** — one smooth arc through each phrase, open at the top and
+  letting go across the last bar; off means off, and never in Pulse, the
+  count-in or the last stroke of a Finish
 - **Finish** — the last stroke lands on beat 1 of the phrase's last bar;
   pressed in that bar it waits for the next phrase; it can be taken back, and
   a stall cannot lose it
@@ -92,6 +96,16 @@ only in the stroke: the up stroke is lighter, with less fundamental, less pitch
 bend, a shorter ring and relatively more stick; a ghost is lighter again, a
 faint thump and a soft tick about 22dB under a down stroke. That means
 nothing to download or license, and the drum can be re-tuned live.
+
+**Back hand** brings in the player's other hand, pressing on the skin from
+inside: at full pressure the pitch rises about a fourth (5 semitones) and the
+skin rings shorter, with less boom. The hand moves slowly while the tipper does
+the fast work, so it follows one arc per phrase (`TRAD.backHandShape` in
+`js/patterns.js`): open at the top, pressing in through the middle, letting go
+across the last bar so the fill falls in pitch into the next phrase. In Full
+mode each phrase presses in a little differently. It is off in Pulse, the last
+stroke of a Finish is played open, and it defaults to off. MIDI carries only the
+strokes, not the pitch.
 
 Rhythms live in [`js/patterns.js`](js/patterns.js) as **grid strings**. Each
 character is one evenly-spaced slot in a bar, so the string's length sets the

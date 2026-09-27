@@ -248,6 +248,20 @@
     return g.core[0];
   }
 
+  /* The back hand's path through a phrase, 0 (open skin) to 1 (pressed
+   * hardest). A player's back hand moves slowly while the tipper does the
+   * fast work, so this is one smooth arc, not a pressure per stroke: open at
+   * the top of the phrase, pressing in through the middle, and letting go
+   * across the last bar, so the fill falls in pitch into the next phrase.
+   * x is how far through the phrase the stroke falls, 0 to 1. */
+  function backHandShape(x) {
+    x = x - Math.floor(x);
+    var PEAK = 0.7;
+    var s = x < PEAK ? Math.sin(Math.PI / 2 * x / PEAK)
+                     : Math.cos(Math.PI / 2 * (x - PEAK) / (1 - PEAK));
+    return s * s;
+  }
+
   /* Swing as a piecewise-linear remap of position-within-beat.
    * Works at any grid resolution: the quaver offbeat lands on `pivot`,
    * everything either side is stretched to match. */
@@ -265,6 +279,7 @@
   TRAD.pickGrid = pickGrid;
   TRAD.pulseGrid = pulseGrid;
   TRAD.swingShift = swingShift;
+  TRAD.backHandShape = backHandShape;
   TRAD.VELOCITY = VELOCITY;
   TRAD.VOICE = VOICE;
   TRAD.validatePatterns = validate;

@@ -26,6 +26,8 @@
     this.complexity = 0.5;
     this.mode = 'full';    // 'full' | 'simple' | 'pulse'
     this.humanize = 0.4;
+    this.backHand = 0;      // 0 = open skin throughout, 1 = the most pressure
+    this._phrasePeak = 1;   // how far this phrase's back hand presses in
     this.phraseLength = 4;
     this.countInBars = 1;
     this.swingOverride = null;  // null = use the tune's own swing
@@ -77,6 +79,13 @@
       this._lastGrid = null;
     }
     var L = this.phraseLength;
+    // Each phrase in Full mode presses in a little differently, the way a
+    // player's hand never quite repeats. Simple keeps one steady shape.
+    var Lh = L > 0 ? L : 4;
+    if (this._bar >= 0 && this._bar % Lh === 0) {
+      this._phrasePeak = this.mode === 'full' && this.humanize > 0
+        ? 0.65 + 0.35 * Math.random() : 1;
+    }
     if (this._countInLeft > 0) {
       // One slot per beat: an accented click on 1, then plain ones.
       this._grid = 'C' + 'c'.repeat(this.tune.beatsPerBar - 1);
@@ -146,11 +155,21 @@
     vel = Math.max(0.03, Math.min(1.2, vel));
     if (time < this.ctx.currentTime) time = this.ctx.currentTime;
 
-    this.bodhran.hit(voice, time, vel);
+    this.bodhran.hit(voice, time, vel, this._press(slot / grid.length));
     if (this.midi) this.midi.send(this.ctx, voice, time, vel);
     this._pushEvent({ time: time, slot: slot, len: grid.length, char: ch,
                        bar: this._bar, countIn: false });
     return time;
+  };
+
+  /* How hard the back hand presses for a stroke this far through the bar.
+   * Never in Pulse, which is a plain reference; and the last stroke of a
+   * Finish is played open, so it rings out full. */
+  Transport.prototype._press = function (fractionOfBar) {
+    if (!(this.backHand > 0) || this.mode === 'pulse' || this.ending || this._bar < 0) return 0;
+    var L = this.phraseLength > 0 ? this.phraseLength : 4;
+    var x = ((this._bar % L) + fractionOfBar) / L;
+    return this.backHand * this._phrasePeak * TRAD.backHandShape(x);
   };
 
   Transport.prototype._slotTime = function () {
