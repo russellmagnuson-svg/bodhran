@@ -21,6 +21,7 @@
     this.midi = midi;
 
     this.tune = TRAD.tunes[0];
+    this._nextTune = null;   // a tune picked mid-bar, waiting for the next bar
     this.bpm = this.tune.defaultBpm;
     this.complexity = 0.5;
     this.mode = 'full';    // 'full' | 'simple' | 'pulse'
@@ -54,7 +55,22 @@
     return (60 / this.bpm) * this.tune.beatsPerBar;
   };
 
+  /* Change tune type. While playing, the change waits for the next bar, like a
+   * tempo change: the bar under way was laid out for the old tune's beats and
+   * swing, and switching part-way through played the rest of it wrong. */
+  Transport.prototype.setTune = function (tune) {
+    if (this.running) this._nextTune = tune;
+    else { this.tune = tune; this._nextTune = null; }
+  };
+
   Transport.prototype._startBar = function () {
+    if (this._nextTune) {
+      this.tune = this._nextTune;
+      this._nextTune = null;
+      // The last bar's pattern belongs to the old tune. Left in place, the
+      // picker could repeat it: a reel bar played as a jig.
+      this._lastGrid = null;
+    }
     if (this._countInLeft > 0) {
       // One slot per beat: an accented click on 1, then plain ones.
       this._grid = 'C' + 'c'.repeat(this.tune.beatsPerBar - 1);
@@ -189,6 +205,10 @@
     if (this._timer) clearInterval(this._timer);
     this._timer = null;
     this.events.length = 0;
+    if (this._nextTune) { this.tune = this._nextTune; this._nextTune = null; }
+    // Strokes are scheduled a little ahead, so some are always queued. Drop
+    // them, or one can still sound after Stop.
+    if (this.bodhran.cancelFrom) this.bodhran.cancelFrom(this.ctx.currentTime);
     if (this.midi) this.midi.allNotesOff();
   };
 

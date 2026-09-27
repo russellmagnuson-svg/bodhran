@@ -71,6 +71,8 @@
   MidiOut.prototype.allNotesOff = function () {
     if (!this.port) return;
     var status = 0xb0 | ((this.channel - 1) & 0x0f);
+    // Drop strokes queued for later, where the browser supports it.
+    try { if (typeof this.port.clear === 'function') this.port.clear(); } catch (e) {}
     try { this.port.send([status, 123, 0]); } catch (e) {}
   };
 

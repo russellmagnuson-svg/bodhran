@@ -71,7 +71,7 @@
         sparse: ['D-tD-tD-t'],
         core:   ['DtdDtdDtd', 'D-tDtdD-t', 'DttD-tDtt'],
         busy:   ['D-t-d-D-t-d-D-tdtd', 'Dt-td-Dt-td-Dt-td-'],
-        fills:  ['D-t-d-D-t-d-D-tdtd', 'D-t-d-D-tdtdD-tdtd']
+        fills:  ['D-t-d-D-t-d-D-tdtd', 'D-t-d-D-tdtdD-tdtd', 'D-tdtdD-t-d-D-t-T-']
       }
     },
     {
@@ -96,8 +96,8 @@
         simple: ['DtdtDtdt'],
         sparse: ['D-d-D-d-', 'Dtdtdtdt'],
         core:   ['DtdtDtdt', 'DtdtDtd-', 'DtDtDtdt'],
-        busy:   ['DtdtDtdtDtdtDtd-'],
-        fills:  ['D-t-d-t-D-t-dtDt', 'DtdtDtdtDtdtDtdt']
+        busy:   ['DtdtDtdtDtdtDtd-', 'D-tdd-t-D-tdd-t-', 'D-tgd-t-D-tgdtdt'],
+        fills:  ['D-t-d-t-D-t-dtDt', 'DtdtDtdtDtdtDtdt', 'D-tdd-tdD-tdDtDt']
       }
     },
     {
@@ -107,10 +107,14 @@
       grids: {
         pulse:  ['DdDd'],
         simple: ['D-tD-tD-tD-t'],
-        sparse: ['D-tD-tD-tD-t'],
+        sparse: ['D-tD-tD-tD-t', 'D--D-tD--D-t'],
         core:   ['DtdD-tDtdD-t', 'DtdDtdDtdDtd', 'DttD-tDttD-t'],
-        busy:   ['D-t-d-D-tdtdD-t-d-D-tdtd'],
-        fills:  ['DtdD-tDtdD-tD-t-d-D-tdtd']
+        busy:   ['D-t-d-D-tdtdD-t-d-D-tdtd', 'D-tdtdD---t-D-tdtdD---t-'],
+        // 24 slots is six to a beat: a quaver every 2 (D-t-d-), a semiquaver
+        // every 1. The first fill used to be a whole 12-slot bar squashed into
+        // two beats, which put hard strokes halfway between quavers.
+        fills:  ['D-t-d-D---t-D-t-d-D-tdtd', 'D-t-d-D-t-d-D-tdtdD-tdtd',
+                 'D---t-D---t-D-tdtdD-t-T-']
       }
     },
     {
@@ -148,8 +152,8 @@
         simple: ['Dtdtdtdt'],
         sparse: ['D-d-d-d-', 'Dtd-dtd-'],
         core:   ['Dtdtdtdt', 'Dtdtdtd-', 'Dtd-dtdt'],
-        busy:   ['DtdtDtdtDtd-dtdt'],
-        fills:  ['D-t-d-t-D-t-dtDt']
+        busy:   ['DtdtDtdtDtd-dtdt', 'D-tdd-t-d-tdd-t-'],
+        fills:  ['D-t-d-t-D-t-dtDt', 'Dtdtd-t-D-tdd-Dt', 'D-t-d-tdD-tdDtdt']
       }
     },
     {

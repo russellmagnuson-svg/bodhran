@@ -8,7 +8,7 @@
    * Bump it with every change that gets pushed: the last number for a fix,
    * the middle one for a new feature. It is also the quickest way to tell
    * whether a phone is running the latest deploy or an older copy. */
-  var VERSION = '1.1.0';
+  var VERSION = '1.1.1';
   TRAD.VERSION = VERSION;
 
   TRAD.validatePatterns();
@@ -131,8 +131,10 @@
       ? 'tune default (' + Math.round(tune.swing * 100) + '%)'
       : 'tune default (straight)';
 
-    if (transport) { transport.tune = tune; transport.swingOverride = null; }
-    renderGrid(idleGrid());
+    if (transport) { transport.setTune(tune); transport.swingOverride = null; }
+    // While playing, the bar display moves to the new tune with the drum, on
+    // the next bar.
+    if (!transport || !transport.running) renderGrid(idleGrid());
   }
 
   /* What to show in the bar display when nothing is playing. */
@@ -494,9 +496,10 @@
   function setupMidi() {
     var status = $('midi-status');
     if (!midi.available()) {
-      status.innerHTML = 'This browser has no Web MIDI, so GarageBand output is ' +
-        'unavailable here. <b>Chrome</b> or <b>Edge</b> on macOS support it; ' +
-        'Safari does not.';
+      // Safari, and so every iPhone. Nothing here can work, so the panel
+      // shrinks to one line rather than taking a screenful to say so.
+      $('midi-panel').classList.add('unavailable');
+      status.innerHTML = 'Needs <b>Chrome</b> or <b>Edge</b> on a Mac.';
       return;
     }
     midi.init().then(function (ports) {

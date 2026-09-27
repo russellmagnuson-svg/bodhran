@@ -34,22 +34,25 @@ Open <http://localhost:8777/tests/> (or `/tests/` on the live site) and press
 **Run checks**. In about ten seconds it checks the rules the app has settled on,
 against the real code:
 
-- **Patterns** — every pattern fits its meter; no tak on a main beat; Pulse is
-  the low drum only; every style reaches 60 bpm; triplet fills are well formed
+- **Patterns** — every pattern fits its meter; no tak on a main beat; accents
+  fall on the quavers; every style has more than one fill; Pulse is the low
+  drum only; every style reaches 60 bpm; triplet fills are well formed
 - **Choosing patterns** — fills only on the last bar of a phrase; Busyness
   behaves at both ends
 - **Timing** — quavers and triplets land exactly; tempo changes wait for the
-  next bar; a frozen page never stacks strokes; Pulse is dead straight; Simple
+  next bar, and so do tune changes; a frozen page never stacks strokes; Pulse is dead straight; Simple
   never wanders; the count-in is one bar
 - **Sound** — dum, tak and ghost are the same skin; stroke levels; no clipping
-  at maximum volume and room; taks audible at the fastest tempos; changing the
-  drone's root leaves nothing behind
+  at maximum volume and room; taks audible at the fastest tempos; nothing
+  sounds after Stop; changing the drone's root leaves nothing behind
 - **MIDI** — one drum note; velocity tracks how hard the stroke is
 - **The app** — version shown; each tune keeps its tempo; Space after a slider;
-  modes grey out the right controls; Space ignored while About is open
+  modes grey out the right controls; the About names the panels as they are;
+  Space ignored while About is open
 - **Phone layout** (in a phone-sized copy of the app) — the rhythm choice is on
   the first screen; Play sits beside the tempo; the pinned Play/Stop bar appears
-  when scrolled down, works, and never covers the page
+  when scrolled down, works, and never covers the page; without MIDI (an
+  iPhone) the GarageBand panel is one line
 - **Offline copy** — its file list covers everything the page loads, and every
   file on it exists
 
@@ -151,7 +154,8 @@ callback drifts audibly within a few bars. Measured drift here is about 0.1%
 over 17 seconds, which is the measurement noise floor rather than real drift.
 
 Tempo, tune type and busyness changes land on the **next bar boundary**, which
-is where a musician expects them to land.
+is where a musician expects them to land. Stop drops any strokes already
+queued, so nothing sounds after it.
 
 Swing is a piecewise-linear remap of position-within-beat, so it works at any
 grid resolution: at 100% the quaver offbeat sits exactly on the triplet (0.667).

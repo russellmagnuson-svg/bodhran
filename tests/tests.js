@@ -122,18 +122,27 @@
   /* ---------- the real app, in a hidden frame ----------
    * Each check gets a fresh copy of the app. Settings are saved first and put
    * back afterwards, so running the checks never changes your own tempos. */
-  function withApp(fn, size) {
+  function withApp(fn, size, first) {
     size = size || { w: 800, h: 900 };
     var saved = localStorage.getItem('bodhran.settings');
     localStorage.removeItem('bodhran.settings');
     var frame = document.createElement('iframe');
-    frame.src = '../index.html';
     frame.style.cssText = 'position:absolute;left:-10000px;top:0;border:0;width:' +
                           size.w + 'px;height:' + size.h + 'px';
+    // `first` is a script run in the app's page before any of the app's own —
+    // how a check pretends to be a browser without something, such as Safari
+    // without Web MIDI. It needs the page's text rather than its address.
+    var page = first
+      ? text('../index.html').then(function (html) {
+          frame.srcdoc = html.replace('<head>', '<head><base href="' +
+            new URL('../', location.href).href + '"><script>' + first + '<\/script>');
+        })
+      : Promise.resolve().then(function () { frame.src = '../index.html'; });
     document.body.appendChild(frame);
     return new Promise(function (resolve, reject) {
       var t = setTimeout(function () { reject(new Error('the app did not load')); }, 10000);
       frame.onload = function () { clearTimeout(t); setTimeout(resolve, 300); };
+      page.catch(reject);
     }).then(function () {
       return fn(frame.contentWindow, frame.contentDocument);
     }).finally(function () {
@@ -202,6 +211,31 @@
         return t.bpmRange[0] !== 60 || t.defaultBpm < t.bpmRange[0] || t.defaultBpm > t.bpmRange[1];
       }).map(function (t) { return t.id + ' ' + t.bpmRange.join('-') + ' default ' + t.defaultBpm; });
       expect(bad.length === 0, bad.join('\n'));
+    });
+
+  check('Patterns', 'Accents fall on the quavers',
+    'A hard stroke halfway between two quavers puts a duple feel into jig time. The slide’s only fill used to do that: a whole bar squashed into two beats.',
+    function () {
+      var bad = [];
+      eachGrid(function (t, bank, g) {
+        var perBeat = t.beatUnit === 'dotted crotchet' ? 3 : 2;   // quavers in a beat
+        var spb = g.length / t.beatsPerBar;
+        if (spb % perBeat) return;                                // triplet grids have their own check
+        for (var i = 0; i < g.length; i++) {
+          if ((g[i] === 'D' || g[i] === 'T') && i % (spb / perBeat)) {
+            bad.push(t.id + ' ' + bank + ' ' + g + ' (slot ' + (i + 1) + ')'); break;
+          }
+        }
+      });
+      expect(bad.length === 0, bad.join('\n'));
+    });
+
+  check('Patterns', 'Every style has more than one fill',
+    'With a single fill, every phrase in that style ended the same way. The slide and barndance did.',
+    function () {
+      var bad = TRAD.tunes.filter(function (t) { return only(t, 'fills').length < 2; })
+                          .map(function (t) { return t.id + ': ' + only(t, 'fills').length; });
+      expect(bad.length === 0, bad.join(', '));
     });
 
   check('Patterns', 'Reel triplet fills are well formed',
@@ -344,6 +378,42 @@
       var bar1 = gaps.slice(0, 8), bar2 = gaps.slice(8, 15);
       expect(bar1.every(function (g) { return Math.abs(g - oldHalf) < 1e-6; }), 'bar 1 did not keep the old tempo');
       expect(bar2.every(function (g) { return Math.abs(g - newHalf) < 1e-6; }), 'bar 2 is not at the new tempo');
+    });
+
+  check('Timing', 'Tune changes land on the next bar',
+    'Switching tune part-way through a bar played the rest of it with the new tune’s swing, and could repeat the old tune’s pattern under the new one.',
+    function () {
+      // A swung hornpipe, switched to a straight reel half-way through bar 1.
+      var run = fakeRun(function (tr) { tr.tune = TRAD.tuneById('hornpipe'); tr.mode = 'simple'; tr.bpm = 100; });
+      var bar = (60 / 100) * 4, beat = bar / 4, t0 = run.hits[0].time;
+      run.advance(bar / 2);
+      run.tr.setTune(TRAD.tuneById('reel'));
+      run.advance(bar * 1.5); run.done();
+      var swungAt = 0.5 + TRAD.swingShift(0.5, TRAD.tuneById('hornpipe').swing);
+      function offbeats(from, to) {
+        return run.hits.filter(function (h) { return h.time >= t0 + from - 1e-6 && h.time < t0 + to - 1e-6; })
+          .map(function (h) { var x = (h.time - t0) / beat; return round(x - Math.floor(x + 1e-6), 3); })
+          .filter(function (f) { return f > 0.01; });
+      }
+      var bar1 = offbeats(bar / 2, bar), bar2 = offbeats(bar, bar * 2);
+      expect(bar1.length && bar1.every(function (f) { return Math.abs(f - swungAt) < 0.002; }),
+             'the rest of bar 1 lost the hornpipe swing: offbeats at ' + bar1.join(', '));
+      expect(bar2.length && bar2.every(function (f) { return Math.abs(f - 0.5) < 0.002; }),
+             'bar 2 is not a straight reel: offbeats at ' + bar2.join(', '));
+
+      // In Full mode, no bar after the switch may be one of the old tune's.
+      var jig = TRAD.tuneById('jig'), jigGrids = [];
+      Object.keys(jig.grids).forEach(function (b) { jigGrids = jigGrids.concat(jig.grids[b]); });
+      var strays = 0;
+      for (var n = 0; n < 30; n++) {
+        var r = fakeRun(function (tr) { tr.tune = TRAD.tuneById('reel'); tr.mode = 'full'; tr.bpm = 120; });
+        r.advance(3);                                // into bar 2 of the reel
+        var before = r.bars.length;
+        r.tr.setTune(jig);
+        r.advance(4); r.done();
+        r.bars.slice(before).forEach(function (b) { if (jigGrids.indexOf(b.grid) === -1) strays++; });
+      }
+      expect(strays === 0, strays + ' bars after the switch played a reel pattern under the jig');
     });
 
   check('Timing', 'A stall never stacks strokes on one instant',
@@ -497,6 +567,32 @@
       });
     });
 
+  check('Sound', 'Nothing sounds after Stop',
+    'Strokes are queued a tenth of a second ahead, so one used to sound after Stop. A stroke already ringing is left to ring.',
+    function () {
+      // The transport tells the drum to drop what it has queued...
+      var dropped = null;
+      var run = fakeRun(function (tr) { tr.tune = TRAD.tuneById('reel'); tr.mode = 'simple'; tr.bpm = 112; });
+      run.tr.bodhran.cancelFrom = function (t) { dropped = t; };
+      run.advance(1.03);
+      run.done();
+      expect(dropped !== null && Math.abs(dropped - run.ctx.currentTime) < 1e-9,
+             'Stop did not ask the drum to drop its queued strokes');
+      // ...and the drum really does go quiet, while the stroke under way rings on.
+      var oc = new OfflineAudioContext(1, SR * 2, SR);
+      var b = new TRAD.Bodhran(oc, oc.destination);
+      b.setRoom(0);
+      // One stroke sounding, three queued for after its ring has died away.
+      b.hit('bass', 0.10, 1); b.hit('treble', 0.90, 1); b.hit('bass', 1.10, 1); b.hit('click', 1.30, 1);
+      oc.suspend(0.2).then(function () { b.cancelFrom(oc.currentTime); oc.resume(); });
+      return oc.startRendering().then(function (buf) {
+        var d = buf.getChannelData(0);
+        var ringing = rms(d, 0.10, 0.2), after = peak(d.subarray(Math.floor(0.85 * SR)));
+        expect(ringing > 0.01, 'the stroke already sounding was cut off');
+        expect(after < 1e-4, 'a queued stroke still sounded after Stop (peak ' + round(db(after, 1)) + ' dBFS)');
+      });
+    });
+
   check('Sound', 'Changing the drone’s root leaves no old drone behind',
     'The old drone used to keep sounding under the new one for 1.5 s, then click off.',
     function () {
@@ -616,6 +712,27 @@
       });
     });
 
+  check('The app', 'The About names the panels as they are',
+    'After the phone layout moved Full, Simple and Pulse into their own Rhythm panel, the About still sent people to Feel.',
+    function () {
+      return withApp(function (win, doc) {
+        function heading(el) { return el.closest('.panel').querySelector('h2').firstChild.textContent.trim(); }
+        var panels = Array.prototype.map.call(doc.querySelectorAll('.panel h2'), function (h) {
+          return h.firstChild.textContent.trim().toLowerCase();
+        });
+        var about = doc.querySelector('.about-body').innerHTML, named = [], m;
+        var re = /<b>([^<]+)<\/b> panel/g;
+        while ((m = re.exec(about))) named.push(m[1]);
+        var missing = named.filter(function (n) { return panels.indexOf(n.toLowerCase()) === -1; });
+        expect(named.length > 0, 'the About names no panels at all');
+        expect(missing.length === 0, 'the About names panels that do not exist: ' + missing.join(', '));
+        var rhythms = about.match(/Three rhythms<\/h3>\s*<p>The <b>([^<]+)<\/b> panel/);
+        var where = heading(doc.getElementById('modes'));
+        expect(rhythms && rhythms[1].toLowerCase() === where.toLowerCase(),
+               'the About says the rhythms are in ' + (rhythms ? rhythms[1] : '?') + '; they are in ' + where);
+      });
+    });
+
   check('The app', 'Space does nothing while the About is open',
     'Reading the About should not start the drum behind it.',
     function () {
@@ -694,6 +811,20 @@
         expect(stopped, 'its Stop did not stop the drum');
         expect(hiddenAgain, 'the pinned bar stays after scrolling back up');
       }, PHONE);
+    });
+
+  check('Phone layout', 'Without MIDI, the GarageBand panel is one line',
+    'An iPhone has no Web MIDI, so nothing in that panel can work there. It used to take three lines to say so.',
+    function () {
+      return withApp(function (win, doc) {
+        var panel = doc.getElementById('midi-panel'), status = doc.getElementById('midi-status');
+        var line = parseFloat(win.getComputedStyle(status).lineHeight) ||
+                   1.5 * parseFloat(win.getComputedStyle(status).fontSize);
+        expect(!win.navigator.requestMIDIAccess, 'the page still has Web MIDI, so this check proves nothing');
+        expect(box(status).height < line * 1.5, 'the message takes ' + Math.round(box(status).height / line) + ' lines');
+        expect(doc.getElementById('midi-controls').classList.contains('hidden'), 'the MIDI controls are showing');
+        expect(box(panel).height < 80, 'the panel is ' + Math.round(box(panel).height) + 'px tall');
+      }, PHONE, 'delete Navigator.prototype.requestMIDIAccess;');
     });
 
   /* ================================================================

@@ -67,7 +67,30 @@
 
     this.master = master;
     this.roomSend = wet;
+    this._pending = [];   // strokes scheduled but not yet sounded: {time, out}
   }
+
+  /* Every stroke gets its own little output, so one that is scheduled but has
+   * not sounded yet can be dropped. The transport schedules about a tenth of a
+   * second ahead, so without this a stroke could still be heard after Stop. */
+  Bodhran.prototype._strokeOut = function (time) {
+    var out = this.ctx.createGain();
+    out.connect(this.master);
+    var now = this.ctx.currentTime;
+    this._pending = this._pending.filter(function (p) { return p.time > now; });
+    this._pending.push({ time: time, out: out });
+    return out;
+  };
+
+  /* Drop every stroke due at or after `time`. Strokes already sounding ring
+   * on, and so does the room. */
+  Bodhran.prototype.cancelFrom = function (time) {
+    this._pending = this._pending.filter(function (p) {
+      if (p.time < time) return true;
+      p.out.disconnect();
+      return false;
+    });
+  };
 
   Bodhran.prototype.setLevel = function (v) {
     this.master.gain.setTargetAtTime(v, this.ctx.currentTime, 0.02);
@@ -77,7 +100,7 @@
     this.roomSend.gain.setTargetAtTime(v, this.ctx.currentTime, 0.02);
   };
 
-  Bodhran.prototype._noiseBurst = function (time, dur, freq, q, peak, highpass) {
+  Bodhran.prototype._noiseBurst = function (time, dur, freq, q, peak, dest) {
     var ctx = this.ctx;
     var src = ctx.createBufferSource();
     src.buffer = this.noise;
@@ -94,16 +117,8 @@
     g.gain.exponentialRampToValueAtTime(0.0001, time + dur);
 
     src.connect(band);
-    if (highpass) {
-      var hp = ctx.createBiquadFilter();
-      hp.type = 'highpass';
-      hp.frequency.value = highpass;
-      band.connect(hp);
-      hp.connect(g);
-    } else {
-      band.connect(g);
-    }
-    g.connect(this.master);
+    band.connect(g);
+    g.connect(dest);
 
     // Offset into the noise buffer so repeated hits never sound identical.
     src.start(time, Math.random() * 1.5, dur + 0.05);
@@ -154,6 +169,7 @@
     var ctx = this.ctx;
     var f0 = this.tuning * s.pitch * (0.985 + Math.random() * 0.03);
     var dur = s.len + s.lenVel * vel;
+    var out = this._strokeOut(time);
 
     var amp = ctx.createGain();
     amp.gain.setValueAtTime(0.0001, time);
@@ -166,7 +182,7 @@
     lp.Q.value = 0.7;
 
     amp.connect(lp);
-    lp.connect(this.master);
+    lp.connect(out);
 
     // Fundamental, swooping down as the skin settles.
     var o1 = ctx.createOscillator();
@@ -191,7 +207,7 @@
 
     // The stick meeting the skin.
     this._noiseBurst(time, s.stickLen, s.stickHz, s.stickQ,
-                     vel * (s.level || 1) * s.stick);
+                     vel * (s.level || 1) * s.stick, out);
   };
 
   /* The "dum" — down stroke, on the beat. */
@@ -213,7 +229,7 @@
     amp.gain.setValueAtTime(0.0001, time);
     amp.gain.exponentialRampToValueAtTime(vel * 0.4, time + 0.001);
     amp.gain.exponentialRampToValueAtTime(0.0001, time + 0.05);
-    amp.connect(this.master);
+    amp.connect(this._strokeOut(time));
     var o = ctx.createOscillator();
     o.type = 'square';
     o.frequency.value = vel > 0.7 ? 1600 : 1050;
