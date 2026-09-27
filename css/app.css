@@ -183,6 +183,8 @@ body {
 .tempo-unit { display: flex; flex-direction: column; color: var(--muted); }
 .tempo-unit span { font-size: 14px; }
 .tempo-unit small { font-size: 11px; opacity: 0.8; }
+/* A tempo you asked for was outside the tune's range: say what it can be. */
+.tempo-unit small.warn { color: var(--amber); opacity: 1; }
 
 .tempo-actions { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
 

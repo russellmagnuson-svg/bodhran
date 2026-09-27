@@ -8,7 +8,7 @@
    * Bump it with every change that gets pushed: the last number for a fix,
    * the middle one for a new feature. It is also the quickest way to tell
    * whether a phone is running the latest deploy or an older copy. */
-  var VERSION = '1.3.0';
+  var VERSION = '1.3.1';
   TRAD.VERSION = VERSION;
 
   TRAD.validatePatterns();
@@ -92,6 +92,32 @@
   var swingTouched = false;
   function swingOverride() { return swingTouched ? +$('swing').value : null; }
 
+  /* ---------- choosing with the arrow keys ----------
+   * The tune types and the rhythms are each one choice, so they behave as one
+   * control: Tab lands on the chosen one, the arrow keys move the choice
+   * along (wrapping at the ends), Home and End jump to the first and last. */
+  function syncRoving(group) {
+    Array.prototype.forEach.call(group.children, function (b) {
+      b.tabIndex = b.getAttribute('aria-checked') === 'true' ? 0 : -1;
+    });
+  }
+  function arrowKeys(group, choose) {
+    group.addEventListener('keydown', function (e) {
+      var items = Array.prototype.slice.call(group.children);
+      var i = items.indexOf(e.target);
+      if (i === -1) return;
+      var n = items.length, next = null;
+      if (e.key === 'ArrowRight' || e.key === 'ArrowDown') next = (i + 1) % n;
+      else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') next = (i + n - 1) % n;
+      else if (e.key === 'Home') next = 0;
+      else if (e.key === 'End') next = n - 1;
+      if (next === null) return;
+      e.preventDefault();
+      choose(items[next]);
+      items[next].focus();
+    });
+  }
+
   /* ---------- tune chips ---------- */
   function buildChips() {
     var host = $('tunes');
@@ -115,17 +141,21 @@
     Array.prototype.forEach.call($('tunes').children, function (c) {
       c.setAttribute('aria-checked', String(c.dataset.id === id));
     });
+    syncRoving($('tunes'));
     $('tune-blurb').textContent = tune.blurb;
+    clearTimeout(noteTimer);
+    $('beat-unit').classList.remove('warn');
     $('beat-unit').textContent = 'per ' + tune.beatUnit;
 
-    var bpmEl = $('bpm');
-    bpmEl.min = tune.bpmRange[0];
-    bpmEl.max = tune.bpmRange[1];
+    ['bpm', 'bpm-num'].forEach(function (el) {
+      $(el).min = tune.bpmRange[0];
+      $(el).max = tune.bpmRange[1];
+    });
     // Come back to the tempo you last used for this tune type; the default is
     // only for the first visit. (setBpm saves as it goes, so going straight to
     // the default here used to overwrite the tempo it should have restored.)
     var saved = settings['bpm_' + id];
-    setBpm(saved != null ? saved : tune.defaultBpm);
+    setBpm(saved != null ? saved : tune.defaultBpm, true);
 
     swingTouched = false;
     $('swing').value = tune.swing;
@@ -133,7 +163,7 @@
       ? 'tune default (' + Math.round(tune.swing * 100) + '%)'
       : 'tune default (straight)';
 
-    if (transport) { transport.setTune(tune); transport.swingOverride = null; }
+    if (transport) transport.setTune(tune);
     // While playing, the bar display moves to the new tune with the drum, on
     // the next bar.
     if (!transport || !transport.running) renderGrid(idleGrid());
@@ -149,13 +179,29 @@
   function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
 
   /* ---------- tempo ---------- */
-  function setBpm(v) {
-    v = clamp(Math.round(v), +$('bpm').min, +$('bpm').max);
+  // quiet: the app is setting it, not you, so there is nobody to tell.
+  function setBpm(v, quiet) {
+    var asked = Math.round(v);
+    v = clamp(isNaN(asked) ? +$('bpm').value : asked, +$('bpm').min, +$('bpm').max);
+    // A tempo outside the tune's range used to be changed without a word.
+    if (!quiet && asked !== v) rangeNote();
     $('bpm').value = v;
     $('bpm-num').value = v;
     if (transport) transport.bpm = v;
     remember('bpm_' + tune.id, v);
     syncMini();
+  }
+
+  var noteTimer = null;
+  function rangeNote() {
+    var el = $('beat-unit');
+    el.textContent = 'range ' + tune.bpmRange[0] + '\u2013' + tune.bpmRange[1];
+    el.classList.add('warn');
+    clearTimeout(noteTimer);
+    noteTimer = setTimeout(function () {
+      el.textContent = 'per ' + tune.beatUnit;
+      el.classList.remove('warn');
+    }, 3000);
   }
 
   var taps = [];
@@ -328,6 +374,7 @@
     Array.prototype.forEach.call($('modes').children, function (b) {
       b.setAttribute('aria-checked', String(b.dataset.mode === mode));
     });
+    syncRoving($('modes'));
     $('mode-desc').textContent = MODE_TEXT[mode];
 
     var off = { complexity: mode !== 'full', phrase: mode !== 'full',
@@ -462,12 +509,14 @@
     $('swing').addEventListener('input', function () {
       swingTouched = true;
       $('swing-out').textContent = +this.value === 0 ? 'straight' : pct(+this.value);
-      if (transport) transport.swingOverride = +this.value;
+      if (transport) transport.setSwing(+this.value);
     });
 
     Array.prototype.forEach.call($('modes').children, function (b) {
       b.addEventListener('click', function () { applyMode(b.dataset.mode); });
     });
+    arrowKeys($('tunes'), function (b) { selectTune(b.dataset.id); });
+    arrowKeys($('modes'), function (b) { applyMode(b.dataset.mode); });
 
     $('countin').addEventListener('change', function () {
       if (transport) transport.countInBars = +this.value;
@@ -495,6 +544,9 @@
       var slider = t.tagName === 'INPUT' && t.type === 'range';
       if (/^(INPUT|SELECT|TEXTAREA)$/.test(t.tagName) &&
           !(slider && e.code === 'Space')) return;
+      // On a tune type or a rhythm the arrows move the choice, not the tempo.
+      if (t.getAttribute && t.getAttribute('role') === 'radio' && e.code !== 'Space' &&
+          /^(Arrow|Home|End)/.test(e.key)) return;
       if ($('about').open) return;   // dialog owns the keyboard while it is up
       if (e.code === 'Space') { e.preventDefault(); toggle(); }
       else if (e.key === 'ArrowRight') { e.preventDefault(); setBpm(+$('bpm').value + 1); }
@@ -576,6 +628,11 @@
         this.value = midi.channel;
         remember('midiChannel', midi.channel);
       });
+      $('midi-click-note').addEventListener('change', function () {
+        midi.clickNote = clamp(+this.value, 0, 127);
+        this.value = midi.clickNote;
+        remember('midiClickNote', midi.clickNote);
+      });
       $('midi-note').addEventListener('change', function () {
         midi.note = clamp(+this.value, 0, 127);
         this.value = midi.note;
@@ -589,6 +646,9 @@
       // before, keep it as the one drum rather than silently dropping it.
       var savedNote = settings.midiNote != null ? settings.midiNote : settings.midiBass;
       if (savedNote != null) { $('midi-note').value = midi.note = savedNote; }
+      if (settings.midiClickNote != null) {
+        $('midi-click-note').value = midi.clickNote = settings.midiClickNote;
+      }
     }).catch(function (err) {
       // Chrome gates Web MIDI behind a permission prompt; a denied or dismissed
       // prompt lands here, as does MIDI being blocked by policy.

@@ -49,11 +49,11 @@
 
     <div class="tempo">
       <div class="tempo-readout">
-        <input id="bpm-num" type="number" min="40" max="220" step="1" value="112"
+        <input id="bpm-num" type="number" min="60" max="160" step="1" value="112"
                aria-label="Tempo in beats per minute">
         <div class="tempo-unit">
           <span>bpm</span>
-          <small id="beat-unit">per crotchet</small>
+          <small id="beat-unit" aria-live="polite">per crotchet</small>
         </div>
       </div>
       <input id="bpm" type="range" min="70" max="160" step="1" value="112"
@@ -170,6 +170,7 @@
           <option value="43">G</option>
           <option value="45">A</option>
           <option value="52">E</option>
+          <option value="47">B</option>
           <option value="48">C</option>
           <option value="41">F</option>
           <option value="46">A#/B♭</option>
@@ -206,6 +207,12 @@
         </label>
         <span class="inline-hint">41 is the low floor tom in a standard kit</span>
       </div>
+      <div class="row">
+        <label class="inline">Count-in note
+          <input id="midi-click-note" type="number" min="0" max="127" value="37" class="num">
+        </label>
+        <span class="inline-hint">37 is the side stick: a click, not a drum stroke</span>
+      </div>
       <details class="how">
         <summary>How to hook this up to GarageBand</summary>
         <ol>
@@ -218,7 +225,9 @@
           <li>Tick <b>Send MIDI</b> and press play. Every stroke goes to the
               one drum note: dum, tak and ghost are told apart by how hard
               they hit, as on a real bodhr&aacute;n. If your kit has a frame
-              drum or a deeper tom, change <b>Drum note</b> to that.</li>
+              drum or a deeper tom, change <b>Drum note</b> to that. The
+              count-in clicks go to <b>Count-in note</b>, so they never sound
+              like the drum.</li>
         </ol>
         <p class="note">Web MIDI works in Chrome and Edge. Safari does not
            support it, so this panel stays disabled there.</p>
@@ -368,7 +377,8 @@
 
     <h3>Keyboard</h3>
     <p class="keys"><b>Space</b> play/stop &middot; <b>F</b> finish &middot;
-    <b>&larr;</b> <b>&rarr;</b> nudge tempo &middot; <b>T</b> tap tempo</p>
+    <b>&larr;</b> <b>&rarr;</b> nudge tempo &middot; <b>T</b> tap tempo. On a
+    tune type or a rhythm, the arrows move the choice instead.</p>
 
     <p class="hint">Your settings are remembered in this browser, tempo included,
     per tune type.</p>

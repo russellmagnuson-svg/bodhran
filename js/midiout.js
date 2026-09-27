@@ -19,6 +19,9 @@
     // closest standard drum to a bodhrán in size and pitch. (This used to be
     // a kick for the dum and a side stick for the tak: two different drums.)
     this.note = 41;
+    // The count-in is not the drum, so its clicks go to a drum of their own.
+    // 37 is the side stick, in every General MIDI kit.
+    this.clickNote = 37;
   }
 
   MidiOut.prototype.available = function () {
@@ -58,7 +61,7 @@
 
   MidiOut.prototype.send = function (ctx, voice, audioTime, vel) {
     if (!this.enabled || !this.port) return;
-    var note = this.note;
+    var note = voice === 'click' ? this.clickNote : this.note;
     var status = 0x90 | ((this.channel - 1) & 0x0f);
     var velocity = Math.max(1, Math.min(127, Math.round(vel * 127)));
     var at = this._perfTime(ctx, audioTime);

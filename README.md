@@ -26,7 +26,11 @@ can mix old and new files, which can stop the app starting at all.
 You can also just double-click `index.html` — the scripts are plain
 `<script>` tags rather than ES modules precisely so that works.
 
-**Keys:** `Space` play/stop · `F` finish · `←`/`→` tempo · `T` tap tempo.
+**Keys:** `Space` play/stop · `F` finish · `←`/`→` tempo · `T` tap tempo. On a
+tune type or a rhythm, the arrow keys move the choice instead. A tempo outside
+a tune type's range is brought inside it, and the range shows under **bpm**.
+
+The drone roots are D, G, A, E, B, C, F and B♭.
 
 ## Checks
 
@@ -40,7 +44,7 @@ against the real code:
 - **Choosing patterns** — fills only on the last bar of a phrase; Busyness
   behaves at both ends
 - **Timing** — quavers and triplets land exactly; tempo changes wait for the
-  next bar, and so do tune changes; phrases count from the first bar the drum
+  next bar, and so do tune changes and the swing that goes with them; phrases count from the first bar the drum
   plays, not the count-in; a frozen page never stacks strokes; Pulse is dead straight; Simple
   never wanders; the count-in is one bar
 - **Sound** — dum, tak and ghost are the same skin; stroke levels; the back
@@ -53,9 +57,12 @@ against the real code:
 - **Finish** — the last stroke lands on beat 1 of the phrase's last bar;
   pressed in that bar it waits for the next phrase; it can be taken back, and
   a stall cannot lose it
-- **MIDI** — one drum note; velocity tracks how hard the stroke is
+- **MIDI** — one drum note; velocity tracks how hard the stroke is; the
+  count-in goes to a note of its own
 - **The app** — version shown; each tune keeps its tempo; Space after a slider;
   modes grey out the right controls; Finish ends the tune and puts Play back;
+  every drone root plays the note it names; a tempo outside the range says so;
+  arrow keys move the choice of tune type and rhythm;
   the About names the panels as they are;
   Space ignored while About is open
 - **Phone layout** (in a phone-sized copy of the app) — the rhythm choice is on
@@ -200,7 +207,9 @@ Reaper) over a virtual MIDI bus:
 5. In GarageBand, make a **Software Instrument** track with a drum kit.
 
 Every stroke goes to one drum note (default 41, the low floor tom in a General
-MIDI kit), because every stroke on a bodhrán lands on one skin. Dum, tak and
+MIDI kit), because every stroke on a bodhrán lands on one skin. The count-in
+clicks go to their own note (default 37, the side stick), so a recording has
+them to line up by without them sounding like the drum. Dum, tak and
 ghost are told apart only by velocity — and since sampled kits change timbre
 with velocity, a light stroke sounds lighter rather than just quieter. If your
 kit has a frame drum or a deeper tom, set **Drum note** to that.

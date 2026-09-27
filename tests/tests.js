@@ -534,6 +534,32 @@
       expect(late.length <= 1, late.length + ' strokes after the ending');
     });
 
+  check('Timing', 'A swing you set waits for the tune change too',
+    'Changing tune mid-bar reset the swing at once, so the rest of the old tune’s bar lost the swing you had set.',
+    function () {
+      var bar = (60 / 100) * 4, beat = bar / 4;
+      function offbeats(r, from, to) {
+        var t0 = r.hits[0].time;
+        return r.hits.filter(function (h) { return h.time >= t0 + from - 1e-6 && h.time < t0 + to - 1e-6; })
+          .map(function (h) { var x = (h.time - t0) / beat; return round(x - Math.floor(x + 1e-6), 3); })
+          .filter(function (f) { return f > 0.01; });
+      }
+      function all(list, at) { return list.length && list.every(function (f) { return Math.abs(f - at) < 0.002; }); }
+
+      // A hornpipe you have straightened out, switched to a reel mid-bar.
+      var a = fakeRun(function (tr) { tr.tune = TRAD.tuneById('hornpipe'); tr.mode = 'simple'; tr.bpm = 100; tr.swingOverride = 0; });
+      a.advance(bar / 2); a.tr.setTune(TRAD.tuneById('reel')); a.advance(bar * 1.5); a.done();
+      expect(all(offbeats(a, bar / 2, bar), 0.5), 'the rest of the hornpipe bar lost your straight swing: ' + offbeats(a, bar / 2, bar).join(', '));
+
+      // A hornpipe on its own swing; switched to a reel and the swing moved
+      // straight away, before the change has landed.
+      var b = fakeRun(function (tr) { tr.tune = TRAD.tuneById('hornpipe'); tr.mode = 'simple'; tr.bpm = 100; });
+      b.advance(bar / 2); b.tr.setTune(TRAD.tuneById('reel')); b.tr.setSwing(0.5); b.advance(bar * 1.5); b.done();
+      var horn = 0.5 + TRAD.swingShift(0.5, TRAD.tuneById('hornpipe').swing), reel = 0.5 + TRAD.swingShift(0.5, 0.5);
+      expect(all(offbeats(b, bar / 2, bar), horn), 'the swing for the reel landed in the hornpipe’s bar: ' + offbeats(b, bar / 2, bar).join(', '));
+      expect(all(offbeats(b, bar, bar * 2), reel), 'the reel did not get the swing set for it: ' + offbeats(b, bar, bar * 2).join(', '));
+    });
+
   check('Timing', 'A stall never stacks strokes on one instant',
     'If the page freezes, missed strokes must be skipped. Firing them all at once was a loud crash (a 3 s freeze stacked 10).',
     function () {
@@ -780,6 +806,26 @@
       expect(v[0] > v[1] && v[1] > v[2] && v[2] > v[3] && v[3] > v[4], 'velocities D,T,d,t,g: ' + v.join(', '));
     });
 
+  check('MIDI', 'The count-in goes over MIDI, to a note of its own',
+    'Recording in GarageBand, the count-in lines the take up. It must not sound like drum strokes, so it has its own note (37, the side stick).',
+    function () {
+      var sent = [];
+      var run = fakeRun(function (tr) {
+        tr.tune = TRAD.tuneById('reel'); tr.mode = 'simple'; tr.bpm = 120; tr.countInBars = 1;
+        tr.midi = { send: function (ctx, voice, time, vel) { sent.push({ voice: voice, vel: vel }); }, allNotesOff: function () {} };
+      });
+      run.advance(3); run.done();
+      var clicks = sent.filter(function (x) { return x.voice === 'click'; });
+      expect(clicks.length === 4, clicks.length + ' count-in clicks sent over MIDI (expected 4)');
+      expect(clicks[0].vel > clicks[1].vel, 'the click on 1 is not the accented one');
+      var m = new TRAD.MidiOut(), out = [];
+      m.port = { send: function (d) { out.push(d); } };
+      m.enabled = true;
+      var ctx = { currentTime: 0, getOutputTimestamp: function () { return { contextTime: 0, performanceTime: 0 }; } };
+      m.send(ctx, 'click', 0.1, 0.9); m.send(ctx, 'bass', 0.2, 1);
+      expect(out[0][1] === 37 && out[2][1] === 41, 'count-in went to note ' + out[0][1] + ', the drum to ' + out[2][1]);
+    });
+
   /* ================================================================
    * The app
    * ================================================================ */
@@ -900,6 +946,70 @@
           expect($('finish').disabled && $('finish').textContent === 'Finish', 'Finish did not go back to how it started');
           expect($('bar-count').textContent === '—', 'the bar counter still says "' + $('bar-count').textContent + '"');
         });
+      });
+    });
+
+  check('The app', 'Every drone root plays the note it names, B included',
+    'B minor is one of the commonest keys in the music and was missing. And a label that says D must play a D.',
+    function () {
+      return withApp(function (win, doc) {
+        var opts = Array.prototype.map.call(doc.querySelectorAll('#drone-root option'), function (o) {
+          return { label: o.textContent.split('/')[0], note: TRAD.noteName(+o.value).replace(/-?\d+$/, '') };
+        });
+        var wrong = opts.filter(function (o) { return o.label !== o.note; });
+        expect(opts.some(function (o) { return o.label === 'B'; }), 'no B among ' + opts.map(function (o) { return o.label; }).join(', '));
+        expect(wrong.length === 0, wrong.map(function (o) { return o.label + ' plays ' + o.note; }).join(', '));
+      });
+    });
+
+  check('The app', 'A tempo outside the range says so',
+    'Typing 200 for a reel used to turn it into 160 without a word.',
+    function () {
+      return withApp(function (win, doc) {
+        function $(id) { return doc.getElementById(id); }
+        function type(v) { $('bpm-num').value = v; $('bpm-num').dispatchEvent(new win.Event('change')); }
+        doc.querySelector('.chip[data-id="reel"]').click();
+        type(120);
+        var quietInRange = !$('beat-unit').classList.contains('warn');
+        type(200);
+        var high = { value: +$('bpm-num').value, warn: $('beat-unit').classList.contains('warn'), text: $('beat-unit').textContent };
+        doc.querySelector('.chip[data-id="hornpipe"]').click();
+        var cleared = !$('beat-unit').classList.contains('warn') && /per/.test($('beat-unit').textContent);
+        type(20);
+        var low = +$('bpm-num').value, lowText = $('beat-unit').textContent;
+        expect(quietInRange, 'a tempo inside the range was flagged');
+        expect(high.value === 160, 'typing 200 for a reel gave ' + high.value);
+        expect(high.warn && /60/.test(high.text) && /160/.test(high.text), 'nothing said why: "' + high.text + '"');
+        expect(+$('bpm-num').max === 130 && +$('bpm-num').min === 60, 'the box allows ' + $('bpm-num').min + '–' + $('bpm-num').max + ' for a hornpipe');
+        expect(cleared, 'the note stayed up after changing tune');
+        expect(low === 60 && /130/.test(lowText), 'typing 20 for a hornpipe gave ' + low + ', saying "' + lowText + '"');
+      });
+    });
+
+  check('The app', 'Arrow keys move the choice of tune type and rhythm',
+    'Each row is one choice: Tab reaches the chosen one, and the arrows move along, not the tempo.',
+    function () {
+      return withApp(function (win, doc) {
+        function chip(id) { return doc.querySelector('.chip[data-id="' + id + '"]'); }
+        function checked(sel) { return doc.querySelector(sel + '[aria-checked="true"]'); }
+        chip('reel').click();
+        var tabbable = Array.prototype.filter.call(doc.querySelectorAll('.chip'), function (c) { return c.tabIndex === 0; });
+        chip('reel').focus();
+        key(win, chip('reel'), 'ArrowRight', 'ArrowRight');
+        var toJig = checked('.chip').dataset.id, focused = doc.activeElement === chip('jig');
+        var jigBpm = +doc.getElementById('bpm-num').value;
+        key(win, chip('jig'), 'ArrowLeft', 'ArrowLeft');
+        key(win, chip('reel'), 'ArrowLeft', 'ArrowLeft');
+        var wrapped = checked('.chip').dataset.id;
+        var full = doc.querySelector('.mode[data-mode="full"]');
+        full.click(); full.focus();
+        key(win, full, 'ArrowRight', 'ArrowRight');
+        var mode = checked('.mode').dataset.mode;
+        expect(tabbable.length === 1 && tabbable[0] === chip('reel'), 'Tab reaches ' + tabbable.length + ' tune chips, not just the chosen one');
+        expect(toJig === 'jig' && focused, '→ from Reel chose ' + toJig);
+        expect(jigBpm === TRAD.tuneById('jig').defaultBpm, 'the arrow also nudged the tempo, to ' + jigBpm);
+        expect(wrapped === TRAD.tunes[TRAD.tunes.length - 1].id, '← from Reel went to ' + wrapped + ', not round to the end');
+        expect(mode === 'simple', '→ from Full chose ' + mode);
       });
     });
 

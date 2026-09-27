@@ -22,6 +22,7 @@
 
     this.tune = TRAD.tunes[0];
     this._nextTune = null;   // a tune picked mid-bar, waiting for the next bar
+    this._nextSwing = null;  // and the swing that goes with it
     this.bpm = this.tune.defaultBpm;
     this.complexity = 0.5;
     this.mode = 'full';    // 'full' | 'simple' | 'pulse'
@@ -66,14 +67,25 @@
    * tempo change: the bar under way was laid out for the old tune's beats and
    * swing, and switching part-way through played the rest of it wrong. */
   Transport.prototype.setTune = function (tune) {
-    if (this.running) this._nextTune = tune;
-    else { this.tune = tune; this._nextTune = null; }
+    // A new tune starts on its own swing. The swing that goes with it waits
+    // too: resetting it at once played the rest of the old tune's bar with
+    // the old tune's default instead of the swing you had set.
+    if (this.running) { this._nextTune = tune; this._nextSwing = null; }
+    else { this.tune = tune; this._nextTune = null; this.swingOverride = null; }
+  };
+
+  /* Set the swing (null = the tune's own). Moved while a tune change is
+   * waiting, it belongs to the new tune, so it waits with it. */
+  Transport.prototype.setSwing = function (v) {
+    if (this._nextTune) this._nextSwing = v; else this.swingOverride = v;
   };
 
   Transport.prototype._startBar = function () {
     if (this._nextTune) {
       this.tune = this._nextTune;
       this._nextTune = null;
+      this.swingOverride = this._nextSwing;
+      this._nextSwing = null;
       // The last bar's pattern belongs to the old tune. Left in place, the
       // picker could repeat it: a reel bar played as a jig.
       this._lastGrid = null;
@@ -136,6 +148,7 @@
     if (ch === 'C' || ch === 'c') {
       var cv = ch === 'C' ? 0.9 : 0.55;
       this.bodhran.hit('click', time, cv);
+      if (this.midi) this.midi.send(this.ctx, 'click', time, cv);
       this._pushEvent({ time: time, slot: slot, len: grid.length, char: ch,
                         bar: this._bar, countIn: true });
       return;
@@ -269,7 +282,10 @@
     if (this._timer) clearInterval(this._timer);
     this._timer = null;
     this.events.length = 0;
-    if (this._nextTune) { this.tune = this._nextTune; this._nextTune = null; }
+    if (this._nextTune) {
+      this.tune = this._nextTune; this._nextTune = null;
+      this.swingOverride = this._nextSwing; this._nextSwing = null;
+    }
     // Strokes are scheduled a little ahead, so some are always queued. Drop
     // them, or one can still sound after Stop.
     if (this.bodhran.cancelFrom) this.bodhran.cancelFrom(this.ctx.currentTime);
