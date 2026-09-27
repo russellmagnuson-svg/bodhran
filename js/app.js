@@ -8,7 +8,7 @@
    * Bump it with every change that gets pushed: the last number for a fix,
    * the middle one for a new feature. It is also the quickest way to tell
    * whether a phone is running the latest deploy or an older copy. */
-  var VERSION = '1.1.1';
+  var VERSION = '1.2.0';
   TRAD.VERSION = VERSION;
 
   TRAD.validatePatterns();
@@ -62,6 +62,7 @@
     drone = new TRAD.Drone(ctx, out);
     transport = new TRAD.Transport(ctx, bodhran, midi);
     transport.onBar = onBar;
+    transport.onEnd = showState;
 
     applyAll();
     requestAnimationFrame(frame);
@@ -184,13 +185,28 @@
     }
   }
 
+  var lastBar = null;
   function onBar(grid, bar, countIn) {
     renderGrid(grid);
-    // The bar counter is absolute; show it as a position within the phrase.
-    var n = transport.phraseLength;
-    $('bar-count').textContent = countIn ? 'count-in'
+    lastBar = { bar: bar, countIn: countIn };
+    if (transport.ending) showState();   // the Finish buttons have done their job
+    else showBarCount();
+  }
+
+  /* The bar counter is absolute; show it as a position within the phrase,
+   * and say so when a Finish is on its way. */
+  function showBarCount() {
+    if (!transport || !transport.running || !lastBar) {
+      $('bar-count').textContent = '—';
+      return;
+    }
+    var n = transport.phraseLength, bar = lastBar.bar;
+    var text = lastBar.countIn ? 'count-in'
       : n ? 'bar ' + ((bar % n) + 1) + ' of ' + n
           : 'bar ' + (bar + 1);
+    if (transport.ending) text = 'last stroke';
+    else if (transport.finishing) text += ' \u00b7 finishing';
+    $('bar-count').textContent = text;
   }
 
   function frame() {
@@ -261,16 +277,33 @@
   function toggle() {
     ensureAudio();
     transport.toggle();
-    if (transport.running) holdScreen(); else releaseScreen();
+    showState();
+  }
+
+  /* Bring the buttons into line with the drum: after Play or Stop, a Finish
+   * pressed or taken back, and when a Finish has played its last stroke. */
+  function showState() {
+    var on = !!(transport && transport.running);
+    if (on) holdScreen(); else releaseScreen();
     var b = $('play');
-    b.classList.toggle('playing', transport.running);
-    b.setAttribute('aria-pressed', String(transport.running));
-    b.querySelector('.play-label').textContent = transport.running ? 'Stop' : 'Play';
+    b.classList.toggle('playing', on);
+    b.setAttribute('aria-pressed', String(on));
+    b.querySelector('.play-label').textContent = on ? 'Stop' : 'Play';
+    var fin = on && transport.finishing;
+    ['finish', 'mini-finish'].forEach(function (id) {
+      $(id).disabled = !on || transport.ending;
+      $(id).setAttribute('aria-pressed', String(fin));
+      $(id).textContent = fin ? 'Finishing' : 'Finish';
+    });
     syncMini();
-    if (!transport.running) {
-      $('bar-count').textContent = '—';
-      renderGrid(idleGrid());
-    }
+    showBarCount();
+    if (!on) { lastBar = null; renderGrid(idleGrid()); }
+  }
+
+  function finish() {
+    if (!transport || !transport.running) return;
+    if (transport.finishing) transport.keepGoing(); else transport.finish();
+    showState();
   }
 
 
@@ -384,6 +417,8 @@
     $('bpm-num').addEventListener('change', function () { setBpm(+this.value); });
 
     $('mini-play').addEventListener('click', toggle);
+    $('finish').addEventListener('click', finish);
+    $('mini-finish').addEventListener('click', finish);
     $('mini-up').addEventListener('click', function () { setBpm(+$('bpm').value + 5); });
     $('mini-down').addEventListener('click', function () { setBpm(+$('bpm').value - 5); });
     addEventListener('scroll', updateMini, { passive: true });
@@ -459,6 +494,7 @@
       else if (e.key === 'ArrowRight') { e.preventDefault(); setBpm(+$('bpm').value + 1); }
       else if (e.key === 'ArrowLeft') { e.preventDefault(); setBpm(+$('bpm').value - 1); }
       else if (e.key === 't' || e.key === 'T') tapTempo();
+      else if (e.key === 'f' || e.key === 'F') finish();
     });
 
     wireAbout();

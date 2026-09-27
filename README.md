@@ -26,7 +26,7 @@ can mix old and new files, which can stop the app starting at all.
 You can also just double-click `index.html` — the scripts are plain
 `<script>` tags rather than ES modules precisely so that works.
 
-**Keys:** `Space` play/stop · `←`/`→` tempo · `T` tap tempo.
+**Keys:** `Space` play/stop · `F` finish · `←`/`→` tempo · `T` tap tempo.
 
 ## Checks
 
@@ -40,14 +40,19 @@ against the real code:
 - **Choosing patterns** — fills only on the last bar of a phrase; Busyness
   behaves at both ends
 - **Timing** — quavers and triplets land exactly; tempo changes wait for the
-  next bar, and so do tune changes; a frozen page never stacks strokes; Pulse is dead straight; Simple
+  next bar, and so do tune changes; phrases count from the first bar the drum
+  plays, not the count-in; a frozen page never stacks strokes; Pulse is dead straight; Simple
   never wanders; the count-in is one bar
 - **Sound** — dum, tak and ghost are the same skin; stroke levels; no clipping
   at maximum volume and room; taks audible at the fastest tempos; nothing
   sounds after Stop; changing the drone's root leaves nothing behind
+- **Finish** — the last stroke lands on beat 1 of the phrase's last bar;
+  pressed in that bar it waits for the next phrase; it can be taken back, and
+  a stall cannot lose it
 - **MIDI** — one drum note; velocity tracks how hard the stroke is
 - **The app** — version shown; each tune keeps its tempo; Space after a slider;
-  modes grey out the right controls; the About names the panels as they are;
+  modes grey out the right controls; Finish ends the tune and puts Play back;
+  the About names the panels as they are;
   Space ignored while About is open
 - **Phone layout** (in a phone-sized copy of the app) — the rhythm choice is on
   the first screen; Play sits beside the tempo; the pinned Play/Stop bar appears
@@ -141,7 +146,9 @@ To mix quavers and triplets in one bar, give each beat 6 slots — in 4/4 that i
 every 2 (`D-t-d-`). The reel's triplet fills are built this way; the same trick
 works for any duple-time style.
 
-Fills are only ever played on the last bar of a phrase. The picker repeats the
+Fills are only ever played on the last bar of a phrase. Phrases count from
+the first bar the drum plays, so if the tune starts as the drum comes in, the
+bar counter follows the tune. The picker repeats the
 previous bar's pattern some of the time so the drum does not change every bar,
 but it never repeats a fill, so a fill cannot spill onto the next phrase.
 
@@ -152,6 +159,11 @@ coarse 25 ms timer schedules notes *ahead* of the clock against
 `ctx.currentTime`, which is sample-accurate. Firing notes straight from a timer
 callback drifts audibly within a few bars. Measured drift here is about 0.1%
 over 17 seconds, which is the measurement noise floor rather than real drift.
+
+**Finish** plays on to the last bar of the phrase and lands one hard down
+stroke on its first beat, where a tune's final note falls, then stops and lets
+it ring. Pressed during that last bar, it goes round to the next phrase's last
+bar instead; pressed again, it is taken back.
 
 Tempo, tune type and busyness changes land on the **next bar boundary**, which
 is where a musician expects them to land. Stop drops any strokes already

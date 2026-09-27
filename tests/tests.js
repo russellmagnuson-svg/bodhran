@@ -416,6 +416,79 @@
       expect(strays === 0, strays + ' bars after the switch played a reel pattern under the jig');
     });
 
+  check('Timing', 'Phrases count from the first bar the drum plays',
+    'The tune starts when the drum comes in. Count-in bars used to count as bars of the first phrase, which put every fill a bar early (bars 3 and 7).',
+    function () {
+      var real = TRAD.pickGrid, bad = [];
+      try {
+        [0, 1, 2].forEach(function (countIn) {
+          var ends = [];
+          TRAD.pickGrid = function (t, c, phraseEnd) { ends.push(phraseEnd); return 'DtdtDtdt'; };
+          var r = fakeRun(function (tr) {
+            tr.tune = TRAD.tuneById('reel'); tr.mode = 'full'; tr.bpm = 120; tr.countInBars = countIn; tr.phraseLength = 4;
+          });
+          r.advance(2 * (countIn + 8) + 0.5); r.done();
+          var at = [];
+          ends.slice(0, 8).forEach(function (e, i) { if (e) at.push(i + 1); });
+          if (at.join() !== '4,8') bad.push(countIn + '-bar count-in: fills on drum bars ' + at.join(', '));
+        });
+      } finally { TRAD.pickGrid = real; }
+      expect(bad.length === 0, bad.join('\n'));
+    });
+
+  /* A reel at 120 bpm: 2 s a bar. With a one-bar count-in from 0.08 s, the
+   * drum's bar k (from 0) starts at 0.08 + 2 (k + 1). */
+  function finishRun(phrase, pressAt, extra) {
+    var ended = 0;
+    var r = fakeRun(function (tr) {
+      tr.tune = TRAD.tuneById('reel'); tr.mode = 'simple'; tr.bpm = 120;
+      tr.countInBars = 1; tr.phraseLength = phrase;
+      tr.onEnd = function () { ended++; };
+    });
+    r.advance(pressAt);
+    r.tr.finish();
+    if (extra) extra(r);
+    r.advance(30);
+    var last = r.hits[r.hits.length - 1];
+    return { run: r, last: last, ended: ended, barOf: function (t) { return Math.round((t - 0.08) / 2 - 1); } };
+  }
+
+  check('Finish', 'The last stroke lands on beat 1 of the phrase’s last bar',
+    'A tune’s final note comes at the start of its last bar, so the drum hits it with you and lets it ring, then stops.',
+    function () {
+      var f = finishRun(4, 0.08 + 2 * 2 + 1);           // pressed half-way through bar 2 of 4
+      expect(Math.abs(f.last.time - (0.08 + 2 * 4)) < 1e-6,
+             'last stroke at ' + round(f.last.time, 3) + ' s, in drum bar ' + (f.barOf(f.last.time) + 1) + ' (expected the start of bar 4)');
+      expect(f.last.voice === 'bass' && f.last.vel === 1, 'the last stroke is a ' + f.last.voice + ' at ' + f.last.vel + ', not a full down stroke');
+      expect(!f.run.tr.running, 'the drum did not stop after the last stroke');
+      expect(f.ended === 1, 'the app was told it ended ' + f.ended + ' times');
+      var beforeLast = f.run.hits[f.run.hits.length - 2];
+      expect(beforeLast.time < 0.08 + 2 * 4 - 0.2, 'bar 3 did not play through to the ending');
+    });
+
+  check('Finish', 'Pressed in the last bar, it waits for the next phrase',
+    'Once the last bar has begun, its first beat has gone. The end then comes at the next phrase’s last bar, which the counter shows.',
+    function () {
+      var f = finishRun(4, 0.08 + 2 * 4 + 0.5);         // part-way into bar 4 of 4
+      expect(Math.abs(f.last.time - (0.08 + 2 * 8)) < 1e-6,
+             'last stroke in drum bar ' + (f.barOf(f.last.time) + 1) + ' (expected bar 8)');
+      var g = finishRun(0, 0.08 + 2 * 2 + 0.5);         // Fills every: never
+      expect(Math.abs(g.last.time - (0.08 + 2 * 3)) < 1e-6,
+             'with no phrases, last stroke in drum bar ' + (g.barOf(g.last.time) + 1) + ' (expected the next bar, 3)');
+    });
+
+  check('Finish', 'It can be taken back, and a stall cannot lose it',
+    'Pressing Finish again means go round again. And a page that freezes through the last stroke must still stop, not play on.',
+    function () {
+      var kept = finishRun(4, 0.08 + 2 * 2 + 1, function (r) { r.tr.keepGoing(); });
+      expect(kept.run.tr.running, 'the drum stopped even though Finish was taken back');
+      kept.run.done();
+      var stalled = finishRun(4, 0.08 + 2 * 3 + 1.4, function (r) { r.jump(1.5); });   // frozen through the last stroke
+      expect(!stalled.run.tr.running, 'after a freeze through the ending the drum played on');
+      var late = stalled.run.hits.filter(function (h) { return h.time > 0.08 + 2 * 4 - 1e-6; });
+      expect(late.length <= 1, late.length + ' strokes after the ending');
+    });
+
   check('Timing', 'A stall never stacks strokes on one instant',
     'If the page freezes, missed strokes must be skipped. Firing them all at once was a loud crash (a 3 s freeze stacked 10).',
     function () {
@@ -730,6 +803,39 @@
         var where = heading(doc.getElementById('modes'));
         expect(rhythms && rhythms[1].toLowerCase() === where.toLowerCase(),
                'the About says the rhythms are in ' + (rhythms ? rhythms[1] : '?') + '; they are in ' + where);
+      });
+    });
+
+  check('The app', 'Finish ends the tune and puts Play back',
+    'Finish only means something while the drum plays. After the last stroke the page should be back where it started.',
+    function () {
+      return withApp(function (win, doc) {
+        function $(id) { return doc.getElementById(id); }
+        var cin = $('countin'); cin.value = '0'; cin.dispatchEvent(new win.Event('change'));
+        var ph = $('phrase'); ph.value = 2; ph.dispatchEvent(new win.Event('input'));
+        var bpm = $('bpm'); bpm.value = 160; bpm.dispatchEvent(new win.Event('input'));   // 1.5 s a bar
+        var offWhenStopped = $('finish').disabled && $('mini-finish').disabled;
+        $('play').click();
+        var onWhenPlaying = !$('finish').disabled;
+        key(win, doc, 'KeyF', 'f');                      // F does what the button does
+        var pressed = $('finish').getAttribute('aria-pressed') === 'true' &&
+                      $('mini-finish').getAttribute('aria-pressed') === 'true';
+        var counter = $('bar-count').textContent;
+        var start = Date.now();
+        return new Promise(function (resolve) {
+          (function wait() {
+            if (!isPlaying(doc) || Date.now() - start > 8000) resolve(); else setTimeout(wait, 100);
+          })();
+        }).then(function () {
+          expect(offWhenStopped, 'Finish can be pressed with nothing playing');
+          expect(onWhenPlaying, 'Finish is greyed out while playing');
+          expect(pressed, 'pressing F did not show Finish as on its way');
+          expect(/finishing/.test(counter), 'the bar counter says "' + counter + '", not that it is finishing');
+          expect(!isPlaying(doc), 'still playing 8 s after Finish, at 1.5 s a bar in 2-bar phrases');
+          expect($('play').textContent.trim() === 'Play', 'the button says "' + $('play').textContent.trim() + '"');
+          expect($('finish').disabled && $('finish').textContent === 'Finish', 'Finish did not go back to how it started');
+          expect($('bar-count').textContent === '—', 'the bar counter still says "' + $('bar-count').textContent + '"');
+        });
       });
     });
 

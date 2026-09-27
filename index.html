@@ -36,10 +36,16 @@
 
   <!-- Transport -->
   <section class="panel transport">
-    <button id="play" class="play" aria-label="Start or stop" aria-pressed="false">
-      <span class="play-icon" aria-hidden="true"></span>
-      <span class="play-label">Play</span>
-    </button>
+    <div class="play-col">
+      <button id="play" class="play" aria-label="Start or stop" aria-pressed="false">
+        <span class="play-icon" aria-hidden="true"></span>
+        <span class="play-label">Play</span>
+      </button>
+      <!-- Plays on to the last bar of the phrase and lands one last stroke
+           there, with the tune's final note. Press again to carry on. -->
+      <button id="finish" class="ghost-btn finish" type="button" aria-pressed="false"
+              disabled>Finish</button>
+    </div>
 
     <div class="tempo">
       <div class="tempo-readout">
@@ -227,12 +233,14 @@
       <span id="mini-tune" class="mini-tune">Reel</span>
       <span class="mini-tempo"><b id="mini-bpm">112</b> bpm</span>
     </div>
+    <button id="mini-finish" class="ghost-btn finish" type="button" aria-pressed="false"
+            disabled>Finish</button>
     <button id="mini-down" class="ghost-btn" type="button" aria-label="Slower">−5</button>
     <button id="mini-up" class="ghost-btn" type="button" aria-label="Faster">+5</button>
   </div>
 
   <footer class="foot">
-    <p><b>Space</b> play/stop · <b>←/→</b> tempo · <b>T</b> tap tempo</p>
+    <p><b>Space</b> play/stop · <b>F</b> finish · <b>←/→</b> tempo · <b>T</b> tap tempo</p>
   </footer>
 
 </main>
@@ -256,7 +264,12 @@
       <li>Set the tempo, or beat it in with <b>Tap tempo</b>. Everything
           goes down to 60 bpm for slow practice.</li>
       <li>Press <b>Play</b>. You get a bar of count-in clicks first; change
-          that under <b>Count-in</b> in the <b>Feel</b> panel.</li>
+          that under <b>Count-in</b> in the <b>Feel</b> panel. Start the tune
+          as the drum comes in, and the bar counter follows the tune.</li>
+      <li>Coming into the last phrase, press <b>Finish</b>. The drum plays on
+          to the phrase's last bar, lands one hard stroke on its first beat
+          &mdash; with the tune's final note &mdash; and lets it ring. Press
+          it again if you change your mind and want to go round again.</li>
     </ol>
 
     <h3>Tune types</h3>
@@ -292,7 +305,9 @@
           sounding like a machine. It still applies in Simple.</li>
       <li><b>Swing</b> is preset per tune type &mdash; hornpipes 62%, barndances
           45%, the rest straight &mdash; and you can override it.</li>
-      <li><b>Fills every</b> sets the phrase length the fills land on.</li>
+      <li><b>Fills every</b> sets the phrase length: the fills land on the
+          last bar of each phrase, and so does <b>Finish</b>. At 8 bars a
+          phrase is a whole part of the tune.</li>
     </ul>
 
     <h3>Why it sits where it sits</h3>
@@ -337,8 +352,8 @@
     plays so the phone does not lock mid-tune.</p>
 
     <h3>Keyboard</h3>
-    <p class="keys"><b>Space</b> play/stop &middot; <b>&larr;</b> <b>&rarr;</b>
-    nudge tempo &middot; <b>T</b> tap tempo</p>
+    <p class="keys"><b>Space</b> play/stop &middot; <b>F</b> finish &middot;
+    <b>&larr;</b> <b>&rarr;</b> nudge tempo &middot; <b>T</b> tap tempo</p>
 
     <p class="hint">Your settings are remembered in this browser, tempo included,
     per tune type.</p>

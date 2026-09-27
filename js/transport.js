@@ -40,9 +40,14 @@
     this._bar = 0;
     this._countInLeft = 0;
     this._countIn = false;
+    this.finishing = false;   // Finish pressed: end at the phrase's last bar
+    this.ending = false;     // this bar is the ending: one stroke, then stop
+    this._endSent = false;
+    this._endTime = 0;
 
     this.events = [];   // {time, slot, len, char, bar, countIn} for the UI
     this.onBar = null;  // called when a new bar's grid is chosen
+    this.onEnd = null;  // called when a Finish has played its last stroke
   }
 
   Transport.prototype._swing = function () {
@@ -71,11 +76,20 @@
       // picker could repeat it: a reel bar played as a jig.
       this._lastGrid = null;
     }
+    var L = this.phraseLength;
     if (this._countInLeft > 0) {
       // One slot per beat: an accented click on 1, then plain ones.
       this._grid = 'C' + 'c'.repeat(this.tune.beatsPerBar - 1);
       this._countIn = true;
       this._countInLeft--;
+    } else if (this.finishing && (L <= 0 || this._bar % L === L - 1)) {
+      // The ending. A tune's last note arrives at the start of its last bar,
+      // so the drum lands one hard down stroke there, with it, lets it ring,
+      // and stops. With no phrases set, it lands on the next bar.
+      this._grid = 'D' + '-'.repeat(this.tune.beatsPerBar - 1);
+      this.ending = true;
+      this._endSent = false;
+      this._countIn = false;
     } else if (this.mode === 'pulse') {
       this._grid = TRAD.pulseGrid(this.tune);
       this._lastGrid = this._grid;
@@ -88,7 +102,7 @@
     } else {
       this._grid = TRAD.pickGrid(
         this.tune, this.complexity,
-        this.phraseLength > 0 && (this._bar % this.phraseLength) === this.phraseLength - 1,
+        L > 0 && (this._bar % L) === L - 1,
         this._lastGrid, Math.random
       );
       this._lastGrid = this._grid;
@@ -108,7 +122,7 @@
     var time = this._barStart + (slot / grid.length) * this._barDur;
     time += TRAD.swingShift(fractionOfBeat, this._swing()) * beatDur;
 
-    if (ch === '-' ) return;
+    if (ch === '-' ) return time;
 
     if (ch === 'C' || ch === 'c') {
       var cv = ch === 'C' ? 0.9 : 0.55;
@@ -136,6 +150,7 @@
     if (this.midi) this.midi.send(this.ctx, voice, time, vel);
     this._pushEvent({ time: time, slot: slot, len: grid.length, char: ch,
                        bar: this._bar, countIn: false });
+    return time;
   };
 
   Transport.prototype._slotTime = function () {
@@ -161,10 +176,10 @@
     // piled 10 hits together). Skip them silently instead and rejoin in time:
     // the audio clock kept running, so the beat carries on where it would be.
     var skipped = 0;
-    while (this.running && this._slotTime() < now - LATE && skipped++ < 4096) {
+    while (this.running && !this.ending && this._slotTime() < now - LATE && skipped++ < 4096) {
       this._advance();
     }
-    if (this._slotTime() < now - LATE) {
+    if (!this.ending && this._slotTime() < now - LATE) {
       // Absurdly far behind; stop counting and start a fresh bar.
       this._barStart = now + 0.05;
       this._slot = 0;
@@ -173,11 +188,34 @@
 
     var horizon = now + SCHEDULE_AHEAD;
     var guard = 0;
-    while (this.running && guard++ < 256) {
+    while (this.running && !this.ending && guard++ < 256) {
       if (this._slotTime() >= horizon) break;
       this._scheduleSlot(this._slot);
       this._advance();
     }
+
+    // The ending bar has one stroke and nothing after it. Once that stroke has
+    // sounded, stop — it rings on by itself. (If the page stalled through it,
+    // it is skipped like any late stroke, and the drum still stops.)
+    if (this.running && this.ending) {
+      if (!this._endSent && this._barStart < horizon) {
+        this._endSent = true;
+        this._endTime = this._barStart >= now - LATE ? this._scheduleSlot(0) : this._barStart;
+      }
+      if (this._endSent && now >= this._endTime + 0.02) {
+        this.stop();
+        if (this.onEnd) this.onEnd();
+      }
+    }
+  };
+
+  /* Finish: play on to the last bar of the phrase and end there. Pressing it
+   * again changes your mind and carries on. */
+  Transport.prototype.finish = function () {
+    if (this.running && !this.ending) this.finishing = true;
+  };
+  Transport.prototype.keepGoing = function () {
+    if (!this.ending) this.finishing = false;
   };
 
   Transport.prototype.start = function () {
@@ -189,8 +227,13 @@
     }
 
     this.running = true;
-    this._bar = 0;
+    // Count-in bars are numbered below zero, so bar 0 is the first bar the
+    // drum plays: the first bar of the tune. They used to count as bars of the
+    // first phrase, which put every fill a bar early (on bars 3 and 7).
+    this._bar = -this.countInBars;
     this._slot = 0;
+    this.finishing = false;
+    this.ending = false;
     this._lastGrid = null;
     this._countInLeft = this.countInBars;
     this._barStart = this.ctx.currentTime + 0.08;
@@ -202,6 +245,8 @@
 
   Transport.prototype.stop = function () {
     this.running = false;
+    this.finishing = false;
+    this.ending = false;
     if (this._timer) clearInterval(this._timer);
     this._timer = null;
     this.events.length = 0;
