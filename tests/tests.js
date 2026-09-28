@@ -1572,6 +1572,64 @@
       });
     });
 
+  check('Guitar demo', 'The bodhrán is not buried under the guitar',
+    'It was: 4 dB under overall, and its stick click, the part the ear picks a drum out by, 34 dB under the guitar in its own band. Now level overall, the click lifted.',
+    function () {
+      var frame = document.createElement('iframe');
+      frame.src = '../guitar/';
+      frame.style.cssText = 'position:absolute;left:-10000px;top:0;border:0;width:375px;height:812px';
+      document.body.appendChild(frame);
+      var SRG = 48000, q = 60 / 100 / 3, BARS = 8, K = window.KESH;
+      function level(d, lo, hi) {                 // average level in a band, dB
+        var o = new OfflineAudioContext(1, d.length, SRG), b = o.createBuffer(1, d.length, SRG);
+        b.getChannelData(0).set(d);
+        var s = o.createBufferSource(); s.buffer = b; var node = s;
+        [[lo, 'highpass'], [lo, 'highpass'], [hi, 'lowpass'], [hi, 'lowpass']].forEach(function (f) {
+          if (!f[0]) return;
+          var bq = o.createBiquadFilter(); bq.type = f[1]; bq.frequency.value = f[0]; node.connect(bq); node = bq;
+        });
+        node.connect(o.destination); s.start();
+        return o.startRendering().then(function (r) {
+          var x = r.getChannelData(0), e = 0; for (var i = 0; i < x.length; i++) e += x[i] * x[i];
+          return 10 * Math.log10(e / x.length);
+        });
+      }
+      return new Promise(function (resolve, reject) {
+        var t = setTimeout(function () { reject(new Error('the demo page did not load')); }, 10000);
+        frame.onload = function () { clearTimeout(t); setTimeout(resolve, 200); };
+      }).then(function () {
+        var D = frame.contentWindow.KESH_DEMO, MIX = D.MIX, lift = D.DRUM && D.DRUM.lift;
+        var len = Math.ceil(SRG * (BARS * 6 * q + 2));
+        var og = new OfflineAudioContext(1, len, SRG), g = new window.GTR.Guitar(og, og.destination);
+        g.level.gain.value = MIX.guitar;
+        var notes = {};
+        ['G', 'D', 'C', 'Em'].forEach(function (c) { K.voicing(c, 'dadgad').forEach(function (m) { if (m != null) notes[m] = 1; }); });
+        g.prepare(Object.keys(notes).map(Number));
+        var od = new OfflineAudioContext(1, len, SRG), dest = od.destination;
+        if (lift) {
+          var pk = od.createBiquadFilter(); pk.type = 'peaking';
+          pk.frequency.value = lift.f; pk.Q.value = lift.q; pk.gain.value = lift.gain; pk.connect(od.destination); dest = pk;
+        }
+        var drum = new TRAD.Bodhran(od, dest);
+        drum.master.gain.value = MIX.drum; drum.setRoom(0.1);
+        var t = 0.05;
+        ['G', 'D', 'C', 'D', 'G', 'D', 'C', 'G'].forEach(function (c) {
+          var v = K.voicing(c, 'dadgad');
+          g.strum(v, t, 'D', 1); g.strum(v, t + 2 * q, 'U', 0.5, 4); g.strum(v, t + 3 * q, 'D', 0.8); g.strum(v, t + 5 * q, 'U', 0.5, 4);
+          drum.hit('bass', t, 1); drum.hit('treble', t + 2 * q, 0.46); drum.hit('bass', t + 3 * q, 1); drum.hit('treble', t + 5 * q, 0.46);
+          t += 6 * q;
+        });
+        return Promise.all([og.startRendering(), od.startRendering()]).then(function (r) {
+          var gd = r[0].getChannelData(0), dd = r[1].getChannelData(0);
+          return Promise.all([level(gd), level(dd), level(gd, 1500, 5000), level(dd, 1500, 5000)]);
+        }).then(function (L) {
+          var overall = L[1] - L[0], click = L[3] - L[2];
+          expect(overall > -2, 'the bodhrán is ' + round(-overall) + ' dB under the guitar overall');
+          expect(click > -24, 'its stick click is ' + round(-click) + ' dB under the guitar at 1.5–5 kHz');
+        });
+      }).finally(function () { frame.remove(); });
+    });
+
   check('Guitar demo', 'It shows its own version, and the notes cover it',
     'The quickest way to tell whether a phone has the latest demo. Bump the demo’s version? Add it to CHANGELOG.md and the release notes in the same change.',
     function () {

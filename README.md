@@ -93,7 +93,7 @@ against the real code:
   a shape and the drone rings through; the guitar is in tune; the page builds;
   each sound's volume is heard straight away and remembered; DADGAD is
   D A D G A D with the top D open in every shape; the tuning switch changes the
-  shapes and is remembered; it shows its own version and the notes cover it
+  shapes and is remembered; the bodhrán is not buried under the guitar; it shows its own version and the notes cover it
 - **Release notes** (under The app) — `CHANGELOG.md` and `release-notes/` both
   have an entry for the current version, so bumping the version means adding
   the notes in the same change

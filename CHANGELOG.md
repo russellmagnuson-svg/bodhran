@@ -97,6 +97,14 @@ that gets pushed (the last number for a fix, the middle one for a feature).
 
 The page at `/guitar/` has its own version number, shown next to its title.
 
+### Guitar demo 1.3.1 — 2026-09-28
+
+- The bodhrán was buried under the bassier guitar: 4 dB under it overall,
+  and its stick click, the part the ear picks a drum out by, 34 dB under the
+  guitar in its band. Now it sits level with the guitar, with its click lifted
+  (it came up to 20 dB under, plainly heard for a sound that short). The
+  count-in clicks stay as loud as before. The app's own drum is unchanged.
+
 ### Guitar demo 1.3.0 — 2026-09-28
 
 - DADGAD tuning (D A D G A D), now the starting tuning, with a switch back to

@@ -13,7 +13,7 @@
    * with every change to the demo that gets pushed: the last number for a
    * fix, the middle one for something new. Add it to CHANGELOG.md and the
    * release notes in the same change (a check makes sure). */
-  var VERSION = '1.3.0';
+  var VERSION = '1.3.1';
 
   var $ = function (id) { return document.getElementById(id); };
   var K = window.KESH, G = window.GTR, T = window.TRAD;
@@ -38,11 +38,18 @@
   var strum = 'lilt';
 
   /* ---------- how loud each sound is ----------
-   * MIX is the balance set by measurement, with the guitar leading: alone,
-   * guitar -21 dB, flute -22 and drum -24.5 on average, all three together
-   * peaking under full scale. The sliders scale it, 0 to 200%, and the page
-   * remembers them. */
-  var MIX = { guitar: 0.7, tune: 0.18, drum: 0.42 };
+   * MIX is the balance set by measurement: guitar and flute about -21 dB on
+   * average, the bodhrán level with them. The sliders scale it, 0 to 200%,
+   * and the page remembers them.
+   *
+   * The bodhrán used to be buried: 4 dB under the guitar overall, level with
+   * it only in the bass, where the big-bodied guitar covers it, and its stick
+   * click, the part the ear picks a drum out by, 34 dB under the guitar in its
+   * band. So besides more level, its channel lifts the click around 2.5 kHz
+   * (DRUM.lift): the stick came up to 20 dB under the guitar, which for a
+   * sound that short is plainly heard. The app's own drum is unchanged. */
+  var MIX = { guitar: 0.7, tune: 0.18, drum: 0.7 };
+  var DRUM = { lift: { f: 2500, q: 0.7, gain: 9 } };
   var vol = { guitar: 1, tune: 1, drum: 1 };
   try {
     var saved = JSON.parse(localStorage.getItem('kesh.demo.volume') || '{}');
@@ -73,7 +80,7 @@
   });
 
   /* ---------- audio, built on the first press of Play ---------- */
-  var ctx = null, run = null, guitar = null, drum = null, fluteBus = null, noise = null;
+  var ctx = null, run = null, guitar = null, drum = null, clicker = null, fluteBus = null, noise = null;
 
   function roomImpulse(seconds, decay) {
     var len = Math.floor(ctx.sampleRate * seconds), buf = ctx.createBuffer(2, len, ctx.sampleRate);
@@ -110,8 +117,18 @@
     });
     guitar.prepare(Object.keys(all).map(Number));
 
-    drum = new T.Bodhran(ctx, run);
+    var lift = ctx.createBiquadFilter();
+    lift.type = 'peaking';
+    lift.frequency.value = DRUM.lift.f; lift.Q.value = DRUM.lift.q; lift.gain.value = DRUM.lift.gain;
+    lift.connect(run);
+    drum = new T.Bodhran(ctx, lift);
     drum.setRoom(0.1);
+    // The count-in has a clicker of its own, at the level the clicks always
+    // had, outside the drum's louder, lifted channel. (Its click takes the
+    // higher, accented pitch from how hard it is struck, so it cannot simply
+    // be struck more softly.)
+    clicker = new T.Bodhran(ctx, run);
+    clicker.setLevel(0.42); clicker.setRoom(0.1);
 
     fluteBus = ctx.createGain(); fluteBus.gain.value = MIX.tune * vol.tune;
     var soft = ctx.createBiquadFilter(); soft.type = 'lowpass'; soft.frequency.value = 5200;
@@ -172,8 +189,8 @@
   function layBar(n, t0) {
     var q = quaver();
     if (n < 0) {
-      pending.push({ t: t0, fn: function (t) { drum.hit('click', t, 0.9); } });
-      pending.push({ t: t0 + 3 * q, fn: function (t) { drum.hit('click', t, 0.55); } });
+      pending.push({ t: t0, fn: function (t) { clicker.hit('click', t, 0.9); } });
+      pending.push({ t: t0 + 3 * q, fn: function (t) { clicker.hit('click', t, 0.55); } });
       shown.push({ t: t0, n: n });
       return 6 * q;
     }
@@ -471,7 +488,7 @@
 
   // For the checks page: what the demo plays, without playing it.
   window.KESH_DEMO = {
-    VERSION: VERSION, STRUMS: STRUMS, FORM: FORM, VOICE: VOICE, MIX: MIX,
+    VERSION: VERSION, STRUMS: STRUMS, FORM: FORM, VOICE: VOICE, MIX: MIX, DRUM: DRUM,
     tuning: function () { return tuning; },
     audio: function () { return { ctx: ctx, run: run, guitar: guitar, flute: fluteBus, drum: drum }; },
     playing: function () { return playing; }
