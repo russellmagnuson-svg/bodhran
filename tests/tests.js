@@ -1095,6 +1095,90 @@
     });
 
   /* ================================================================
+   * Basic and Advanced
+   * ================================================================ */
+
+  function shown(win, el) { return !!el && el.getClientRects().length > 0 && win.getComputedStyle(el).visibility !== 'hidden'; }
+  function viewTo(doc, v) { doc.querySelector('#view [data-view="' + v + '"]').click(); }
+
+  check('Basic and Advanced', 'Basic keeps the advanced controls back, and says so in every panel',
+    'A first visit sees the everyday controls. Nothing may be out of sight without the panel saying what, and that it is in Advanced.',
+    function () {
+      return withApp(function (win, doc) {
+        // Everything marked as held back, and everything a panel says it holds back.
+        var kept = doc.querySelectorAll('.adv, [data-adv]'), showing = [], unsaid = [];
+        Array.prototype.forEach.call(kept, function (el) { if (shown(win, el)) showing.push(el.dataset.adv || el.id); });
+        Array.prototype.forEach.call(doc.querySelectorAll('[data-adv]'), function (el) {
+          var hint = el.closest('.panel').querySelector('.adv-hint');
+          if (!shown(win, hint) || hint.textContent.indexOf(el.dataset.adv) === -1 || !/Advanced/.test(hint.textContent)) unsaid.push(el.dataset.adv);
+        });
+        var everyday = ['play', 'finish', 'bpm', 'tunes', 'modes', 'grid', 'countin', 'level', 'drone-on', 'drone-root']
+          .filter(function (id) { return !shown(win, doc.getElementById(id)); });
+        expect(doc.querySelector('#view [aria-checked="true"]').dataset.view === 'basic', 'a first visit does not start in Basic');
+        expect(kept.length >= 10, 'only ' + kept.length + ' controls are marked advanced');
+        expect(showing.length === 0, 'Basic still shows: ' + showing.join(', '));
+        expect(unsaid.length === 0, 'kept back without a word: ' + unsaid.join(', '));
+        expect(everyday.length === 0, 'Basic hides everyday controls: ' + everyday.join(', '));
+        expect(shown(win, doc.getElementById('view')), 'the Basic / Advanced switch is not on screen');
+      });
+    });
+
+  check('Basic and Advanced', 'Advanced shows everything, and is remembered',
+    'Advanced is every control with nothing held back; a choice made once should not need making every visit.',
+    function () {
+      return withApp(function (win, doc) {
+        viewTo(doc, 'advanced');
+        var hidden = Array.prototype.filter.call(doc.querySelectorAll('.adv[data-adv]'), function (el) {
+          return el.id !== 'midi-controls' && !shown(win, el);
+        }).map(function (el) { return el.dataset.adv; });
+        var hints = Array.prototype.filter.call(doc.querySelectorAll('.adv-hint'), function (h) { return shown(win, h); }).length;
+        var saved = JSON.parse(win.localStorage.getItem('bodhran.settings') || '{}').view;
+        key(win, doc.querySelector('#view [data-view="advanced"]'), 'ArrowLeft', 'ArrowLeft');
+        var backByKey = doc.querySelector('#view [aria-checked="true"]').dataset.view;
+        expect(hidden.length === 0, 'Advanced still hides: ' + hidden.join(', '));
+        expect(hints === 0, hints + ' “More in Advanced” lines still showing in Advanced');
+        expect(saved === 'advanced', 'the choice was saved as ' + saved);
+        expect(backByKey === 'basic', 'the arrow keys do not move the switch');
+      });
+    });
+
+  check('Basic and Advanced', 'A changed setting kept back is flagged',
+    'Settings kept back still count. One moved from where it started would change the sound out of sight, so Basic says which.',
+    function () {
+      return withApp(function (win, doc) {
+        var drumHint = doc.getElementById('backhand').closest('.panel').querySelector('.adv-hint');
+        var feelHint = doc.getElementById('swing').closest('.panel').querySelector('.adv-hint');
+        var fresh = drumHint.textContent + feelHint.textContent;
+        viewTo(doc, 'advanced');
+        var bh = doc.getElementById('backhand'); bh.value = 0.5; bh.dispatchEvent(new win.Event('input'));
+        var sw = doc.getElementById('swing'); sw.value = 0.3; sw.dispatchEvent(new win.Event('input'));
+        viewTo(doc, 'basic');
+        var drum = drumHint.textContent, feel = feelHint.textContent;
+        doc.querySelector('.chip[data-id="jig"]').click();          // a new tune goes back to its own swing
+        var feelAfter = feelHint.textContent;
+        expect(!/changed/.test(fresh), 'a first visit already flags changes: ' + fresh);
+        expect(/changed: back hand \(moderate\)/.test(drum), 'the Drum panel says: ' + drum);
+        expect(/changed: swing \(30%\)/.test(feel), 'the Feel panel says: ' + feel);
+        expect(!/changed/.test(feelAfter), 'still flags swing after a new tune reset it: ' + feelAfter);
+      });
+    });
+
+  check('Basic and Advanced', 'A panel’s hint opens Advanced right there',
+    'Tapping “More in Advanced” should bring the controls in where you are looking, not jump the page.',
+    function () {
+      return withApp(function (win, doc) {
+        var hint = doc.getElementById('tuning').closest('.panel').querySelector('.adv-hint');
+        hint.scrollIntoView({ block: 'center' });
+        var panel = hint.closest('.panel'), before = box(panel).top;
+        hint.click();
+        var after = box(panel).top;
+        expect(!doc.querySelector('.app').classList.contains('basic'), 'the hint did not open Advanced');
+        expect(Math.abs(after - before) <= 2, 'the panel moved ' + Math.round(after - before) + 'px');
+        expect(doc.activeElement === doc.getElementById('tuning'), 'the first control it brought in is not ready to use');
+      }, PHONE);
+    });
+
+  /* ================================================================
    * Phone layout — checked in a phone-sized copy of the app (375 x 812)
    * ================================================================ */
 
@@ -1167,6 +1251,9 @@
     function () {
       return withApp(function (win, doc) {
         var panel = doc.getElementById('midi-panel'), status = doc.getElementById('midi-status');
+        var leftOutOfBasic = !shown(win, panel);
+        viewTo(doc, 'advanced');
+        expect(leftOutOfBasic, 'Basic shows a GarageBand panel on a browser that cannot use it');
         var line = parseFloat(win.getComputedStyle(status).lineHeight) ||
                    1.5 * parseFloat(win.getComputedStyle(status).fontSize);
         expect(!win.navigator.requestMIDIAccess, 'the page still has Web MIDI, so this check proves nothing');

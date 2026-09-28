@@ -26,6 +26,16 @@ can mix old and new files, which can stop the app starting at all.
 You can also just double-click `index.html` — the scripts are plain
 `<script>` tags rather than ES modules precisely so that works.
 
+**Basic and Advanced.** A switch under the title picks how much is on screen.
+Basic (the default) has tempo, tune type, rhythm, the bar display, count-in,
+volume and the drone. Advanced adds the feel sliders, the drum's tuning, tone,
+back hand and room, the drone level and GarageBand. In Basic each panel says
+what it keeps back ("More in Advanced: …"), and tapping that line opens
+Advanced without moving the page. Settings kept back still count, so any that
+have been changed from where they started are flagged in that line. Mark a
+control as advanced with `class="adv" data-adv="its name"` in `index.html`; the
+panel's line is built from those names.
+
 **Keys:** `Space` play/stop · `F` finish · `←`/`→` tempo · `T` tap tempo. On a
 tune type or a rhythm, the arrow keys move the choice instead. A tempo outside
 a tune type's range is brought inside it, and the range shows under **bpm**.
@@ -67,6 +77,9 @@ against the real code:
   arrow keys move the choice of tune type and rhythm;
   the About names the panels as they are;
   Space ignored while About is open
+- **Basic and Advanced** — Basic keeps the advanced controls back and says so
+  in every panel; Advanced shows everything and is remembered; a changed
+  setting kept back is flagged; a panel's line opens Advanced right there
 - **Phone layout** (in a phone-sized copy of the app) — the rhythm choice is on
   the first screen; Play sits beside the tempo; the pinned Play/Stop bar appears
   when scrolled down, works, and never covers the page; without MIDI (an

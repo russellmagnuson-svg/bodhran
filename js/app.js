@@ -8,7 +8,7 @@
    * Bump it with every change that gets pushed: the last number for a fix,
    * the middle one for a new feature. It is also the quickest way to tell
    * whether a phone is running the latest deploy or an older copy. */
-  var VERSION = '1.3.3';
+  var VERSION = '1.4.0';
   TRAD.VERSION = VERSION;
 
   TRAD.validatePatterns();
@@ -211,6 +211,7 @@
       : 'tune default (straight)';
 
     if (transport) transport.setTune(tune);
+    renderHints();   // a new tune goes back to its own swing
     // While playing, the bar display moves to the new tune with the drum, on
     // the next bar.
     if (!transport || !transport.running) renderGrid(idleGrid());
@@ -436,6 +437,76 @@
     if (!transport || !transport.running) renderGrid(idleGrid());
   }
 
+  /* ---------- Basic / Advanced ----------
+   * Basic shows the everyday controls. What it keeps back still counts, so
+   * each panel says what is kept back there, and flags any of it that has
+   * been changed from where it started: nothing out of sight changes the
+   * sound without a word. */
+  var view = 'basic';
+
+  function applyView(next) {
+    view = next === 'advanced' ? 'advanced' : 'basic';
+    document.querySelector('.app').classList.toggle('basic', view === 'basic');
+    Array.prototype.forEach.call($('view').children, function (b) {
+      b.setAttribute('aria-checked', String(b.dataset.view === view));
+    });
+    syncRoving($('view'));
+    $('view-note').textContent = view === 'basic'
+      ? 'Advanced adds the feel, drum sound and GarageBand.'
+      : 'Showing every control.';
+    remember('view', view);
+    renderHints();
+    updateMini();
+  }
+
+  /* Has this kept-back control been moved from where it started? */
+  function changed(el) {
+    var input = el.querySelector('input[type=range]');
+    if (input) {
+      if (input.id === 'swing') return swingTouched;
+      return Math.abs(+input.value - +input.defaultValue) > 1e-9;
+    }
+    var box = el.querySelector('input[type=checkbox]');
+    return !!(box && box.checked);
+  }
+  function valueOf(el) {
+    var out = el.querySelector('output');
+    return out ? ' (' + out.textContent + ')' : ' (on)';
+  }
+
+  function renderHints() {
+    Array.prototype.forEach.call(document.querySelectorAll('.adv-hint'), function (hint) {
+      var kept = hint.closest('.panel').querySelectorAll('[data-adv]');
+      var names = [], moved = [];
+      Array.prototype.forEach.call(kept, function (el) {
+        names.push(el.dataset.adv);
+        if (changed(el)) moved.push(el.dataset.adv + valueOf(el));
+      });
+      hint.innerHTML = '';
+      var b = document.createElement('b');
+      b.textContent = 'More in Advanced: ';
+      hint.appendChild(b);
+      hint.appendChild(document.createTextNode(names.join(', ')));
+      if (moved.length) {
+        var c = document.createElement('span');
+        c.className = 'changed';
+        c.textContent = ' \u00b7 changed: ' + moved.join(', ');
+        hint.appendChild(c);
+      }
+    });
+  }
+
+  /* A panel's hint opens Advanced right there: the panel stays where it is
+   * on screen while the controls it was keeping back appear inside it. */
+  function openHere(hint) {
+    var panel = hint.closest('.panel');
+    var before = panel.getBoundingClientRect().top;
+    applyView('advanced');
+    window.scrollBy(0, panel.getBoundingClientRect().top - before);
+    var first = panel.querySelector('.adv input, .adv select');
+    if (first) first.focus({ preventScroll: true });
+  }
+
   /* ---------- about ---------- */
   // The tune list is generated from the pattern data rather than written out
   // by hand, so it cannot drift when a tune type is added or re-tuned.
@@ -563,6 +634,14 @@
       b.addEventListener('click', function () { applyMode(b.dataset.mode); });
     });
     arrowKeys($('tunes'), function (b) { selectTune(b.dataset.id); });
+    arrowKeys($('view'), function (b) { applyView(b.dataset.view); });
+    Array.prototype.forEach.call($('view').children, function (b) {
+      b.addEventListener('click', function () { applyView(b.dataset.view); });
+    });
+    Array.prototype.forEach.call(document.querySelectorAll('.adv-hint'), function (h) {
+      h.addEventListener('click', function () { openHere(h); });
+    });
+    $('midi-on').addEventListener('change', renderHints);
     arrowKeys($('modes'), function (b) { applyMode(b.dataset.mode); });
 
     $('countin').addEventListener('change', function () {
@@ -631,6 +710,7 @@
     var startTune = settings.tune && TRAD.tuneById(settings.tune).id === settings.tune
       ? settings.tune : TRAD.tunes[0].id;
     selectTune(startTune);
+    applyView(settings.view);
   }
 
   /* ---------- MIDI ---------- */

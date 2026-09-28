@@ -16,7 +16,7 @@
 </head>
 <body>
 
-<main class="app">
+<main class="app basic">
 
   <header class="head">
     <img class="logo" src="icons/icon-192.png" alt="" width="44" height="44">
@@ -33,6 +33,17 @@
       <span>About</span>
     </button>
   </header>
+
+  <!-- Basic shows the everyday controls; Advanced adds the rest. Basic says
+       in every panel what it is keeping back, so nothing is out of sight
+       without a word. -->
+  <div class="view-bar">
+    <div id="view" class="view-switch" role="radiogroup" aria-label="Controls shown">
+      <button type="button" role="radio" data-view="basic" aria-checked="true">Basic</button>
+      <button type="button" role="radio" data-view="advanced" aria-checked="false">Advanced</button>
+    </div>
+    <span id="view-note" class="view-note"></span>
+  </div>
 
   <!-- Transport -->
   <section class="panel transport">
@@ -102,19 +113,19 @@
   <section class="panel">
     <h2>Feel</h2>
     <div class="sliders">
-      <label>Busyness
+      <label class="adv" data-adv="busyness">Busyness
         <input id="complexity" type="range" min="0" max="1" step="0.01" value="0.5">
         <output id="complexity-out">even</output>
       </label>
-      <label>Humanise
+      <label class="adv" data-adv="humanise">Humanise
         <input id="humanize" type="range" min="0" max="1" step="0.01" value="0.4">
         <output id="humanize-out">40%</output>
       </label>
-      <label>Swing
+      <label class="adv" data-adv="swing">Swing
         <input id="swing" type="range" min="0" max="1" step="0.01" value="0">
         <output id="swing-out">tune default</output>
       </label>
-      <label>Fills every
+      <label class="adv" data-adv="fills every">Fills every
         <input id="phrase" type="range" min="0" max="8" step="2" value="4">
         <output id="phrase-out">4 bars</output>
       </label>
@@ -128,6 +139,7 @@
         </select>
       </label>
     </div>
+    <button type="button" class="adv-hint"></button>
   </section>
 
   <!-- Drum -->
@@ -138,23 +150,24 @@
         <input id="level" type="range" min="0" max="1.4" step="0.01" value="0.9">
         <output id="level-out">90%</output>
       </label>
-      <label>Tuning
+      <label class="adv" data-adv="tuning">Tuning
         <input id="tuning" type="range" min="58" max="112" step="1" value="78">
         <output id="tuning-out">78 Hz</output>
       </label>
-      <label>Tone
+      <label class="adv" data-adv="tone">Tone
         <input id="tone" type="range" min="0" max="1" step="0.01" value="0.5">
         <output id="tone-out">balanced</output>
       </label>
-      <label>Back hand
+      <label class="adv" data-adv="back hand">Back hand
         <input id="backhand" type="range" min="0" max="1" step="0.01" value="0">
         <output id="backhand-out">off</output>
       </label>
-      <label>Room
+      <label class="adv" data-adv="room">Room
         <input id="room" type="range" min="0" max="0.6" step="0.01" value="0.16">
         <output id="room-out">16%</output>
       </label>
     </div>
+    <button type="button" class="adv-hint"></button>
   </section>
 
   <!-- Drone -->
@@ -178,18 +191,19 @@
       </label>
     </div>
     <div class="sliders one">
-      <label>Drone level
+      <label class="adv" data-adv="drone level">Drone level
         <input id="drone-level" type="range" min="0" max="0.5" step="0.01" value="0.18">
         <output id="drone-level-out">18%</output>
       </label>
     </div>
+    <button type="button" class="adv-hint"></button>
   </section>
 
   <!-- MIDI -->
   <section id="midi-panel" class="panel">
     <h2>Send to GarageBand <span class="tag muted">MIDI</span></h2>
-    <p id="midi-status" class="blurb">Checking for MIDI support…</p>
-    <div id="midi-controls" class="hidden">
+    <p id="midi-status" class="blurb adv">Checking for MIDI support…</p>
+    <div id="midi-controls" class="hidden adv" data-adv="sending the drum to GarageBand">
       <div class="row">
         <label class="inline">
           <input id="midi-on" type="checkbox"> Send MIDI
@@ -233,6 +247,7 @@
            support it, so this panel stays disabled there.</p>
       </details>
     </div>
+    <button type="button" class="adv-hint"></button>
   </section>
 
   <!-- Pinned to the bottom of the screen once the main Play button has
@@ -285,6 +300,16 @@
           it again if you change your mind and want to go round again.</li>
     </ol>
 
+    <h3>Basic and Advanced</h3>
+    <p>The switch under the title picks how much is on screen. <b>Basic</b>
+    has what you reach for every time: tempo, tune type, rhythm, count-in,
+    volume and the drone. <b>Advanced</b> adds the rest &mdash; the feel
+    sliders, the drum&rsquo;s tuning, tone, back hand and room, the drone
+    level, and GarageBand. In Basic, each panel says what it is keeping back,
+    and tapping that line opens Advanced right there. Settings kept back still
+    count, and if one has been changed from where it started, Basic says so,
+    so nothing out of sight changes the sound without a word.</p>
+
     <h3>Tune types</h3>
     <p class="hint" id="about-count">Tempos are the defaults; each has its own sensible range.</p>
     <div id="about-tunes" class="tune-list"></div>
@@ -310,7 +335,7 @@
           2 in a mazurka.</li>
     </ul>
 
-    <h3>Shaping the full mode</h3>
+    <h3>Shaping the full mode <span class="hint">(in Advanced)</span></h3>
     <ul>
       <li><b>Busyness</b> slides the weighting from sparse, through steady, to
           flat out.</li>

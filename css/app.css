@@ -523,6 +523,33 @@ dialog.about::backdrop {
 .mode-desc { margin: 10px 0 0; min-height: 2.6em; }
 
 /* a control that simple mode has taken over */
+/* ---------- Basic / Advanced ---------- */
+.view-bar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: -4px 0 -2px; }
+.view-switch {
+  display: inline-flex; gap: 3px; padding: 3px;
+  background: var(--panel-2); border: 1px solid var(--line); border-radius: 9px;
+}
+.view-switch button {
+  padding: 5px 14px; border: 0; border-radius: 6px; background: transparent;
+  color: var(--muted); font: inherit; font-size: 13px; cursor: pointer;
+}
+.view-switch button:hover { color: var(--text); }
+.view-switch button[aria-checked="true"] { background: var(--amber); color: #1a1208; font-weight: 600; }
+.view-note { font-size: 12.5px; color: var(--muted); flex: 1 1 12em; }
+
+.app.basic .adv { display: none; }
+.app.basic #midi-panel.unavailable { display: none; }   /* nothing to offer here */
+.adv-hint { display: none; }
+.app.basic .adv-hint {
+  display: block; width: 100%; margin-top: 12px; padding: 8px 10px;
+  background: transparent; border: 1px dashed var(--line); border-radius: 8px;
+  color: var(--muted); font: inherit; font-size: 12.5px; text-align: left; cursor: pointer;
+}
+.app.basic .adv-hint:hover { border-color: var(--amber-dim); color: var(--text); }
+.adv-hint b { color: var(--amber); font-weight: 600; }
+.adv-hint .changed { color: var(--amber); }
+.app.basic #midi-panel h2 { margin-bottom: 0; }
+
 .sliders label.is-off { opacity: 0.38; }
 .sliders label.is-off input[type=range] { cursor: not-allowed; }
 
