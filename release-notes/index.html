@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#141110">
+<meta name="description" content="What has changed in the Bodhrán accompaniment app, version by version.">
+<title>Bodhrán Release Notes</title>
+<link rel="icon" href="../icons/icon-192.png" sizes="192x192" type="image/png">
+<link rel="apple-touch-icon" href="../icons/apple-touch-icon.png">
+<style>
+  /* Dark first, like the app itself: its goatskin browns and amber tipper. */
+  :root {
+    color-scheme: dark;
+    --bg: #141110;
+    --panel: #1e1a17;
+    --line: #3a3029;
+    --ink: #f0e8df;
+    --muted: #a2938a;
+    --brand: #c9a473;
+    --amber: #e0a04a;
+    --amber-ink: #1a1208;
+    --amber-soft: rgba(224, 160, 74, 0.12);
+  }
+  @media (prefers-color-scheme: light) {
+    :root {
+      color-scheme: light;
+      --bg: #f1ede8;
+      --panel: #fbf9f6;
+      --line: #dcd2c7;
+      --ink: #2a211b;
+      --muted: #74665c;
+      --brand: #8a5f2c;
+      --amber: #b8731f;
+      --amber-ink: #fffaf2;
+      --amber-soft: rgba(184, 115, 31, 0.10);
+    }
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font: 16px/1.6 -apple-system, "SF Pro Text", "Segoe UI", system-ui, sans-serif;
+    padding: 40px 18px 64px;
+  }
+  .wrap { max-width: 700px; margin: 0 auto; display: flex; flex-direction: column; gap: 28px; }
+
+  header { display: flex; gap: 16px; align-items: flex-start; }
+  .mark { flex: 0 0 auto; width: 52px; height: 52px; }
+  h1 {
+    font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+    font-weight: 700;
+    font-size: 34px;
+    line-height: 1.1;
+    color: var(--brand);
+    margin: 2px 0 6px;
+    text-wrap: balance;
+  }
+  .lede { margin: 0; color: var(--muted); max-width: 58ch; }
+  .facts {
+    display: flex; flex-wrap: wrap; gap: 8px 22px;
+    margin: 12px 0 0; padding: 0; list-style: none;
+    font-size: 14px; color: var(--muted);
+  }
+  .facts b { color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
+
+  .releases { display: flex; flex-direction: column; gap: 12px; }
+  .release {
+    display: grid;
+    grid-template-columns: 96px 1fr;
+    gap: 4px 18px;
+    padding: 18px 20px;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+  }
+  .when { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
+  .ver {
+    font-weight: 600; font-size: 14px;
+    font-variant-numeric: tabular-nums;
+    padding: 2px 10px; border-radius: 999px;
+    border: 1px solid var(--line); color: var(--ink);
+  }
+  .feature .ver { background: var(--amber); border-color: var(--amber); color: var(--amber-ink); }
+  .date { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  h2 {
+    font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+    font-weight: 500;
+    font-size: 21px;
+    line-height: 1.25;
+    margin: 0 0 6px;
+    text-wrap: balance;
+  }
+  ul.changes { margin: 0; padding-left: 1.1em; display: flex; flex-direction: column; gap: 5px; }
+  ul.changes li::marker { color: var(--amber); }
+  .kind {
+    font-size: 11.5px; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--muted); margin-left: 8px; font-family: -apple-system, "Segoe UI", system-ui, sans-serif;
+    font-weight: 600; vertical-align: 2px;
+  }
+  code {
+    font: 13.5px/1.4 ui-monospace, Menlo, Consolas, monospace;
+    background: var(--amber-soft); padding: 1px 5px; border-radius: 4px;
+  }
+  .key {
+    font: 600 12.5px/1 ui-monospace, Menlo, Consolas, monospace;
+    border: 1px solid var(--line); border-bottom-width: 2px;
+    border-radius: 4px; padding: 2px 6px; background: var(--bg);
+  }
+
+  .legend { display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: 13.5px; color: var(--muted); margin: -12px 0 0; }
+  .legend span { display: inline-flex; align-items: center; gap: 7px; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; border: 1px solid var(--line); }
+  .dot.f { background: var(--amber); border-color: var(--amber); }
+
+  .back {
+    align-self: flex-start;
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 14.5px; font-weight: 600; color: var(--amber); text-decoration: none;
+    padding: 7px 14px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel);
+  }
+  .back:hover, .back:focus-visible { border-color: var(--amber); }
+  a:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+  footer a { color: var(--amber); }
+  footer { font-size: 14px; color: var(--muted); border-top: 1px solid var(--line); padding-top: 18px; }
+  footer p { margin: 0 0 8px; max-width: 62ch; }
+
+  @media (max-width: 520px) {
+    body { padding-block: 28px 48px; }
+    h1 { font-size: 28px; }
+    .release { grid-template-columns: 1fr; padding: 16px; }
+    .when { flex-direction: row; align-items: center; gap: 10px; margin-bottom: 4px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <a class="back" href="../">&larr; Open the app</a>
+  <header>
+    <svg class="mark" viewBox="0 0 52 52" aria-hidden="true">
+      <circle cx="26" cy="26" r="23" style="fill:var(--panel);stroke:var(--brand)" stroke-width="2.5"/>
+      <circle cx="26" cy="26" r="17.5" fill="none" style="stroke:var(--line)" stroke-width="1"/>
+      <line x1="13" y1="39" x2="40" y2="12" style="stroke:var(--amber)" stroke-width="3" stroke-linecap="round"/>
+      <circle cx="13" cy="39" r="3" style="fill:var(--amber)"/>
+      <circle cx="40" cy="12" r="3" style="fill:var(--amber)"/>
+    </svg>
+    <div>
+      <h1>Bodhrán Release Notes</h1>
+      <p class="lede">What has changed in the bodhrán accompaniment app since version 1.1.0.
+      The version number shows next to the title in the app, so you can check which one
+      your phone or browser is running.</p>
+      <ul class="facts">
+        <li><b>1.1.0 → 1.5.2</b> over three days, 26–28 September 2026</li>
+        <li><b>36 → 67</b> automated checks</li>
+      </ul>
+    </div>
+  </header>
+
+  <div class="legend" aria-hidden="true">
+    <span><i class="dot f"></i> New feature</span>
+    <span><i class="dot"></i> Fixes and smaller changes</span>
+  </div>
+
+  <main class="releases">
+
+    <article class="release">
+      <div class="when"><span class="ver">1.5.2</span><span class="date">28 Sep</span></div>
+      <div>
+        <h2>These release notes</h2>
+        <ul class="changes">
+          <li>This page, on the app’s own site and linked from <b>What’s new</b> in the About.</li>
+          <li>Offline, every page on the site now comes from its own saved copy. Before, any page other than the app itself came up as a broken copy of the app.</li>
+        </ul>
+      </div>
+    </article>
+
+    <article class="release">
+      <div class="when"><span class="ver">1.5.1</span><span class="date">28 Sep</span></div>
+      <div>
+        <h2>Waltz length</h2>
+        <ul class="changes">
+          <li>Waltzes now start at 64 bars, since their parts are usually 16 bars long. Every other tune type starts at 32.</li>
+        </ul>
+      </div>
+    </article>
+
+    <article class="release feature">
+      <div class="when"><span class="ver">1.5.0</span><span class="date">28 Sep</span></div>
+      <div>
+        <h2>Play it N times, then finish</h2>
+        <ul class="changes">
+          <li>New <b>Length</b> (16, 32, 48 or 64 bars) and <b>Play it</b> (until I stop, or 1 to 6 times) settings under the bar display. Each tune type remembers its own length.</li>
+          <li>On the last time through, the drum lands one final stroke on beat 1 of the tune’s last bar, with your final note, and stops.</li>
+          <li>The counter follows the tune, for example “bar 13 of 32 · time 2 of 3”.</li>
+          <li>Lowering the number part-way through ends at the end of the time you’re on.</li>
+        </ul>
+      </div>
+    </article>
+
+    <article class="release feature">
+      <div class="when"><span class="ver">1.4.0</span><span class="date">28 Sep</span></div>
+      <div>
+        <h2>Basic and Advanced controls</h2>
+        <ul class="changes">
+          <li>A <b>Basic / Advanced</b> switch under the title. Basic is the default and shows the everyday controls: tempo, tune type, rhythm, the bar display, count-in, volume and the drone.</li>
+          <li>In Basic, each panel lists what it keeps back (“More in Advanced: tuning, tone, back hand, room”), and tapping that line opens Advanced right there.</li>
+          <li>Hidden settings still work, and Basic flags any that have been changed from where they started.</li>
+        </ul>
+      </div>
+    </article>
+
+    <article class="release">
+      <div class="when"><span class="ver">1.3.3</span><span class="date">28 Sep</span></div>
+      <div>
+        <h2>Mac Safari silence fixed</h2>
+        <ul class="changes">
+          <li>After the Mac slept, a Safari tab could go silent while looking as if it was playing, however often it was reloaded. Pressing Play now wakes the sound.</li>
+          <li>Added a sound test page, <code>/tests/sound.html</code>, for tracking down silent playback.</li>
+        </ul>
+      </div>
+    </article>
+
+    <article class="release">
+      <div class="when"><span class="ver">1.3.2</span><span class="date">28 Sep</span></div>
+      <div>
+        <h2>iPhone setting kept to the iPhone</h2>
+        <ul class="changes">
+          <li>The setting that lets an iPhone play with its silent switch on no longer runs on the Mac, where it has no job.</li>
+        </ul>
+      </div>
+    </article>
+
+    <article class="release">
+      <div class="when"><span class="ver">1.3.1</span><span class="date">27 Sep</span></div>
+      <div>
+        <h2>B for the drone, and small fixes</h2>
+        <ul class="changes">
+          <li>Added <b>B</b> to the drone, for tunes in B minor.</li>
+          <li>Typing a tempo outside a tune type’s range now shows the range, instead of changing it without a word.</li>
+          <li>Arrow keys move between tune types and between rhythms on the Mac.</li>
+          <li>Count-in clicks are sent to GarageBand, on their own note (side stick, 37), so they never sound like drum strokes.</li>
+          <li>Changing tune mid-bar no longer resets your swing until the next bar.</li>
+        </ul>
+      </div>
+    </article>
+
+    <article class="release feature">
+      <div class="when"><span class="ver">1.3.0</span><span class="date">27 Sep</span></div>
+      <div>
+        <h2>Back hand</h2>
+        <ul class="changes">
+          <li>New <b>Back hand</b> control, off by default: the player’s other hand pressing the skin from inside. It raises the pitch and shortens the ring, following one arc across each phrase, so the fill falls in pitch into the next one.</li>
+        </ul>
+      </div>
+    </article>
+
+    <article class="release feature">
+      <div class="when"><span class="ver">1.2.0</span><span class="date">27 Sep</span></div>
+      <div>
+        <h2>Finish</h2>
+        <ul class="changes">
+          <li>New <b>Finish</b> button, or the <span class="key">F</span> key, plays to the end of the phrase and ends with one stroke on beat 1 of the last bar. Press it again to carry on.</li>
+          <li>Fixed: the count-in bar used to count as a bar of the tune, so every fill landed a bar early, on bars 3 and 7.</li>
+        </ul>
+      </div>
+    </article>
+
+    <article class="release">
+      <div class="when"><span class="ver">1.1.1</span><span class="date">27 Sep</span></div>
+      <div>
+        <h2>Fixes and more patterns</h2>
+        <ul class="changes">
+          <li>Fixed the slide’s only fill, which played a whole bar squashed into two beats.</li>
+          <li>Added fills and busy bars for slides, barndances, hornpipes and slip jigs.</li>
+          <li>Stop now silences strokes that were already queued.</li>
+          <li>Changing tune waits for the next bar, and no longer plays the old tune’s pattern under the new one.</li>
+          <li>The About text matches the current layout, and the GarageBand panel is one line on iPhone.</li>
+        </ul>
+      </div>
+    </article>
+
+  </main>
+
+  <footer>
+    <p>The musical changes (the back hand, the new fills, how Finish ends) follow bodhrán
+    technique rather than drum-kit habits: down strokes on the beat, up strokes between, and
+    the weight where the dance puts it. The final say on how they sound is by ear.</p>
+    <p>Every change came with automated checks that run against the real app, and each new check
+    was shown to catch the fault it guards against.</p>
+    <p><a href="../">Open the app</a> &middot; the same notes, as plain text, are in
+    <a href="../CHANGELOG.md">CHANGELOG.md</a>.</p>
+  </footer>
+</div>
+</body>
+</html>

@@ -890,6 +890,21 @@
       });
     });
 
+  check('The app', 'The release notes cover this version, and the About links to them',
+    'The notes are shared with other people, so they must never fall behind the app. Bump the version? Add it to CHANGELOG.md and release-notes/ in the same change.',
+    function () {
+      return withApp(function (win, doc) {
+        var v = win.TRAD.VERSION;
+        var link = doc.querySelector('.about-body a[href="release-notes/"]');
+        return Promise.all([text('../release-notes/'), text('../CHANGELOG.md')]).then(function (r) {
+          expect(!!link, 'the About has no link to the release notes');
+          expect(r[0].indexOf('<span class="ver">' + v + '</span>') !== -1, 'the release notes page has no entry for ' + v);
+          expect(r[1].indexOf('## ' + v + ' ') !== -1, 'CHANGELOG.md has no entry for ' + v);
+          expect(/href="\.\.\/"/.test(r[0]), 'the release notes page has no way back to the app');
+        });
+      });
+    });
+
   check('The app', 'Each tune type keeps its own tempo',
     'Switching tune type used to throw away the tempo you had set.',
     function () {

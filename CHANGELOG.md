@@ -4,6 +4,13 @@ What changed in each version of Bodhrán, newest first. The version shows next
 to the title in the app; bump it at the top of `js/app.js` with every change
 that gets pushed (the last number for a fix, the middle one for a feature).
 
+## 1.5.2 — 2026-09-28
+
+- Release notes page at `/release-notes/`, linked from **What's new** in the
+  About.
+- Offline, every page on the site now comes from its own saved copy. Before,
+  any page other than the app itself came up as a broken copy of the app.
+
 ## 1.5.1 — 2026-09-28
 
 - Waltzes now start at 64 bars (16-bar parts); every other tune type starts
@@ -78,5 +85,5 @@ that gets pushed (the last number for a fix, the middle one for a feature).
   and a pinned Play/Stop bar when scrolled down.
 
 Behind the scenes, the automated checks at `/tests/` grew from 36 at 1.1.0 to
-66 at 1.5.1, and each new one was shown to catch the fault it guards against.
+67 at 1.5.2, and each new one was shown to catch the fault it guards against.
 Earlier history is in the git log.

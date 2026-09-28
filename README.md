@@ -89,6 +89,9 @@ against the real code:
   iPhone) the GarageBand panel is one line
 - **Offline copy** — its file list covers everything the page loads, and every
   file on it exists
+- **Release notes** (under The app) — `CHANGELOG.md` and `release-notes/` both
+  have an entry for the current version, so bumping the version means adding
+  the notes in the same change
 
 Your saved settings are put back afterwards. Each check says which rule it
 protects and why, so a failure tells you what broke. Most of these rules were
@@ -351,3 +354,4 @@ patterns sound the way you want.
 | `serve.py`        | local server that turns caching off, for editing |
 | `tests/`          | the checks page: open it and press Run |
 | `CHANGELOG.md`    | what changed in each version |
+| `release-notes/`  | the same, as a page to share: `/release-notes/` on the site |

@@ -31,7 +31,7 @@ var APP_FILES = [
 ];
 // Kept for offline too, but a version apart they cannot break anything.
 var EXTRAS = [
-  './manifest.webmanifest',
+  './manifest.webmanifest', './release-notes/', './CHANGELOG.md',
   './icons/icon-192.png', './icons/icon-512.png', './icons/apple-touch-icon.png'
 ];
 
@@ -82,6 +82,12 @@ function refreshOfflineCopy() {
     // Something did not arrive: throw the partial copy away, keep the old one.
     return caches.delete(name);
   });
+}
+
+/* The app's own page, however it is addressed: the site root or index.html. */
+function isAppPage(url) {
+  var path = new URL(url).pathname, root = new URL('./', self.location.href).pathname;
+  return path === root || path === root + 'index.html';
 }
 
 /* ---------- which source each page load uses ---------- */
@@ -135,7 +141,14 @@ self.addEventListener('fetch', function (event) {
       }).catch(function () {
         lastMode = 'offline';
         if (event.resultingClientId) pageMode[event.resultingClientId] = 'offline';
-        return fromOffline('./index.html').then(function (hit) {
+        // Each page from its own offline copy. Only the app itself falls back
+        // to index.html (its address can carry a query or name the file):
+        // any other page used to come up as the app, with every file it
+        // loads missing, because they are named relative to the app.
+        return fromOffline(req).then(function (hit) {
+          if (hit || !isAppPage(req.url)) return hit;
+          return fromOffline('./index.html');
+        }).then(function (hit) {
           return hit || fetch(req);
         });
       })
