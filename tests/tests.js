@@ -1864,11 +1864,9 @@
       return chain.then(function () { expect(bad.length === 0, bad.join('\n')); });
     });
 
-  check('Guitar demo', 'Bass runs can be turned off, and the choice is remembered',
-    'On to begin with, and heard in bar 1; Off means no run anywhere, the chart marks gone, and the same next visit.',
+  check('Guitar demo', 'The page plays no bass runs, for now',
+    'Taken off at the user’s request in guitar demo 1.6.0 (the engine and its checks are kept for later). This makes sure they don’t come back by accident.',
     function () {
-      var KEY = 'kesh.demo.runs', saved = localStorage.getItem(KEY);
-      localStorage.removeItem(KEY);
       // Hidden, so the demo hands several seconds of notes to the audio at once.
       var first = 'window.__hidden = true;' +
           'Object.defineProperty(Document.prototype, "hidden", { configurable: true, get: function () { return window.__hidden; } });' +
@@ -1884,26 +1882,16 @@
             '"><script>' + first + '<\/script>');
         });
       }).then(function () {
-        var win = frame.contentWindow, doc = frame.contentDocument, D = win.KESH_DEMO;
+        var win = frame.contentWindow, doc = frame.contentDocument;
         var picks = 0, real = win.GTR.Guitar.prototype.pick;
         win.GTR.Guitar.prototype.pick = function () { picks++; return real.apply(this, arguments); };
-        function marks() { return Array.prototype.filter.call(doc.querySelectorAll('#chart .run-mark'), function (m) { return !m.hidden; }).length; }
         var bpm = doc.getElementById('bpm'); bpm.value = 130; bpm.dispatchEvent(new win.Event('input'));
-        var startOn = D.runs(), marksOn = marks();
-        doc.getElementById('play').click(); var withRuns = picks; doc.getElementById('play').click();
-        doc.querySelector('#runs [data-runs="off"]').click();
-        picks = 0;
-        doc.getElementById('play').click(); var without = picks; doc.getElementById('play').click();
-        var stored = win.localStorage.getItem(KEY), marksOff = marks();
-        expect(startOn && marksOn === 4, 'a first visit starts with runs ' + (startOn ? 'on' : 'off') + ', ' + marksOn + ' marked');
-        expect(withRuns >= 3, 'with runs on, ' + withRuns + ' bass notes were picked in the first bars');
-        expect(without === 0, 'with runs off, ' + without + ' bass notes were still picked');
-        expect(marksOff === 0, marksOff + ' runs still marked in the chart');
-        expect(stored === 'off', 'the choice was saved as ' + stored);
-      }).finally(function () {
-        frame.remove();
-        if (saved == null) localStorage.removeItem(KEY); else localStorage.setItem(KEY, saved);
-      });
+        doc.getElementById('play').click();
+        var played = picks;
+        doc.getElementById('play').click();
+        expect(played === 0, played + ' bass-run notes were played in the first bars');
+        expect(!doc.getElementById('runs') && !doc.querySelector('.run-mark'), 'the page still shows bass runs');
+      }).finally(function () { frame.remove(); });
     });
 
   check('Guitar demo', 'It shows its own version, and the notes cover it',

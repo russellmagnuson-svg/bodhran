@@ -113,6 +113,12 @@ that gets pushed (the last number for a fix, the middle one for a feature).
 
 The page at `/guitar/` has its own version number, shown next to its title.
 
+### Guitar demo 1.6.0 — 2026-09-28
+
+- Bass runs taken off the page for now: no runs, no switch, no marks in the
+  chart. The run data and the thumb-plucked string behind them are kept, with
+  their checks, so they can come back.
+
 ### Guitar demo 1.5.0 — 2026-09-28
 
 - Bass runs rebuilt as a thumb-plucked low string. The earlier run notes

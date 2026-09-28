@@ -96,9 +96,9 @@ against the real code:
   D A D G A D with the top D open in every shape; the tuning switch changes the
   shapes and is remembered; the bodhrán is not buried under the guitar; it
   wakes a silent Safari tab the way the app does; hidden, it plans ahead and
-  Stop drops the lot; bass runs walk up into the next chord, and can be turned
-  off; a picked bass note settles like a guitar string, not a piano, and
-  starts from a thumb pluck, not a burst of noise; it shows its own version and the notes cover it
+  Stop drops the lot; the page plays no bass runs, for now; the parked bass-run
+  engine still walks up into the next chord, settles like a guitar string, and
+  starts from a thumb pluck; it shows its own version and the notes cover it
 - **Release notes** (under The app) — `CHANGELOG.md` and `release-notes/` both
   have an entry for the current version, so bumping the version means adding
   the notes in the same change
@@ -361,10 +361,10 @@ Chords: A part G | D | C | D | G | D | C | D G, B part G | C D | G | D |
 G | C G | Em D | G, in two tunings, switchable on the page: DADGAD (the
 default: Gadd9 520000, Cadd9 x32030, D5 000200, Em7 222020, the top D open in
 every shape and the G in three) and standard (G, Cadd9 and Em7 hold D and G on
-the top two strings; D takes F sharp). Bass runs, switchable: on the last
-beat before the change into bars 2 and 5 of each part, three single notes walk
-up into the new chord (G A B into C, D E F♯ into G, A B C♯ into D), in each
-tuning's own octave (`KESH.runs`, `KESH.runFrom` in kesh.js). The checks cover the tune's bars, the shapes,
+the top two strings; D takes F sharp). Bass runs were tried (1.4.0-1.5.0) and
+taken off the page in 1.6.0; their data (`KESH.runs`, `KESH.runFrom`) and the
+thumb-plucked string (`pluckThumb`, `Guitar.pick`) are kept, with their checks,
+for later. The checks cover the tune's bars, the shapes,
 the guitar's tuning and the page itself.
 
 ## Roadmap

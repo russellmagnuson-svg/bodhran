@@ -101,7 +101,8 @@
   }
   GTR.pluckDark = pluckDark;
 
-  /* A low string plucked with the thumb, for the bass runs.
+  /* A low string plucked with the thumb, for the bass runs. (Not played by
+   * the page for now: the runs were taken off in guitar demo 1.6.0.)
    *
    * The models above start every note from a burst of random noise. Inside a
    * strum that is fine; a single bass note it gives away: its overtones came

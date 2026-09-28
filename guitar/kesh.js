@@ -101,7 +101,12 @@
     });
   });
 
-  /* ---- bass runs ----
+  /* ---- bass runs (not played for now) ----
+   * Taken off the page in guitar demo 1.6.0 at the user's request, after
+   * several tries at a sound for them (1.4.0-1.5.0). Kept, with their checks,
+   * so they can come back: see the git history of guitar/demo.js at 1.5.0
+   * for how the page played and showed them.
+   *
    * On the last beat before a chord change, three single bass notes walking
    * up into the new chord, in place of that beat's strum. Into bars 2 and 5 of
    * each part: enough to hear, not so many that they crowd the backing. The
