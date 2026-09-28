@@ -8,7 +8,7 @@
    * Bump it with every change that gets pushed: the last number for a fix,
    * the middle one for a new feature. It is also the quickest way to tell
    * whether a phone is running the latest deploy or an older copy. */
-  var VERSION = '1.6.0';
+  var VERSION = '1.6.1';
   TRAD.VERSION = VERSION;
 
   TRAD.validatePatterns();
@@ -45,60 +45,14 @@
   }
 
   /* Called only from a press of Play or the drone: the moment Safari lets a
-   * page start sound. After the Mac sleeps, Safari can report the audio as
-   * 'running' while holding it back, and the tab stays silent however often
-   * it is reloaded. Asking it to resume anyway, on every press, is what woke
-   * it up (the sound test page does this); elsewhere, asking a running audio
-   * clock to resume does nothing. */
-  function startSound() {
-    if (ctx && ctx.state !== 'closed') {
-      ctx.resume().catch(function () {});
-    }
-    nudgeMacSafari();
-  }
-
-  /* In a stuck tab, Safari still played sound the way a video does. So on a
-   * Mac, in Safari, each press also plays a moment of silence that way, which
-   * brings the tab's sound back if resuming alone does not. Mac Safari only:
-   * Chrome never needed it, and the iPhone has its own audio rules. */
-  var MAC_SAFARI = (function () {
-    var ua = navigator.userAgent || '';
-    return /Safari\//.test(ua) && !/Chrome|Chromium|CriOS|FxiOS|Edg|OPR|Android/.test(ua) &&
-           !(navigator.maxTouchPoints > 0);
-  })();
-  var silence = null;
-  function nudgeMacSafari() {
-    if (!MAC_SAFARI) return;
-    try {
-      if (!silence) silence = URL.createObjectURL(new Blob([silentWav()], { type: 'audio/wav' }));
-      var a = new Audio(silence);
-      var p = a.play();
-      if (p && p.catch) p.catch(function () {});
-    } catch (e) { /* only ever a nudge */ }
-  }
-  /* A twentieth of a second of silence as a WAV file, made on the spot. */
-  function silentWav() {
-    var sr = 8000, n = sr / 20, buf = new ArrayBuffer(44 + n * 2), v = new DataView(buf);
-    function str(o, s) { for (var i = 0; i < s.length; i++) v.setUint8(o + i, s.charCodeAt(i)); }
-    str(0, 'RIFF'); v.setUint32(4, 36 + n * 2, true); str(8, 'WAVE'); str(12, 'fmt ');
-    v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
-    v.setUint32(24, sr, true); v.setUint32(28, sr * 2, true); v.setUint16(32, 2, true);
-    v.setUint16(34, 16, true); str(36, 'data'); v.setUint32(40, n * 2, true);
-    return buf;
-  }
+   * page start sound. The waking itself lives in js/wake.js, shared with the
+   * guitar demo. */
+  function startSound() { TRAD.startSound(ctx); }
 
   function ensureAudio() {
     if (ctx) { startSound(); return; }
 
-    // On iPhone, web audio follows the ring/silent switch by default, so a
-    // phone on silent — which is most phones at a session — plays nothing.
-    // Declaring this as playback audio (Safari 17+) makes it ignore the switch.
-    // Phones and tablets only (they have touch; no Mac does): a Mac has no
-    // silent switch, so there it had no job, and it was the one piece of
-    // Safari-only sound code running while Mac Safari went silent.
-    if (navigator.audioSession && navigator.maxTouchPoints > 0) {
-      try { navigator.audioSession.type = 'playback'; } catch (e) {}
-    }
+    TRAD.prepareAudio();   // the iPhone's silent switch: see js/wake.js
     var AC = window.AudioContext || window.webkitAudioContext;
     ctx = new AC({ latencyHint: 'interactive' });
 

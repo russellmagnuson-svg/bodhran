@@ -4,6 +4,12 @@ What changed in each version of Bodhrán, newest first. The version shows next
 to the title in the app; bump it at the top of `js/app.js` with every change
 that gets pushed (the last number for a fix, the middle one for a feature).
 
+## 1.6.1 — 2026-09-28
+
+- The fix for Mac Safari going silent after sleep now lives in one file,
+  `js/wake.js`, shared with the guitar demo, so the two cannot drift apart.
+  Nothing changes in how the app sounds.
+
 ## 1.6.0 — 2026-09-28 — Guitar backing demonstration
 
 - A separate page, `/guitar/`, plays The Kesh (setting 1 from thesession.org)
@@ -96,6 +102,14 @@ that gets pushed (the last number for a fix, the middle one for a feature).
 ## Guitar demo
 
 The page at `/guitar/` has its own version number, shown next to its title.
+
+### Guitar demo 1.3.2 — 2026-09-28
+
+- Fixed: in Safari on a Mac, after the Mac slept, the demo could go silent
+  while looking as if it played — the problem the app had in 1.3.3. The demo
+  now wakes the sound the same way, from the same shared code. It already
+  asked the audio to resume on each Play, and stayed silent, so it is the
+  moment of silence played like a video that does the waking.
 
 ### Guitar demo 1.3.1 — 2026-09-28
 

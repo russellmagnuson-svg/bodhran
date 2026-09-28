@@ -13,7 +13,7 @@
    * with every change to the demo that gets pushed: the last number for a
    * fix, the middle one for something new. Add it to CHANGELOG.md and the
    * release notes in the same change (a check makes sure). */
-  var VERSION = '1.3.1';
+  var VERSION = '1.3.2';
 
   var $ = function (id) { return document.getElementById(id); };
   var K = window.KESH, G = window.GTR, T = window.TRAD;
@@ -91,14 +91,15 @@
     return buf;
   }
 
+  /* Called from the press of Play. Waking the sound is shared with the app
+   * (js/wake.js): this page used to only resume the audio, and went silent in
+   * Safari after the Mac slept, as the app once did. */
   function ensureAudio() {
-    if (ctx) { ctx.resume().catch(function () {}); return; }
-    if (navigator.audioSession && navigator.maxTouchPoints > 0) {
-      try { navigator.audioSession.type = 'playback'; } catch (e) {}
-    }
+    if (ctx) { T.startSound(ctx); return; }
+    T.prepareAudio();
     var AC = window.AudioContext || window.webkitAudioContext;
     ctx = new AC({ latencyHint: 'interactive' });
-    ctx.resume().catch(function () {});
+    T.startSound(ctx);
     var out = T.makeOutput(ctx);          // the app's limiter: nothing clips
 
     run = ctx.createGain();               // Stop fades this; Play brings it back

@@ -1630,6 +1630,47 @@
       }).finally(function () { frame.remove(); });
     });
 
+  check('Guitar demo', 'It wakes a silent Safari tab the way the app does',
+    'The demo only resumed its audio, and went silent in Mac Safari after sleep as the app once did. Both now share js/wake.js: resume on every press, and in Mac Safari a moment of silence played the way a video plays.',
+    function () {
+      function run(ua, touch) {
+        var first = 'Object.defineProperty(Navigator.prototype, "userAgent", { configurable: true, get: function () { return ' +
+          JSON.stringify(ua) + '; } });' +
+          'Object.defineProperty(Navigator.prototype, "maxTouchPoints", { configurable: true, get: function () { return ' + touch + '; } });' +
+          'window.__plays = 0; HTMLMediaElement.prototype.play = function () { window.__plays++; return Promise.resolve(); };' +
+          'window.__resumes = 0; Object.defineProperty(BaseAudioContext.prototype, "state", { configurable: true, get: function () { return "running"; } });' +
+          'var real = AudioContext.prototype.resume; AudioContext.prototype.resume = function () { window.__resumes++; return real.call(this); };';
+        var frame = document.createElement('iframe');
+        frame.style.cssText = 'position:absolute;left:-10000px;top:0;border:0;width:375px;height:812px';
+        document.body.appendChild(frame);
+        return text('../guitar/').then(function (html) {
+          return new Promise(function (resolve, reject) {
+            var t = setTimeout(function () { reject(new Error('the demo page did not load')); }, 10000);
+            frame.onload = function () { clearTimeout(t); setTimeout(resolve, 200); };
+            frame.srcdoc = html.replace('<head>', '<head><base href="' + new URL('../guitar/', location.href).href +
+              '"><script>' + first + '<\/script>');
+          });
+        }).then(function () {
+          var win = frame.contentWindow, play = frame.contentDocument.getElementById('play');
+          play.click();                      // start
+          var a = { plays: win.__plays, resumes: win.__resumes };
+          play.click(); play.click();        // stop, start again
+          a.plays2 = win.__plays; a.resumes2 = win.__resumes;
+          play.click();
+          return a;
+        }).finally(function () { frame.remove(); });
+      }
+      var SAFARI = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Safari/605.1.15';
+      var CHROME = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36';
+      return run(SAFARI, 0).then(function (mac) {
+        return run(CHROME, 0).then(function (chrome) {
+          expect(mac.resumes >= 1 && mac.resumes2 > mac.resumes, 'Play did not ask the sound to start each time: ' + JSON.stringify(mac));
+          expect(mac.plays === 1 && mac.plays2 === 2, 'Mac Safari was not nudged on each Play: ' + JSON.stringify(mac));
+          expect(chrome.plays === 0, 'Chrome was nudged too');
+        });
+      });
+    });
+
   check('Guitar demo', 'It shows its own version, and the notes cover it',
     'The quickest way to tell whether a phone has the latest demo. Bump the demo’s version? Add it to CHANGELOG.md and the release notes in the same change.',
     function () {

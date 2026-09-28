@@ -27,7 +27,7 @@ var TIMEOUT = 2500;
 var APP_FILES = [
   './', './index.html', './css/app.css',
   './js/patterns.js', './js/bodhran.js', './js/drone.js',
-  './js/midiout.js', './js/transport.js', './js/app.js'
+  './js/midiout.js', './js/transport.js', './js/wake.js', './js/app.js'
 ];
 // Kept for offline too, but a version apart they cannot break anything.
 var EXTRAS = [

@@ -93,7 +93,8 @@ against the real code:
   a shape and the drone rings through; the guitar is in tune; the page builds;
   each sound's volume is heard straight away and remembered; DADGAD is
   D A D G A D with the top D open in every shape; the tuning switch changes the
-  shapes and is remembered; the bodhrán is not buried under the guitar; it shows its own version and the notes cover it
+  shapes and is remembered; the bodhrán is not buried under the guitar; it
+  wakes a silent Safari tab the way the app does; it shows its own version and the notes cover it
 - **Release notes** (under The app) — `CHANGELOG.md` and `release-notes/` both
   have an entry for the current version, so bumping the version means adding
   the notes in the same change
@@ -380,6 +381,7 @@ patterns sound the way you want.
 | `js/transport.js` | the clock and pattern selection |
 | `js/drone.js`     | root-and-fifth drone pad |
 | `js/midiout.js`   | optional Web MIDI output |
+| `js/wake.js`      | getting the browser to make sound: the iPhone silent switch, and waking Mac Safari; shared with the guitar demo |
 | `js/app.js`       | UI wiring, and the version number at the top |
 | `sw.js`           | offline caching |
 | `_headers`        | Cloudflare cache rules |
