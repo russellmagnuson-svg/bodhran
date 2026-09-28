@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#141110">
+<meta name="description" content="A rhythmic guitar backing for The Kesh, an Irish jig: chords, shapes and strum, played live.">
+<title>The Kesh — guitar backing</title>
+<link rel="icon" href="../icons/icon-192.png" sizes="192x192" type="image/png">
+<link rel="apple-touch-icon" href="../icons/apple-touch-icon.png">
+<link rel="stylesheet" href="../css/app.css">
+<link rel="stylesheet" href="guitar.css">
+</head>
+<body>
+
+<main class="app">
+
+  <header class="head">
+    <div class="brand">
+      <p class="eyebrow">Guitar backing · a demonstration</p>
+      <h1>The Kesh <span class="version">jig · 6/8 · G major</span></h1>
+      <p class="sub">A rhythmic guitar accompaniment for one tune, played live in the
+      browser. Turn the tune, the guitar and the bodhrán on and off to hear how
+      the backing sits under the melody.</p>
+    </div>
+  </header>
+
+  <!-- Transport -->
+  <section class="panel transport">
+    <div class="play-col">
+      <button id="play" class="play" type="button" aria-label="Start or stop" aria-pressed="false">
+        <span class="play-icon" aria-hidden="true"></span>
+        <span class="play-label">Play</span>
+      </button>
+    </div>
+    <div class="tempo">
+      <div class="tempo-readout">
+        <input id="bpm-num" type="number" min="60" max="130" step="1" value="100"
+               aria-label="Tempo in beats per minute">
+        <div class="tempo-unit">
+          <span>bpm</span>
+          <small>per dotted crotchet</small>
+        </div>
+      </div>
+      <input id="bpm" type="range" min="60" max="130" step="1" value="100" aria-label="Tempo slider">
+      <div class="row tight">
+        <label class="inline">Play it
+          <select id="times">
+            <option value="1">once through</option>
+            <option value="2" selected>2 times</option>
+            <option value="3">3 times</option>
+            <option value="0">until I stop</option>
+          </select>
+        </label>
+      </div>
+    </div>
+  </section>
+
+  <!-- What you hear -->
+  <section class="panel">
+    <h2>What you hear</h2>
+    <div class="toggles">
+      <label class="toggle"><input id="on-guitar" type="checkbox" checked> Guitar</label>
+      <label class="toggle"><input id="on-tune" type="checkbox" checked> The tune <small>(flute)</small></label>
+      <label class="toggle"><input id="on-drum" type="checkbox"> Bodhrán</label>
+    </div>
+    <h3 class="sub-h">Strum</h3>
+    <div id="strums" class="modes" role="radiogroup" aria-label="Strum">
+      <button class="mode" type="button" role="radio" data-strum="lilt" aria-checked="true">Lilt</button>
+      <button class="mode" type="button" role="radio" data-strum="drive" aria-checked="false">Driving</button>
+    </div>
+    <p id="strum-desc" class="blurb"></p>
+  </section>
+
+  <!-- Now -->
+  <section class="panel">
+    <h2>Now <span id="where" class="tag">—</span></h2>
+    <div class="now">
+      <div class="now-shape">
+        <div id="now-diagram" class="diagram big"></div>
+      </div>
+      <div class="now-text">
+        <div class="now-label">Chord</div>
+        <div id="now-chord" class="now-chord">G</div>
+        <div class="now-label">Next</div>
+        <div id="next-chord" class="next-chord">D</div>
+        <div id="strum-dots" class="strum-dots" aria-hidden="true"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- The chart -->
+  <section class="panel">
+    <h2>Chords <span class="tag muted">each part played twice: AABB</span></h2>
+    <div id="chart" class="chart"></div>
+    <p class="blurb">The small print in each bar is the melody in ABC notation.</p>
+  </section>
+
+  <!-- Shapes -->
+  <section class="panel">
+    <h2>The shapes</h2>
+    <div id="shapes" class="shapes"></div>
+    <p class="blurb">Standard tuning. G, Cadd9 and Em7 keep the top two strings at the
+    third fret, so a D and a G ring through every change: the open, droning sound
+    of a lot of Irish guitar. D lets them go for its F sharp.</p>
+  </section>
+
+  <footer class="foot">
+    <p>Melody: <a href="https://thesession.org/tunes/55">The Kesh</a>, traditional,
+    setting 1 from thesession.org, note for note. Chords chosen for this demonstration.
+    Everything you hear is synthesised as it plays; there are no recordings.</p>
+    <p><a href="../">The bodhrán app</a> · <b>Space</b> play/stop</p>
+  </footer>
+
+</main>
+
+<script src="../js/bodhran.js"></script>
+<script src="kesh.js"></script>
+<script src="guitar.js"></script>
+<script src="demo.js"></script>
+</body>
+</html>

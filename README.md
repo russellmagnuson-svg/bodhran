@@ -89,6 +89,8 @@ against the real code:
   iPhone) the GarageBand panel is one line
 - **Offline copy** — its file list covers everything the page loads, and every
   file on it exists
+- **Guitar demo** — every bar of The Kesh is a full 6/8 bar; every chord has
+  a shape and the drone rings through; the guitar is in tune; the page builds
 - **Release notes** (under The app) — `CHANGELOG.md` and `release-notes/` both
   have an entry for the current version, so bumping the version means adding
   the notes in the same change
@@ -317,6 +319,25 @@ npx wrangler pages deploy . --project-name=bodhran
   tags that reference them in `index.html` removes all of that cleanly if you
   would rather not have it.
 
+## Guitar backing demonstration
+
+`/guitar/` is a page of its own, apart from the app: The Kesh (setting 1 from
+thesession.org, note for note) with a synthesised guitar backing, and the
+tune on a simple flute and the app's bodhrán to play against. It reuses the
+app's styles, its bodhrán and its output limiter.
+
+- `guitar/kesh.js` — the tune as data: the ABC, the chords bar by bar, the
+  guitar shapes, and a small ABC reader
+- `guitar/guitar.js` — the guitar: each string a Karplus–Strong plucked
+  string, rendered once and pitch-corrected to within a cent, strummed down
+  from the bass or up from the treble a few milliseconds apart
+- `guitar/demo.js` — the clock, the flute, the chart and the shape diagrams
+
+Chords: A part G | D | C | D | G | D | C | D G, B part G | C D | G | D |
+G | C G | Em D | G, in drone shapes (G, Cadd9, Em7 hold D and G on the top
+two strings; D takes F sharp). The checks cover the tune's bars, the shapes,
+the guitar's tuning and the page itself.
+
 ## Roadmap
 
 **Chords.** The drone (root + fifth) is in place as the groundwork. Real chordal
@@ -354,4 +375,5 @@ patterns sound the way you want.
 | `serve.py`        | local server that turns caching off, for editing |
 | `tests/`          | the checks page: open it and press Run |
 | `CHANGELOG.md`    | what changed in each version |
+| `guitar/`         | a separate demonstration: The Kesh with a guitar backing, at `/guitar/` |
 | `release-notes/`  | the same, as a page to share: `/release-notes/` on the site |

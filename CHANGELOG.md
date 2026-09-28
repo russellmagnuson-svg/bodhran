@@ -4,6 +4,15 @@ What changed in each version of Bodhrán, newest first. The version shows next
 to the title in the app; bump it at the top of `js/app.js` with every change
 that gets pushed (the last number for a fix, the middle one for a feature).
 
+## 1.6.0 — 2026-09-28 — Guitar backing demonstration
+
+- A separate page, `/guitar/`, plays The Kesh (setting 1 from thesession.org)
+  with a synthesised guitar backing. It isn't part of the app.
+- Turn the guitar, the tune (a flute) and the bodhrán on and off; choose a
+  lilting or a driving strum; set the tempo and how many times through.
+- The chord chart lights the bar being played, and each chord's shape is
+  drawn, in drone voicings that keep D and G ringing on the top strings.
+
 ## 1.5.2 — 2026-09-28
 
 - Release notes page at `/release-notes/`, linked from **What's new** in the
@@ -85,5 +94,5 @@ that gets pushed (the last number for a fix, the middle one for a feature).
   and a pinned Play/Stop bar when scrolled down.
 
 Behind the scenes, the automated checks at `/tests/` grew from 36 at 1.1.0 to
-67 at 1.5.2, and each new one was shown to catch the fault it guards against.
+71 at 1.6.0, and each new one was shown to catch the fault it guards against.
 Earlier history is in the git log.

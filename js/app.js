@@ -8,7 +8,7 @@
    * Bump it with every change that gets pushed: the last number for a fix,
    * the middle one for a new feature. It is also the quickest way to tell
    * whether a phone is running the latest deploy or an older copy. */
-  var VERSION = '1.5.2';
+  var VERSION = '1.6.0';
   TRAD.VERSION = VERSION;
 
   TRAD.validatePatterns();

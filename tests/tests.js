@@ -1398,6 +1398,93 @@
     });
 
   /* ================================================================
+   * Guitar demo (/guitar/): The Kesh with a guitar backing
+   * ================================================================ */
+
+  check('Guitar demo', 'The Kesh: every bar is a full 6/8 bar',
+    'The melody is setting 1 from thesession.org. A bar a quaver short or long would put the tune out against the backing.',
+    function () {
+      var K = window.KESH, bad = [];
+      ['A', 'B'].forEach(function (p) {
+        expect(K.parts[p].length === 8, 'part ' + p + ' has ' + K.parts[p].length + ' bars');
+        K.parts[p].forEach(function (b) {
+          var q = b.notes.reduce(function (a, n) { return a + n.len; }, 0);
+          if (q !== 6) bad.push(p + (b.index + 1) + ' "' + b.abc + '" is ' + q + ' quavers');
+        });
+      });
+      expect(bad.length === 0, bad.join('\n'));
+      expect(K.form().length === 32, 'one time through is ' + K.form().length + ' bars, not 32 (AABB)');
+      var names = K.parts.A[7].notes.map(function (n) { return n.midi; });
+      expect(names.join() === [71, 69, 66, 67].join(), 'bar A8 “BAF G3” reads as ' + names.join() + ' (the F must be sharp)');
+      expect(K.parts.B[4].notes[4].midi === 73, 'the ^c in B5 is not a C sharp');
+    });
+
+  check('Guitar demo', 'Every chord has a shape, and the drone rings through',
+    'G, Cadd9 and Em7 all hold D and G on the top two strings, the open droning sound of Irish guitar; D lets them go for its F sharp.',
+    function () {
+      var K = window.KESH, missing = [];
+      ['A', 'B'].forEach(function (p) {
+        K.chords[p].forEach(function (c, i) {
+          c.split(' ').forEach(function (x) { if (!K.shapes[x]) missing.push(p + (i + 1) + ': ' + x); });
+        });
+      });
+      expect(missing.length === 0, 'no shape for ' + missing.join(', '));
+      var drone = ['G', 'C', 'Em'].filter(function (c) { var v = K.voicing(c); return v[4] !== 62 || v[5] !== 67; });
+      expect(drone.length === 0, 'not holding D and G on top: ' + drone.join(', '));
+      expect(K.voicing('D')[5] === 66, 'the D shape has no F sharp on top');
+    });
+
+  check('Guitar demo', 'The guitar is in tune',
+    'A plucked-string model sounds a little flat unless its loop is corrected. Strings more than a few cents apart beat against each other in a chord.',
+    function () {
+      var SRG = 48000, notes = [40, 47, 55, 62, 66], out = [];
+      var chain = Promise.resolve();
+      notes.forEach(function (m) {
+        chain = chain.then(function () {
+          var oc = new OfflineAudioContext(1, SRG * 1.4, SRG);
+          var g = new window.GTR.Guitar(oc, oc.destination);
+          g.prepare([m]);
+          var shape = [null, null, null, null, null, null]; shape[3] = m;
+          g.strum(shape, 0.01, 'D', 1);
+          return oc.startRendering().then(function (buf) {
+            var d = buf.getChannelData(0), f0 = window.GTR.hz(m), best = 0, bf = 0;
+            for (var f = f0 * 0.98; f <= f0 * 1.02; f += f0 / 4000) {
+              var s = Math.floor(0.2 * SRG), e = Math.floor(1.2 * SRG), k = 2 * Math.cos(2 * Math.PI * f / SRG), q1 = 0, q2 = 0;
+              for (var i = s; i < e; i++) { var q0 = k * q1 - q2 + d[i]; q2 = q1; q1 = q0; }
+              var mag = q1 * q1 + q2 * q2 - k * q1 * q2;
+              if (mag > best) { best = mag; bf = f; }
+            }
+            out.push({ m: m, cents: 1200 * Math.log2(bf / f0) });
+          });
+        });
+      });
+      return chain.then(function () {
+        var off = out.filter(function (o) { return Math.abs(o.cents) > 3; });
+        expect(off.length === 0, off.map(function (o) { return 'MIDI ' + o.m + ' is ' + round(o.cents) + ' cents out'; }).join(', '));
+      });
+    });
+
+  check('Guitar demo', 'The page builds its chart and shapes',
+    'The demo lives at /guitar/, apart from the app. It should load on its own and lay out all 16 bars and the four shapes.',
+    function () {
+      var frame = document.createElement('iframe');
+      frame.src = '../guitar/';
+      frame.style.cssText = 'position:absolute;left:-10000px;top:0;border:0;width:375px;height:812px';
+      document.body.appendChild(frame);
+      return new Promise(function (resolve, reject) {
+        var t = setTimeout(function () { reject(new Error('the demo page did not load')); }, 10000);
+        frame.onload = function () { clearTimeout(t); setTimeout(resolve, 200); };
+      }).then(function () {
+        var doc = frame.contentDocument, win = frame.contentWindow;
+        var bars = doc.querySelectorAll('#chart .bar').length, shapes = doc.querySelectorAll('#shapes svg').length;
+        expect(bars === 16, bars + ' bars in the chart, not 16');
+        expect(shapes === 4, shapes + ' chord shapes drawn, not 4');
+        expect(win.KESH_DEMO && win.KESH_DEMO.FORM.length === 32, 'the demo does not play the tune AABB');
+        expect(doc.documentElement.scrollWidth <= win.innerWidth, 'the demo scrolls sideways on a phone');
+      }).finally(function () { frame.remove(); });
+    });
+
+  /* ================================================================
    * Runner
    * ================================================================ */
 
