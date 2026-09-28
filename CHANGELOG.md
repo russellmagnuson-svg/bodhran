@@ -113,6 +113,18 @@ that gets pushed (the last number for a fix, the middle one for a feature).
 
 The page at `/guitar/` has its own version number, shown next to its title.
 
+### Guitar demo 1.5.0 — 2026-09-28
+
+- Bass runs rebuilt as a thumb-plucked low string. The earlier run notes
+  started from a burst of random noise, which gave them jagged overtones
+  that jumped about from one to the next, part of why they sounded
+  synthesised. Now each starts from the bend a thumb puts in the string,
+  heard as its slope at the bridge, so its overtones step down in order; the
+  string vibrates two ways at once, a shade apart, for a natural shimmer and a
+  long tail; its pitch settles as a plucked string's does; and the guitar
+  body's own resonances ring with it. Every run note is within a tenth of a
+  cent of true pitch, and the runs sit a few dB above the strums.
+
 ### Guitar demo 1.4.2 — 2026-09-28
 
 - Bass runs heavier and darker. They still read bright and a bit weak for a

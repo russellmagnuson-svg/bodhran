@@ -97,7 +97,8 @@ against the real code:
   shapes and is remembered; the bodhrán is not buried under the guitar; it
   wakes a silent Safari tab the way the app does; hidden, it plans ahead and
   Stop drops the lot; bass runs walk up into the next chord, and can be turned
-  off; a picked bass note settles like a guitar string, not a piano; it shows its own version and the notes cover it
+  off; a picked bass note settles like a guitar string, not a piano, and
+  starts from a thumb pluck, not a burst of noise; it shows its own version and the notes cover it
 - **Release notes** (under The app) — `CHANGELOG.md` and `release-notes/` both
   have an entry for the current version, so bumping the version means adding
   the notes in the same change
@@ -342,7 +343,11 @@ app's styles, its bodhrán and its output limiter.
   guitar shapes, and a small ABC reader
 - `guitar/guitar.js` — the guitar: each string a Karplus–Strong plucked
   string, rendered once and pitch-corrected to within a cent, strummed down
-  from the bass or up from the treble a few milliseconds apart
+  from the bass or up from the treble a few milliseconds apart. The bass-run
+  notes are a thumb-plucked string of their own (`pluckThumb`): started from
+  the slope of a rounded bend, two slightly detuned vibrations, a lowpass and
+  an exactly tuned fractional delay inside each loop, a pitch settle, and
+  the body's resonances by convolution
 - `guitar/demo.js` — the clock, the flute, the chart and the shape diagrams
 
 The demo has its own version number, at the top of `guitar/demo.js` and shown

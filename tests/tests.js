@@ -1833,6 +1833,37 @@
       });
     });
 
+  check('Guitar demo', 'A bass run note starts from a thumb pluck, not a burst of noise',
+    'Started from random noise, a lone bass note had jagged overtones that jumped about (the low D’s 2nd louder than its fundamental) and every rendering differed: part of why it sounded synthesised. A pluck’s overtones step down in order, and every pluck of a string sounds alike.',
+    function () {
+      var SRG = 48000, G = window.GTR, bad = [];
+      function goertzel(d, f, a, b) {
+        var s = Math.floor(a * SRG), e = Math.floor(b * SRG), k = 2 * Math.cos(2 * Math.PI * f / SRG), q1 = 0, q2 = 0;
+        for (var i = s; i < e; i++) { var q0 = k * q1 - q2 + d[i]; q2 = q1; q1 = q0; }
+        return Math.sqrt(Math.max(0, q1 * q1 + q2 * q2 - k * q1 * q2));
+      }
+      var chain = Promise.resolve();
+      [38, 45].forEach(function (m) {
+        chain = chain.then(function () {
+          var o = new OfflineAudioContext(1, SRG, SRG), g = new G.Guitar(o, o.destination);
+          g.preparePicks ? g.preparePicks([m]) : g.prepare([m]);
+          var list = (g.picks && g.picks[m]) || g.notes[m], f0 = G.hz(m);
+          var levels = list.map(function (p) {
+            var d = p.buffer.getChannelData(0), out = [];
+            for (var k = 1; k <= 6; k++) out.push(20 * Math.log10(goertzel(d, f0 * k, 0.03, 0.23) + 1e-12));
+            return out;
+          });
+          var a = levels[0], b = levels[1] || levels[0];
+          if (!(a[0] > a[1] && a[1] > a[2])) bad.push('MIDI ' + m + ': the first three overtones do not step down: ' + a.slice(0, 3).map(function (x) { return round(x - a[0]); }).join(', '));
+          var diff = 0;
+          for (var k = 0; k < 6; k++) diff += Math.abs((a[k] - a[0]) - (b[k] - b[0]));
+          diff /= 6;
+          if (diff > 1.5) bad.push('MIDI ' + m + ': its two renderings differ by ' + round(diff) + ' dB an overtone');
+        });
+      });
+      return chain.then(function () { expect(bad.length === 0, bad.join('\n')); });
+    });
+
   check('Guitar demo', 'Bass runs can be turned off, and the choice is remembered',
     'On to begin with, and heard in bar 1; Off means no run anywhere, the chart marks gone, and the same next visit.',
     function () {
