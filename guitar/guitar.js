@@ -19,7 +19,7 @@
   function hz(midi) { return 440 * Math.pow(2, (midi - 69) / 12); }
 
   /* One plucked string. Returns the samples and the pitch they sound at. */
-  function pluck(sr, f, bright, seed) {
+  function pluck(sr, f, bright, seed, pos) {
     var N = Math.max(2, Math.floor(sr / f - 0.5));
     var len = Math.floor(sr * SECONDS), out = new Float32Array(len);
     // Lower strings ring longer, as they do; on a dreadnought the bass rings on.
@@ -36,6 +36,13 @@
     }
     mean /= fill;
     for (i = 0; i < fill; i++) out[i] -= mean;
+    // Where along the string it is plucked: near the bridge, a fraction `pos`
+    // of the way, every harmonic that has a node there goes missing. That
+    // gap pattern is much of what makes a plucked string sound like a guitar.
+    if (pos) {
+      var M = Math.max(1, Math.round(pos * N)), ex = out.slice(0, fill);
+      for (i = M; i < fill; i++) out[i] = ex[i] - ex[i - M];
+    }
     for (i = fill; i < len; i++) {
       out[i] = rho * 0.5 * (out[i - N] + out[i - N - 1]);
     }
@@ -50,6 +57,7 @@
   function Guitar(ctx, destination) {
     this.ctx = ctx;
     this.notes = {};         // midi -> [{ buffer, rate }]
+    this.picks = {};         // midi -> renderings for single picked notes (bass runs)
     this.voices = [];        // per string: { gain, src } of what is ringing
     this.queued = [];        // every string note handed to the audio but not yet sounding
     this.shape = null;       // the notes of the shape currently held
@@ -76,6 +84,13 @@
     scoop.connect(air); air.connect(lp);
     lp.connect(this.level); this.level.connect(destination);
     this.input = input;
+
+    // Picked bass notes get more bottom than the strums: a low shelf, into
+    // the same body.
+    this.pickBus = ctx.createGain();
+    var fat = ctx.createBiquadFilter(); fat.type = 'lowshelf';
+    fat.frequency.value = 160; fat.gain.value = 5;
+    this.pickBus.connect(fat); fat.connect(input);
   }
 
   /* Render every note the given shapes use. Done once, on first play. */
@@ -94,6 +109,24 @@
         list.push({ buffer: buf, rate: f / p.sounds });
       }
       self.notes[m] = list;
+    });
+  };
+
+  /* Render single picked notes: a firm, bright pick near the bridge. (The
+   * strummed notes use a soft pick, which inside a chord is warmth; alone,
+   * with nothing around it, it sounded like a piano.) */
+  Guitar.prototype.preparePicks = function (midis) {
+    var ctx = this.ctx, self = this;
+    midis.forEach(function (m) {
+      if (self.picks[m]) return;
+      var f = hz(m), list = [];
+      for (var v = 0; v < VARIANTS; v++) {
+        var p = pluck(ctx.sampleRate, f, 0.78 + 0.08 * v, 3 + m * 131 + v * 7919, 0.14);
+        var buf = ctx.createBuffer(1, p.data.length, ctx.sampleRate);
+        buf.getChannelData(0).set(p.data);
+        list.push({ buffer: buf, rate: f / p.sounds });
+      }
+      self.picks[m] = list;
     });
   };
 
@@ -165,9 +198,47 @@
   };
 
   /* One string picked on its own, as in a bass run: it cuts that string's
-   * last note, and leaves the rest of the chord ringing. */
+   * last note, and leaves the rest of the chord ringing.
+   *
+   * A picked guitar string starts bright and loses its top within a fraction
+   * of a second, settling into a warm, round note; the string model alone
+   * kept its overtones as strong half a second in as at the pick (measured:
+   * no change at all), which is how a piano or a struck bar behaves. So a
+   * picked note goes through a lowpass that closes as it rings, and the top
+   * of the guitar gives a knock as the pick lands. */
   Guitar.prototype.pick = function (string, midi, t, vel) {
-    this._string(string, midi, t, vel * 0.36);
+    var ctx = this.ctx, list = this.picks[midi] || this.notes[midi];
+    if (!list) return;
+    this._damp(string, t, true);
+    var p = list[(Math.random() * list.length) | 0];
+    var src = ctx.createBufferSource();
+    src.buffer = p.buffer;
+    src.playbackRate.value = p.rate;
+    var tone = ctx.createBiquadFilter();
+    tone.type = 'lowpass'; tone.Q.value = 0.6;
+    // Relative to the note, so the low D darkens as much as the A above it:
+    // from about the 36th harmonic at the pick to below the 4th as it rings.
+    var f0 = hz(midi);
+    tone.frequency.setValueAtTime(Math.min(6000, f0 * 36), t);
+    tone.frequency.setTargetAtTime(Math.max(240, f0 * 3.5), t + 0.008, 0.11);
+    var g = ctx.createGain();
+    var level = vel * 0.6;
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(level, t + 0.002);
+    src.connect(tone); tone.connect(g); g.connect(this.pickBus);
+    src.start(t);
+    // The knock of the top: a short thump at the body's own low note.
+    var knock = ctx.createOscillator(), kg = ctx.createGain();
+    knock.frequency.value = 98;
+    kg.gain.setValueAtTime(0, t);
+    kg.gain.linearRampToValueAtTime(level * 0.35, t + 0.003);
+    kg.gain.setTargetAtTime(0, t + 0.004, 0.025);
+    knock.connect(kg); kg.connect(g);
+    knock.start(t); knock.stop(t + 0.25);
+    this.voices[string] = { gain: g, src: src };
+    var now = ctx.currentTime;
+    this.queued = this.queued.filter(function (q) { return q.t > now; });
+    this.queued.push({ t: t, gain: g, src: src });
   };
 
   /* Stop everything ringing, quickly, from time t. */

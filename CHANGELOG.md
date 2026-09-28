@@ -113,6 +113,16 @@ that gets pushed (the last number for a fix, the middle one for a feature).
 
 The page at `/guitar/` has its own version number, shown next to its title.
 
+### Guitar demo 1.4.1 — 2026-09-28
+
+- The bass runs sounded like a piano. Picked alone, the soft strum voice kept
+  its overtones as strong half a second in as at the pick (measured: no
+  change at all), which is how a piano behaves; a guitar string starts bright
+  and settles warm. The run notes now have a voice of their own: a firm,
+  bright pick near the bridge that darkens as the note rings, a knock from
+  the guitar's top, more low end, and more level (from 5 dB under the strums
+  around them to about level).
+
 ### Guitar demo 1.4.0 — 2026-09-28
 
 - Bass runs between chords, with a switch to turn them off (on to begin

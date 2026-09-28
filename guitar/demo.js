@@ -13,7 +13,7 @@
    * with every change to the demo that gets pushed: the last number for a
    * fix, the middle one for something new. Add it to CHANGELOG.md and the
    * release notes in the same change (a check makes sure). */
-  var VERSION = '1.4.0';
+  var VERSION = '1.4.1';
 
   var $ = function (id) { return document.getElementById(id); };
   var K = window.KESH, G = window.GTR, T = window.TRAD;
@@ -126,6 +126,11 @@
       });
     });
     guitar.prepare(Object.keys(all).map(Number));
+    var runNotes = {};
+    Object.keys(K.runs).forEach(function (tn) {
+      Object.keys(K.runs[tn]).forEach(function (c) { K.runs[tn][c].forEach(function (m) { runNotes[m] = 1; }); });
+    });
+    guitar.preparePicks(Object.keys(runNotes).map(Number));
 
     var lift = ctx.createBiquadFilter();
     lift.type = 'peaking';

@@ -97,7 +97,7 @@ against the real code:
   shapes and is remembered; the bodhrán is not buried under the guitar; it
   wakes a silent Safari tab the way the app does; hidden, it plans ahead and
   Stop drops the lot; bass runs walk up into the next chord, and can be turned
-  off; it shows its own version and the notes cover it
+  off; a picked bass note settles like a guitar string, not a piano; it shows its own version and the notes cover it
 - **Release notes** (under The app) — `CHANGELOG.md` and `release-notes/` both
   have an entry for the current version, so bumping the version means adding
   the notes in the same change
