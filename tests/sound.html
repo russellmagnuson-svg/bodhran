@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sound test</title>
+<style>
+  :root { --bg: #141110; --panel: #1e1a17; --line: #3a3029; --text: #f0e8df; --muted: #a2938a; --amber: #e0a04a; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.5 -apple-system, ui-sans-serif, sans-serif; }
+  main { max-width: 620px; margin: 0 auto; padding: 24px 16px 48px; }
+  h1 { font-size: 22px; color: #c9a473; margin: 0 0 6px; }
+  p { color: var(--muted); margin: 6px 0 16px; }
+  .test { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; margin-bottom: 10px; }
+  button { background: var(--amber); color: #1a1208; border: 0; border-radius: 8px; padding: 9px 16px; font: inherit; font-weight: 600; cursor: pointer; }
+  .what { color: var(--muted); font-size: 13px; margin-top: 6px; }
+  .state { font-family: ui-monospace, Menlo, monospace; font-size: 12.5px; color: var(--text); margin-top: 6px; white-space: pre-wrap; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Sound test</h1>
+  <p>Press each button in turn. Each plays a one-second beep, about as loud as a
+  quiet drum stroke. Note which ones you hear.</p>
+
+  <div class="test">
+    <button id="a">A — the drum’s way</button>
+    <div class="what">Web Audio, which is how the drum makes its sound.</div>
+    <div class="state" id="a-state"></div>
+  </div>
+
+  <div class="test">
+    <button id="b">B — a plain audio file</button>
+    <div class="what">An ordinary audio element, the way a video or song plays.</div>
+    <div class="state" id="b-state"></div>
+  </div>
+
+  <div class="test">
+    <button id="c">C — the drum’s way, through an audio element</button>
+    <div class="what">Web Audio handed over to an audio element to play. If this
+    works when A does not, the drum can be made to play this way.</div>
+    <div class="state" id="c-state"></div>
+  </div>
+  <div class="test">
+    <button id="d">D — the drum, with your settings</button>
+    <div class="what">The app’s real drum and output chain, with the settings this
+    browser has saved for the app. Plays a bar and measures what comes out.</div>
+    <div class="state" id="d-state"></div>
+  </div>
+
+  <div class="test">
+    <button id="e">E — the drum, with fresh settings</button>
+    <div class="what">The same, with the settings a first visit gets.</div>
+    <div class="state" id="e-state"></div>
+  </div>
+
+  <div class="test">
+    <div class="what">Settings this browser has saved for the app, at this address:</div>
+    <div class="state" id="saved"></div>
+  </div>
+</main>
+
+<script src="../js/patterns.js"></script>
+<script src="../js/bodhran.js"></script>
+<script>
+(function () {
+  'use strict';
+  var AC = window.AudioContext || window.webkitAudioContext;
+  function $(id) { return document.getElementById(id); }
+
+  function describe(ctx) {
+    return 'state ' + ctx.state + ' · ' + ctx.sampleRate + ' Hz' +
+      (ctx.baseLatency != null ? ' · base latency ' + Math.round(ctx.baseLatency * 1000) + ' ms' : '') +
+      (ctx.outputLatency ? ' · output latency ' + Math.round(ctx.outputLatency * 1000) + ' ms' : '');
+  }
+
+  /* Watch the audio clock for a second: if it moves, the page is making sound
+   * as far as the browser knows. */
+  function watch(ctx, el, prefix) {
+    var t0 = ctx.currentTime;
+    setTimeout(function () {
+      var moved = ctx.currentTime - t0;
+      el.textContent = prefix + describe(ctx) + '\nclock moved ' + moved.toFixed(2) + ' s in 1 s' +
+        (moved > 0.5 ? ' (running)' : ' (stuck)');
+    }, 1000);
+  }
+
+  function beep(ctx, dest) {
+    var o = ctx.createOscillator(), g = ctx.createGain(), t = ctx.currentTime + 0.05;
+    o.frequency.value = 440;
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(0.2, t + 0.02);
+    g.gain.setValueAtTime(0.2, t + 0.9);
+    g.gain.linearRampToValueAtTime(0, t + 1);
+    o.connect(g); g.connect(dest);
+    o.start(t); o.stop(t + 1.05);
+  }
+
+  $('a').addEventListener('click', function () {
+    var ctx = new AC({ latencyHint: 'interactive' });
+    ctx.resume().catch(function () {});
+    beep(ctx, ctx.destination);
+    watch(ctx, $('a-state'), '');
+    setTimeout(function () { ctx.close(); }, 1600);
+  });
+
+  /* A one-second 440 Hz beep as a WAV file made on the spot. */
+  function wavBeep() {
+    var sr = 44100, n = sr, buf = new ArrayBuffer(44 + n * 2), v = new DataView(buf);
+    function str(o, s) { for (var i = 0; i < s.length; i++) v.setUint8(o + i, s.charCodeAt(i)); }
+    str(0, 'RIFF'); v.setUint32(4, 36 + n * 2, true); str(8, 'WAVE'); str(12, 'fmt ');
+    v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+    v.setUint32(24, sr, true); v.setUint32(28, sr * 2, true); v.setUint16(32, 2, true);
+    v.setUint16(34, 16, true); str(36, 'data'); v.setUint32(40, n * 2, true);
+    for (var i = 0; i < n; i++) {
+      var env = Math.min(1, i / 880, (n - i) / 4410);
+      v.setInt16(44 + i * 2, Math.sin(2 * Math.PI * 440 * i / sr) * 0.2 * env * 32767, true);
+    }
+    return URL.createObjectURL(new Blob([buf], { type: 'audio/wav' }));
+  }
+
+  $('b').addEventListener('click', function () {
+    var a = new Audio(wavBeep());
+    a.play().then(function () {
+      $('b-state').textContent = 'playing, as far as the browser knows';
+    }, function (e) {
+      $('b-state').textContent = 'the browser refused to play it: ' + e.name;
+    });
+  });
+
+  $('c').addEventListener('click', function () {
+    var ctx = new AC({ latencyHint: 'interactive' });
+    ctx.resume().catch(function () {});
+    if (!ctx.createMediaStreamDestination) {
+      $('c-state').textContent = 'this browser cannot hand Web Audio to an audio element';
+      return;
+    }
+    var dest = ctx.createMediaStreamDestination();
+    var a = new Audio();
+    a.srcObject = dest.stream;
+    a.play().catch(function (e) { $('c-state').textContent = 'the browser refused to play it: ' + e.name; });
+    beep(ctx, dest);
+    watch(ctx, $('c-state'), '');
+    setTimeout(function () { a.pause(); ctx.close(); }, 1600);
+  });
+
+  /* ---- the drum itself ---- */
+  var saved = {};
+  try { saved = JSON.parse(localStorage.getItem('bodhran.settings') || '{}'); } catch (e) {}
+  $('saved').textContent = JSON.stringify(saved, null, 1) || '(none)';
+
+  function drum(settings, el) {
+    var ctx = new AC({ latencyHint: 'interactive' });
+    ctx.resume().catch(function () {});
+    // The app's own output chain, with a meter between it and the speakers.
+    var tap = ctx.createAnalyser();
+    tap.fftSize = 2048;
+    tap.connect(ctx.destination);
+    var out = TRAD.makeOutput({
+      createGain: function () { return ctx.createGain(); },
+      createDynamicsCompressor: function () { return ctx.createDynamicsCompressor(); },
+      destination: tap
+    });
+    var b = new TRAD.Bodhran(ctx, out);
+    function num(k, d) { return settings[k] != null && !isNaN(+settings[k]) ? +settings[k] : d; }
+    b.setLevel(num('level', 0.9));
+    b.setRoom(num('room', 0.16));
+    b.tuning = num('tuning', 78);
+    b.tone = num('tone', 0.5);
+    var used = 'volume ' + num('level', 0.9) + ' · room ' + num('room', 0.16) +
+               ' · tuning ' + num('tuning', 78) + ' · tone ' + num('tone', 0.5);
+
+    var t0 = ctx.currentTime + 0.1, grid = 'DtdtDtdt', beat = 60 / 112;
+    for (var i = 0; i < grid.length; i++) {
+      var c = grid[i];
+      b.hit(TRAD.VOICE[c], t0 + i * beat / 2, TRAD.VELOCITY[c], 0);
+    }
+    var buf = new Float32Array(tap.fftSize), peakV = 0, nan = 0, reads = 0, clock0 = ctx.currentTime;
+    var timer = setInterval(function () {
+      tap.getFloatTimeDomainData(buf);
+      reads++;
+      for (var j = 0; j < buf.length; j++) {
+        if (buf[j] !== buf[j]) nan++; else peakV = Math.max(peakV, Math.abs(buf[j]));
+      }
+    }, 20);
+    setTimeout(function () {
+      clearInterval(timer);
+      var moved = ctx.currentTime - clock0;
+      el.textContent = used + '\n' + describe(ctx) +
+        '\nclock moved ' + moved.toFixed(2) + ' s' +
+        '\nloudest point ' + (peakV > 0 ? (20 * Math.log10(peakV)).toFixed(1) + ' dB' : 'silence') +
+        (nan ? ' · ' + nan + ' broken (NaN) samples' : '') + ' · ' + reads + ' readings';
+      ctx.close();
+    }, 2800);
+    el.textContent = 'playing…';
+  }
+
+  $('d').addEventListener('click', function () { drum(saved, $('d-state')); });
+  $('e').addEventListener('click', function () { drum({}, $('e-state')); });
+})();
+</script>
+</body>
+</html>
