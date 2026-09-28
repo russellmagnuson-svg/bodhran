@@ -204,6 +204,15 @@
       expect(bad.length === 0, 'wrong count in: ' + bad.join(', '));
     });
 
+  check('Patterns', 'Each style starts at its usual length',
+    'Waltzes usually have 16-bar parts, so AABB is 64 bars; everything else starts at 32 (two 8-bar parts, each twice). Change one on purpose? Update this list too.',
+    function () {
+      var want = { waltz: 64 };
+      var bad = TRAD.tunes.filter(function (t) { return t.tuneBars !== (want[t.id] || 32); })
+                          .map(function (t) { return t.id + ': ' + t.tuneBars; });
+      expect(bad.length === 0, bad.join(', '));
+    });
+
   check('Patterns', 'Every style goes down to 60 bpm',
     'Slow practice should be possible in every style, and each default tempo should sit inside its range.',
     function () {
@@ -1130,6 +1139,7 @@
         function set(id, v) { $(id).value = v; $(id).dispatchEvent(new win.Event('change')); }
         function chip(id) { doc.querySelector('.chip[data-id="' + id + '"]').click(); }
         var inBasic = shown(win, $('tune-len')) && shown(win, $('times'));
+        chip('waltz'); var waltzFirst = $('tune-len').value;
         chip('jig'); set('tune-len', 48);
         chip('reel'); var reelLen = $('tune-len').value;
         chip('jig'); var jigLen = $('tune-len').value;
@@ -1140,6 +1150,7 @@
         var saved = JSON.parse(win.localStorage.getItem('bodhran.settings') || '{}');
         expect(inBasic, 'Length or Play it is not on show in Basic');
         expect(reelLen === '32' && jigLen === '48', 'reel came back at ' + reelLen + ' bars, jig at ' + jigLen);
+        expect(waltzFirst === '64', 'a first visit to waltz gave ' + waltzFirst + ' bars, not 64');
         expect(/bar 1 of 48/.test(counter) && /time 1 of 2/.test(counter), 'the counter says "' + counter + '"');
         expect(saved.times === 2 && saved.len_jig === 48, 'not remembered: ' + JSON.stringify({ times: saved.times, len_jig: saved.len_jig }));
       });

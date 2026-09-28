@@ -8,7 +8,7 @@
    * Bump it with every change that gets pushed: the last number for a fix,
    * the middle one for a new feature. It is also the quickest way to tell
    * whether a phone is running the latest deploy or an older copy. */
-  var VERSION = '1.5.0';
+  var VERSION = '1.5.1';
   TRAD.VERSION = VERSION;
 
   TRAD.validatePatterns();
@@ -208,7 +208,7 @@
 
     // Each tune type keeps its own length, like its own tempo.
     var len = settings['len_' + id];
-    $('tune-len').value = len != null ? len : 32;
+    $('tune-len').value = len != null ? len : tune.tuneBars;
     if (transport) transport.tuneBars = +$('tune-len').value;
 
     swingTouched = false;

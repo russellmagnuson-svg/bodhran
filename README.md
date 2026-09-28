@@ -203,7 +203,7 @@ over 17 seconds, which is the measurement noise floor rather than real drift.
 themselves: choose, say, 32 bars (AABB) and 3 times, start the tune as the
 drum comes in, and on the last time through the drum lands the same ending as
 Finish on beat 1 of bar 32. The counter shows the bar and the time through.
-Each tune type keeps its own length (32 to begin with). Lowering the number
+Each tune type keeps its own length, starting at 64 bars for waltzes (16-bar parts) and 32 for the rest. Lowering the number
 part-way through ends at the end of the time through you are on.
 
 **Finish** plays on to the last bar of the phrase and lands one hard down

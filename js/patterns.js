@@ -120,6 +120,7 @@
     {
       id: 'waltz', name: 'Waltz', meter: '3/4', beatsPerBar: 3,
       beatUnit: 'crotchet', defaultBpm: 116, bpmRange: [60, 180], swing: 0,
+      tuneBars: 64,   // waltzes usually have 16-bar parts: AABB is 64 bars
       blurb: 'Three even beats, the weight sitting on the first.',
       grids: {
         pulse:  ['Ddd'],
@@ -170,6 +171,11 @@
       }
     }
   ];
+
+  /* A tune's usual length, one time through, where a style has no tuneBars
+   * of its own: two 8-bar parts, each played twice (AABB). */
+  var TUNE_BARS = 32;
+  TUNES.forEach(function (t) { if (!t.tuneBars) t.tuneBars = TUNE_BARS; });
 
   /* Relative loudness of each grid character. */
   var VELOCITY = { D: 1.0, d: 0.58, T: 0.86, t: 0.46, g: 0.27, '-': 0 };
