@@ -13,7 +13,7 @@
    * with every change to the demo that gets pushed: the last number for a
    * fix, the middle one for something new. Add it to CHANGELOG.md and the
    * release notes in the same change (a check makes sure). */
-  var VERSION = '1.3.3';
+  var VERSION = '1.4.0';
 
   var $ = function (id) { return document.getElementById(id); };
   var K = window.KESH, G = window.GTR, T = window.TRAD;
@@ -73,6 +73,12 @@
     var t = localStorage.getItem('kesh.demo.tuning');
     if (K.tunings[t]) tuning = t;
   } catch (e) {}
+  /* Bass runs on or off: on to begin with; the page remembers a choice. */
+  var runs = true;
+  try { if (localStorage.getItem('kesh.demo.runs') === 'off') runs = false; } catch (e) {}
+  var NOTE = ['C', 'C♯', 'D', 'D♯', 'E', 'F', 'F♯', 'G', 'G♯', 'A', 'A♯', 'B'];
+  function noteName(m) { return NOTE[m % 12]; }
+
   var VOICE = {};
   Object.keys(K.tunings).forEach(function (tn) {
     VOICE[tn] = {};
@@ -114,6 +120,9 @@
     Object.keys(VOICE).forEach(function (tn) {
       Object.keys(VOICE[tn]).forEach(function (c) {
         VOICE[tn][c].forEach(function (m) { if (m != null) all[m] = 1; });
+      });
+      Object.keys(K.runs[tn]).forEach(function (c) {
+        K.runs[tn][c].forEach(function (m) { all[m] = 1; });
       });
     });
     guitar.prepare(Object.keys(all).map(Number));
@@ -228,6 +237,20 @@
 
     var slots = last ? [{ s: 0, d: 'D', v: 0.85 }, { s: 3, d: 'D', v: 1, final: true }]
                      : STRUMS[strum].slots;
+    // A bass run takes the bar's last beat: its strums give way to three
+    // single notes walking up into the next chord.
+    var run = runs && !last && bar.chords.length === 1 ? K.runFrom(bar.part, bar.index, tuning) : null;
+    if (run) {
+      slots = slots.filter(function (x) { return x.s < 3; });
+      if ($('on-guitar').checked) {
+        run.notes.forEach(function (m, i) {
+          (function (at, string, midi, v) {
+            pending.push({ t: at, fn: function (t) { guitar.pick(string, midi, t, v); } });
+          })(t0 + (3 + i) * q, run.strings[i], m, i === 0 ? 1 : 0.85);
+        });
+      }
+      shown.push({ t: t0 + 3 * q, run: run });
+    }
     if ($('on-guitar').checked) {
       slots.forEach(function (x) {
         var chord = bar.chords.length > 1 && x.s >= 3 ? bar.chords[1] : bar.chords[0];
@@ -364,13 +387,21 @@
         el.className = 'bar';
         el.id = 'bar-' + p + i;
         el.innerHTML = '<div class="ch">' + bar.chords.join('<i>·</i>') + '</div>' +
-                       '<div class="abc">' + bar.abc + '</div>';
+                       '<div class="abc">' + bar.abc + '</div>' +
+                       (K.runBars[p].indexOf(i) !== -1 ? '<span class="run-mark">run</span>' : '');
         bars.appendChild(el);
       });
       row.appendChild(bars);
       host.appendChild(row);
     });
     drawShapes();
+  }
+
+  function drawRuns() {
+    Array.prototype.forEach.call(document.querySelectorAll('#chart .run-mark'), function (m) { m.hidden = !runs; });
+    Array.prototype.forEach.call($('runs').children, function (b) {
+      b.setAttribute('aria-checked', String(b.dataset.runs === (runs ? 'on' : 'off')));
+    });
   }
 
   function drawShapes() {
@@ -405,6 +436,7 @@
 
   function showBar(n) {
     heard = n;
+    $('now-run').textContent = '';
     Array.prototype.forEach.call(document.querySelectorAll('.bar.on'), function (el) { el.classList.remove('on'); });
     if (n < 0) { $('where').textContent = 'count-in'; return; }
     var bar = FORM[n % FORM.length], k = n % FORM.length;
@@ -431,6 +463,10 @@
     shown.sort(function (a, b) { return a.t - b.t; });
     while (shown.length && shown[0].t <= now) {
       var e = shown.shift();
+      if (e.run) {
+        $('now-run').textContent = 'Bass run: ' + e.run.notes.map(noteName).join(' ') + ' → ' + e.run.to;
+        continue;
+      }
       if (e.strum != null) {
         var dot = $('dot-' + e.strum);
         if (dot) {
@@ -491,6 +527,14 @@
       box.addEventListener('change', show);
     });
     $('bpm-num').addEventListener('change', function () { setBpm(this.value); });
+    drawRuns();
+    Array.prototype.forEach.call($('runs').children, function (b) {
+      b.addEventListener('click', function () {
+        runs = b.dataset.runs === 'on';
+        try { localStorage.setItem('kesh.demo.runs', runs ? 'on' : 'off'); } catch (e) {}
+        drawRuns();
+      });
+    });
     Array.prototype.forEach.call($('tunings').children, function (b) {
       b.addEventListener('click', function () {
         tuning = b.dataset.tuning;
@@ -520,6 +564,7 @@
   window.KESH_DEMO = {
     VERSION: VERSION, STRUMS: STRUMS, FORM: FORM, VOICE: VOICE, MIX: MIX, DRUM: DRUM,
     tuning: function () { return tuning; },
+    runs: function () { return runs; },
     ahead: function () { return ahead; },
     audio: function () { return { ctx: ctx, run: run, guitar: guitar, flute: fluteBus, drum: drum }; },
     playing: function () { return playing; }

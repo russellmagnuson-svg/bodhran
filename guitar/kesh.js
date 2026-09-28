@@ -101,6 +101,37 @@
     });
   });
 
+  /* ---- bass runs ----
+   * On the last beat before a chord change, three single bass notes walking
+   * up into the new chord, in place of that beat's strum. Into bars 2 and 5 of
+   * each part: enough to hear, not so many that they crowd the backing. The
+   * notes sit where each tuning plays them: in DADGAD the walk into G starts
+   * on the open low D; in standard it climbs the D string to the open G. */
+  KESH.runBars = { A: [0, 3], B: [0, 3] };     // the bar whose last beat walks on
+  KESH.runs = {
+    standard: { G: [50, 52, 54], C: [43, 45, 47], D: [45, 47, 49] },   // D E F#, G A B, A B C#
+    dadgad:   { G: [38, 40, 42], C: [43, 45, 47], D: [45, 47, 49] }
+  };
+  /* The run out of this bar, or null: { to, notes, strings }. `strings` says
+   * which string plays each note: the one with the lowest fret for it. */
+  KESH.runFrom = function (part, index, tuning) {
+    if (KESH.runBars[part].indexOf(index) === -1) return null;
+    var next = KESH.parts[part][index + 1];
+    if (!next) return null;
+    var to = next.chords[0], notes = KESH.runs[tuning || 'standard'][to];
+    if (!notes) return null;
+    var open = KESH.tunings[tuning || 'standard'].strings;
+    var strings = notes.map(function (m) {
+      var best = -1;
+      for (var s = 0; s < 6; s++) {
+        var f = m - open[s];
+        if (f >= 0 && f <= 5 && (best < 0 || f < m - open[best])) best = s;
+      }
+      return best;
+    });
+    return { to: to, notes: notes, strings: strings };
+  };
+
   /* One time through, as played: AABB. */
   KESH.form = function () {
     var A = KESH.parts.A, B = KESH.parts.B;

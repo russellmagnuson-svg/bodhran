@@ -164,6 +164,12 @@
     }
   };
 
+  /* One string picked on its own, as in a bass run: it cuts that string's
+   * last note, and leaves the rest of the chord ringing. */
+  Guitar.prototype.pick = function (string, midi, t, vel) {
+    this._string(string, midi, t, vel * 0.36);
+  };
+
   /* Stop everything ringing, quickly, from time t. */
   Guitar.prototype.silence = function (t) {
     for (var s = 0; s < 6; s++) this._damp(s, t, false);

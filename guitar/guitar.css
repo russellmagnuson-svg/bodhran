@@ -79,6 +79,15 @@
   color: var(--muted);   /* wraps at its space on a phone: BAB / d^cd */
 }
 .bar.on { border-color: var(--amber); background: rgba(224, 160, 74, 0.14); }
+.bar { position: relative; }
+.run-mark {
+  display: inline-block; font-size: 9.5px; font-weight: 700; letter-spacing: 0.06em;
+  text-transform: uppercase; color: #1a1208; background: var(--treble);
+  border-radius: 4px; padding: 0 4px; line-height: 1.5; vertical-align: 1px;
+}
+.bar .run-mark { position: absolute; top: 5px; right: 5px; }
+.bar .run-mark[hidden] { display: none; }
+.now-run { font-size: 13px; color: var(--treble); min-height: 1.4em; margin-bottom: 6px; }
 .bar.on .ch { color: var(--skin); }
 @media (min-width: 620px) {
   .bars { grid-template-columns: repeat(8, 1fr); }

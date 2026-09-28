@@ -92,6 +92,14 @@
       <button class="mode" type="button" role="radio" data-tuning="dadgad" aria-checked="true">DADGAD</button>
     </div>
     <p class="blurb">Switch while it plays to hear the difference: the new tuning comes in at the next bar.</p>
+    <h3 class="sub-h">Bass runs</h3>
+    <div id="runs" class="modes" role="radiogroup" aria-label="Bass runs">
+      <button class="mode" type="button" role="radio" data-runs="off" aria-checked="false">Off</button>
+      <button class="mode" type="button" role="radio" data-runs="on" aria-checked="true">On</button>
+    </div>
+    <p class="blurb">Three single bass notes walking up into the next chord, in place of the last
+    beat’s strum: G A B into C, D E F♯ into G, A B C♯ into D. Into bars 2 and 5 of each part,
+    marked <span class="run-mark">run</span> in the chart.</p>
   </section>
 
   <!-- Now -->
@@ -106,6 +114,7 @@
         <div id="now-chord" class="now-chord">G</div>
         <div class="now-label">Next</div>
         <div id="next-chord" class="next-chord">D</div>
+        <div id="now-run" class="now-run"></div>
         <div id="strum-dots" class="strum-dots" aria-hidden="true"></div>
       </div>
     </div>

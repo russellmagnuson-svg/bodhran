@@ -113,6 +113,16 @@ that gets pushed (the last number for a fix, the middle one for a feature).
 
 The page at `/guitar/` has its own version number, shown next to its title.
 
+### Guitar demo 1.4.0 — 2026-09-28
+
+- Bass runs between chords, with a switch to turn them off (on to begin
+  with; remembered). On the last beat before a change, three single bass
+  notes walk up into the new chord in place of that beat's strum: G A B into
+  C, D E F♯ into G, A B C♯ into D. They lead into bars 2 and 5 of each part,
+  are marked "run" in the chord chart, and the Now panel names each one as
+  it plays. Each sits where the tuning plays it: in DADGAD the walk into G
+  starts on the open low D, in standard it climbs the D string to the open G.
+
 ### Guitar demo 1.3.3 — 2026-09-28
 
 - Fixed: in Safari, the demo stumbled when left playing behind another tab in

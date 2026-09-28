@@ -1760,6 +1760,77 @@
       }).finally(function () { frame.remove(); });
     });
 
+  check('Guitar demo', 'Bass runs walk up into the next chord',
+    'Three single notes, a step apart, climbing to a note of the chord they lead into, and playable on the strings of the tuning in use.',
+    function () {
+      var K = window.KESH, bad = [], found = 0;
+      ['standard', 'dadgad'].forEach(function (tn) {
+        ['A', 'B'].forEach(function (p) {
+          K.parts[p].forEach(function (bar, i) {
+            var run = K.runFrom(p, i, tn);
+            if (!run) return;
+            found++;
+            var where = tn + ' ' + p + (i + 1) + ' into ' + run.to + ': ';
+            var next = K.parts[p][i + 1].chords[0], shape = K.voicing(next, tn);
+            if (run.to !== next) bad.push(where + 'the next bar starts on ' + next);
+            if (run.notes.length !== 3) bad.push(where + run.notes.length + ' notes');
+            for (var k = 1; k < run.notes.length; k++) {
+              var step = run.notes[k] - run.notes[k - 1];
+              if (step < 1 || step > 2) bad.push(where + 'a leap of ' + step + ' semitones');
+            }
+            var last = run.notes[run.notes.length - 1];
+            var lands = shape.some(function (m) { return m != null && m - last >= 1 && m - last <= 2; });
+            if (!lands) bad.push(where + 'the last note does not step onto the chord');
+            if (run.strings.some(function (s) { return s < 0; })) bad.push(where + 'a note no string can play within five frets');
+          });
+        });
+      });
+      expect(found === 8, found + ' runs found, not 8 (bars 1 and 4 of each part, in two tunings)');
+      expect(bad.length === 0, bad.join('\n'));
+    });
+
+  check('Guitar demo', 'Bass runs can be turned off, and the choice is remembered',
+    'On to begin with, and heard in bar 1; Off means no run anywhere, the chart marks gone, and the same next visit.',
+    function () {
+      var KEY = 'kesh.demo.runs', saved = localStorage.getItem(KEY);
+      localStorage.removeItem(KEY);
+      // Hidden, so the demo hands several seconds of notes to the audio at once.
+      var first = 'window.__hidden = true;' +
+          'Object.defineProperty(Document.prototype, "hidden", { configurable: true, get: function () { return window.__hidden; } });' +
+          'Object.defineProperty(Document.prototype, "visibilityState", { configurable: true, get: function () { return window.__hidden ? "hidden" : "visible"; } });';
+      var frame = document.createElement('iframe');
+      frame.style.cssText = 'position:absolute;left:-10000px;top:0;border:0;width:375px;height:812px';
+      document.body.appendChild(frame);
+      return text('../guitar/').then(function (html) {
+        return new Promise(function (resolve, reject) {
+          var t = setTimeout(function () { reject(new Error('the demo page did not load')); }, 10000);
+          frame.onload = function () { clearTimeout(t); setTimeout(resolve, 200); };
+          frame.srcdoc = html.replace('<head>', '<head><base href="' + new URL('../guitar/', location.href).href +
+            '"><script>' + first + '<\/script>');
+        });
+      }).then(function () {
+        var win = frame.contentWindow, doc = frame.contentDocument, D = win.KESH_DEMO;
+        var picks = 0, real = win.GTR.Guitar.prototype.pick;
+        win.GTR.Guitar.prototype.pick = function () { picks++; return real.apply(this, arguments); };
+        function marks() { return Array.prototype.filter.call(doc.querySelectorAll('#chart .run-mark'), function (m) { return !m.hidden; }).length; }
+        var bpm = doc.getElementById('bpm'); bpm.value = 130; bpm.dispatchEvent(new win.Event('input'));
+        var startOn = D.runs(), marksOn = marks();
+        doc.getElementById('play').click(); var withRuns = picks; doc.getElementById('play').click();
+        doc.querySelector('#runs [data-runs="off"]').click();
+        picks = 0;
+        doc.getElementById('play').click(); var without = picks; doc.getElementById('play').click();
+        var stored = win.localStorage.getItem(KEY), marksOff = marks();
+        expect(startOn && marksOn === 4, 'a first visit starts with runs ' + (startOn ? 'on' : 'off') + ', ' + marksOn + ' marked');
+        expect(withRuns >= 3, 'with runs on, ' + withRuns + ' bass notes were picked in the first bars');
+        expect(without === 0, 'with runs off, ' + without + ' bass notes were still picked');
+        expect(marksOff === 0, marksOff + ' runs still marked in the chart');
+        expect(stored === 'off', 'the choice was saved as ' + stored);
+      }).finally(function () {
+        frame.remove();
+        if (saved == null) localStorage.removeItem(KEY); else localStorage.setItem(KEY, saved);
+      });
+    });
+
   check('Guitar demo', 'It shows its own version, and the notes cover it',
     'The quickest way to tell whether a phone has the latest demo. Bump the demo’s version? Add it to CHANGELOG.md and the release notes in the same change.',
     function () {
