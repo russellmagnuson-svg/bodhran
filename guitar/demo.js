@@ -13,7 +13,7 @@
    * with every change to the demo that gets pushed: the last number for a
    * fix, the middle one for something new. Add it to CHANGELOG.md and the
    * release notes in the same change (a check makes sure). */
-  var VERSION = '1.4.1';
+  var VERSION = '1.4.2';
 
   var $ = function (id) { return document.getElementById(id); };
   var K = window.KESH, G = window.GTR, T = window.TRAD;
@@ -251,7 +251,9 @@
         run.notes.forEach(function (m, i) {
           (function (at, string, midi, v) {
             pending.push({ t: at, fn: function (t) { guitar.pick(string, midi, t, v); } });
-          })(t0 + (3 + i) * q, run.strings[i], m, i === 0 ? 1 : 0.85);
+          // Even weight: the run's first note lands with the bodhrán's beat-two
+          // stroke, and struck harder the two together hit the limiter.
+          })(t0 + (3 + i) * q, run.strings[i], m, 0.9);
         });
       }
       shown.push({ t: t0 + 3 * q, run: run });

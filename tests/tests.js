@@ -1790,7 +1790,7 @@
     });
 
   check('Guitar demo', 'A picked bass note settles like a guitar string, not a piano',
-    'Picked alone, the soft strum voice kept its overtones as strong half a second in as at the pick, like a piano. A guitar string starts bright and settles warm. And a run should be heard, not buried under the strums.',
+    'Picked alone, the strum voice kept its overtones as strong half a second in as at the pick, like a piano; then it read bright and weak for a bass line. A bass run should settle warm, be dark, and sit a little above the strums.',
     function () {
       var SRG = 48000, G = window.GTR, K = window.KESH, q = 60 / 100 / 3;
       function goertzel(d, f, a, b) {
@@ -1808,7 +1808,7 @@
       g2.prepare(Object.keys(all).map(Number)); if (g2.preparePicks) g2.preparePicks(K.runs.dadgad.D);
       var r = K.runFrom('A', 0, 'dadgad'), t0 = 0.05;
       g2.strum(K.voicing('G', 'dadgad'), t0, 'D', 1); g2.strum(K.voicing('G', 'dadgad'), t0 + 2 * q, 'U', 0.5, 4);
-      r.notes.forEach(function (m, i) { g2.pick(r.strings[i], m, t0 + (3 + i) * q, i === 0 ? 1 : 0.85); });
+      r.notes.forEach(function (m, i) { g2.pick(r.strings[i], m, t0 + (3 + i) * q, 0.9); });
       return Promise.all([one.startRendering(), run.startRendering()]).then(function (b) {
         var d = b[0].getChannelData(0), f0 = G.hz(45);
         function over(a, z, k) { return 20 * Math.log10(goertzel(d, f0 * k, a, z) / goertzel(d, f0, a, z)); }
@@ -1817,9 +1817,19 @@
         for (var f = f0 * 0.98; f <= f0 * 1.02; f += f0 / 4000) { var v = goertzel(d, f, 0.2, 1.0); if (v > best) { best = v; bf = f; } }
         var cents = 1200 * Math.log2(bf / f0), rd = b[1].getChannelData(0);
         var runVsStrum = seg(rd, t0 + 3 * q, t0 + 6 * q) - seg(rd, t0, t0 + 3 * q);
+        // How bright: energy above 800 Hz against below 400, in its first third of a second.
+        var hi = 0, lo = 0, s0 = Math.floor(0.02 * SRG), s1 = Math.floor(0.35 * SRG);
+        for (var fb = 50; fb <= 6000; fb += 25) {
+          var kk = 2 * Math.cos(2 * Math.PI * fb / SRG), a1 = 0, a2 = 0;
+          for (var j = s0; j < s1; j++) { var a0 = kk * a1 - a2 + d[j]; a2 = a1; a1 = a0; }
+          var mg = Math.max(0, a1 * a1 + a2 * a2 - kk * a1 * a2);
+          if (fb >= 800) hi += mg; else if (fb < 400) lo += mg;
+        }
+        var bright = 10 * Math.log10(hi / lo);
         expect(fell6 > 6 && fell8 > 8, 'half a second in, the 6th and 8th overtones fell only ' + round(fell6) + ' and ' + round(fell8) + ' dB');
         expect(Math.abs(cents) < 3, 'the picked A is ' + round(cents) + ' cents out');
-        expect(runVsStrum > -4, 'the run is ' + round(-runVsStrum) + ' dB under the strummed beat before it');
+        expect(bright < -14, 'the picked A is bright: its top is only ' + round(-bright) + ' dB under its bottom');
+        expect(runVsStrum > 0, 'the run is ' + round(-runVsStrum) + ' dB under the strummed beat before it');
       });
     });
 

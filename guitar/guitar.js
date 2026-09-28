@@ -54,6 +54,53 @@
   }
   GTR.pluck = pluck;
 
+  /* A string that loses its top as a real one does, for single picked notes.
+   *
+   * In the plain model above, the only thing taking the top off is the
+   * averaging of two neighbouring samples, and on a low note that is almost
+   * nothing: measured, the raw A string had 14-27 dB more energy above 800 Hz
+   * than below 400, and kept it as it rang. Inside a strum that is sparkle;
+   * a single bass note it makes bright and thin, like a piano. Here a proper
+   * lowpass sits inside the loop, so every trip round the string takes more
+   * off the top: the note starts with the pick in it and settles into its
+   * warm fundamental within a fraction of a second.
+   *
+   * The loop filter delays the note a little too, which would pull it flat,
+   * so the delay is worked out exactly at the note's own pitch and taken off
+   * the delay line, and the remainder corrected by the playback rate. */
+  function pluckDark(sr, f, seed, cutoff, pos) {
+    var a = Math.exp(-2 * Math.PI * cutoff / sr), c = 1 - a;   // one-pole lowpass
+    var w = 2 * Math.PI * f / sr;
+    var lag = Math.atan2(a * Math.sin(w), 1 - a * Math.cos(w)) / w;   // its delay, in samples
+    var N = Math.max(2, Math.floor(sr / f - lag));
+    var len = Math.floor(sr * SECONDS), out = new Float32Array(len);
+    var t60 = 1.8 + 2.6 * Math.max(0, Math.min(1, (400 - f) / 320));
+    // The filter takes a little off the fundamental too; allow for it.
+    var gain = Math.sqrt(1 + a * a - 2 * a * Math.cos(w)) / c;
+    var rho = Math.min(0.99995, Math.pow(0.001, 1 / (t60 * f)) * gain);
+    var s = seed, mean = 0, i;
+    for (i = 0; i < N; i++) {
+      s = (s * 16807) % 2147483647;
+      out[i] = (s / 2147483647) * 2 - 1; mean += out[i];
+    }
+    mean /= N;
+    for (i = 0; i < N; i++) out[i] -= mean;
+    if (pos) {
+      var M = Math.max(1, Math.round(pos * N)), ex = out.slice(0, N);
+      for (i = M; i < N; i++) out[i] = ex[i] - ex[i - M];
+    }
+    var lp = 0;
+    for (i = N; i < len; i++) {
+      lp += c * (out[i - N] - lp);
+      out[i] = rho * lp;
+    }
+    var peak = 0;
+    for (i = 0; i < len; i++) peak = Math.max(peak, Math.abs(out[i]));
+    for (i = 0; i < len; i++) out[i] /= peak || 1;
+    return { data: out, sounds: sr / (N + lag) };
+  }
+  GTR.pluckDark = pluckDark;
+
   function Guitar(ctx, destination) {
     this.ctx = ctx;
     this.notes = {};         // midi -> [{ buffer, rate }]
@@ -89,7 +136,7 @@
     // the same body.
     this.pickBus = ctx.createGain();
     var fat = ctx.createBiquadFilter(); fat.type = 'lowshelf';
-    fat.frequency.value = 160; fat.gain.value = 5;
+    fat.frequency.value = 200; fat.gain.value = 7;
     this.pickBus.connect(fat); fat.connect(input);
   }
 
@@ -112,16 +159,17 @@
     });
   };
 
-  /* Render single picked notes: a firm, bright pick near the bridge. (The
-   * strummed notes use a soft pick, which inside a chord is warmth; alone,
-   * with nothing around it, it sounded like a piano.) */
+  /* Render single picked notes for the bass runs: played with weight, more
+   * thumb than pick tip, so a round attack rather than a click, plucked a
+   * little further from the bridge. (1.4.1 used a bright pick near the
+   * bridge; it read as bright and a bit weak for a bass line.) */
   Guitar.prototype.preparePicks = function (midis) {
     var ctx = this.ctx, self = this;
     midis.forEach(function (m) {
       if (self.picks[m]) return;
       var f = hz(m), list = [];
       for (var v = 0; v < VARIANTS; v++) {
-        var p = pluck(ctx.sampleRate, f, 0.78 + 0.08 * v, 3 + m * 131 + v * 7919, 0.14);
+        var p = pluckDark(ctx.sampleRate, f, 3 + m * 131 + v * 7919, 1400 + 200 * v, 0.2);
         var buf = ctx.createBuffer(1, p.data.length, ctx.sampleRate);
         buf.getChannelData(0).set(p.data);
         list.push({ buffer: buf, rate: f / p.sounds });
@@ -216,13 +264,16 @@
     src.playbackRate.value = p.rate;
     var tone = ctx.createBiquadFilter();
     tone.type = 'lowpass'; tone.Q.value = 0.6;
-    // Relative to the note, so the low D darkens as much as the A above it:
-    // from about the 36th harmonic at the pick to below the 4th as it rings.
+    // The string darkens itself now (pluckDark); this only rounds the rest
+    // off, relative to the note so the low D and the A above it match.
     var f0 = hz(midi);
-    tone.frequency.setValueAtTime(Math.min(6000, f0 * 36), t);
-    tone.frequency.setTargetAtTime(Math.max(240, f0 * 3.5), t + 0.008, 0.11);
+    tone.frequency.setValueAtTime(Math.min(4000, f0 * 20), t);
+    tone.frequency.setTargetAtTime(Math.max(300, f0 * 5), t + 0.006, 0.08);
     var g = ctx.createGain();
-    var level = vel * 0.6;
+    // A bass line, a little above the strums (measured: 2-4 dB over them).
+    // The rounder note carries far more energy for its peak than the bright
+    // one did, so it needs less gain to sound heavier.
+    var level = vel * 0.82;
     g.gain.setValueAtTime(0, t);
     g.gain.linearRampToValueAtTime(level, t + 0.002);
     src.connect(tone); tone.connect(g); g.connect(this.pickBus);
@@ -231,7 +282,7 @@
     var knock = ctx.createOscillator(), kg = ctx.createGain();
     knock.frequency.value = 98;
     kg.gain.setValueAtTime(0, t);
-    kg.gain.linearRampToValueAtTime(level * 0.35, t + 0.003);
+    kg.gain.linearRampToValueAtTime(level * 0.22, t + 0.003);
     kg.gain.setTargetAtTime(0, t + 0.004, 0.025);
     knock.connect(kg); kg.connect(g);
     knock.start(t); knock.stop(t + 0.25);

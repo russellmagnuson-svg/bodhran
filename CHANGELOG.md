@@ -113,6 +113,17 @@ that gets pushed (the last number for a fix, the middle one for a feature).
 
 The page at `/guitar/` has its own version number, shown next to its title.
 
+### Guitar demo 1.4.2 — 2026-09-28
+
+- Bass runs heavier and darker. They still read bright and a bit weak for a
+  bass line. The string model itself was the cause: on a low note it takes
+  almost nothing off the top as it rings (measured: the raw A string had
+  more energy above 800 Hz than below 400). Run notes now come from a string
+  with a damping filter inside it, so each trip round the string takes more
+  of the top off, as a real one does, with its tuning worked out exactly. The
+  attack is rounder, more thumb than pick tip, and the runs sit 2 to 5 dB
+  above the strums instead of level with them.
+
 ### Guitar demo 1.4.1 — 2026-09-28
 
 - The bass runs sounded like a piano. Picked alone, the soft strum voice kept
