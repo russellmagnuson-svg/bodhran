@@ -61,7 +61,8 @@ against the real code:
   count-in goes to a note of its own
 - **The app** — version shown; each tune keeps its tempo; Space after a slider;
   modes grey out the right controls; Finish ends the tune and puts Play back;
-  the silent-switch setting is for phones only; every drone root plays the
+  the silent-switch setting is for phones only; every Play asks the sound to
+  start; Mac Safari gets a nudge of silence, and nothing else does; every drone root plays the
   note it names; a tempo outside the range says so;
   arrow keys move the choice of tune type and rhythm;
   the About names the panels as they are;
@@ -277,6 +278,15 @@ npx wrangler pages deploy . --project-name=bodhran
   downloaded fresh after a page has started up properly online. A newer
   `app.js` running with an older drum file can fail on start-up, which is
   silence, so this matters more than it sounds.
+- **Safari on a Mac going silent.** After the Mac sleeps, a Safari tab can go
+  quiet: the app looks as if it is playing, the drone and count-in are silent
+  too, reloading does not help, and a new tab works. Safari says its audio is
+  running while holding it back. Every press of Play (or the drone) now asks
+  it to resume anyway, and in Mac Safari also plays a moment of silence the
+  way a video plays, since that route still worked in a stuck tab. If it ever
+  happens again, open the app in a new tab, and open `/tests/sound.html` in
+  the stuck tab: it plays test tones several ways and meters the real drum,
+  which shows which route is getting through.
 - Deleting `sw.js`, the `icons/` folder, `manifest.webmanifest` and the two
   tags that reference them in `index.html` removes all of that cleanly if you
   would rather not have it.

@@ -970,6 +970,54 @@
       });
     });
 
+  check('The app', 'Every Play asks the sound to start, even when it says it is running',
+    'After the Mac sleeps, Safari can say its audio is running while keeping the tab silent, through any number of reloads. Asking it to resume on each press wakes it.',
+    function () {
+      // A browser whose audio always claims to be running, counting resumes.
+      var fake = 'window.__resumes = 0;' +
+        'Object.defineProperty(BaseAudioContext.prototype, "state", { configurable: true, get: function () { return "running"; } });' +
+        'var real = AudioContext.prototype.resume;' +
+        'AudioContext.prototype.resume = function () { window.__resumes++; return real.call(this); };';
+      return withApp(function (win, doc) {
+        var play = doc.getElementById('play');
+        play.click(); var first = win.__resumes;
+        play.click();                                   // stop
+        play.click(); var second = win.__resumes;       // start again
+        play.click();
+        doc.getElementById('drone-on').click(); var drone = win.__resumes;
+        expect(first >= 1, 'the first Play did not ask the sound to start');
+        expect(second > first, 'playing again did not ask the sound to start');
+        expect(drone > second, 'ticking the drone did not ask the sound to start');
+      }, null, fake);
+    });
+
+  check('The app', 'Mac Safari also gets a nudge of silence, and nothing else does',
+    'In a stuck Safari tab, sound played the way a video plays still came through. Chrome and the iPhone never needed it.',
+    function () {
+      function nudges(ua, touch) {
+        var fake = 'Object.defineProperty(Navigator.prototype, "userAgent", { configurable: true, get: function () { return ' +
+          JSON.stringify(ua) + '; } });' +
+          'Object.defineProperty(Navigator.prototype, "maxTouchPoints", { configurable: true, get: function () { return ' + touch + '; } });' +
+          'window.__plays = 0; HTMLMediaElement.prototype.play = function () { window.__plays++; return Promise.resolve(); };';
+        return withApp(function (win, doc) {
+          doc.getElementById('play').click();
+          return win.__plays;
+        }, null, fake);
+      }
+      var SAFARI = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Safari/605.1.15';
+      var CHROME = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36';
+      var IPAD = SAFARI;   // an iPad's Safari says Macintosh too; only touch tells it apart
+      return nudges(SAFARI, 0).then(function (mac) {
+        return nudges(CHROME, 0).then(function (chrome) {
+          return nudges(IPAD, 5).then(function (ipad) {
+            expect(mac === 1, 'Mac Safari was nudged ' + mac + ' times on Play');
+            expect(chrome === 0, 'Chrome was nudged too');
+            expect(ipad === 0, 'an iPad or iPhone was nudged too');
+          });
+        });
+      });
+    });
+
   check('The app', 'Every drone root plays the note it names, B included',
     'B minor is one of the commonest keys in the music and was missing. And a label that says D must play a D.',
     function () {
