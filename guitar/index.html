@@ -60,11 +60,26 @@
   <!-- What you hear -->
   <section class="panel">
     <h2>What you hear</h2>
-    <div class="toggles">
-      <label class="toggle"><input id="on-guitar" type="checkbox" checked> Guitar</label>
-      <label class="toggle"><input id="on-tune" type="checkbox" checked> The tune <small>(flute)</small></label>
-      <label class="toggle"><input id="on-drum" type="checkbox"> Bodhrán</label>
+    <!-- Each sound on or off, and how loud. 100% is the balance the demo
+         was set to by measurement, with the guitar leading. -->
+    <div class="mixer">
+      <div class="voice">
+        <label class="toggle"><input id="on-guitar" type="checkbox" checked> Guitar</label>
+        <input id="vol-guitar" type="range" min="0" max="2" step="0.05" value="1" aria-label="Guitar volume">
+        <output id="vol-guitar-out" for="vol-guitar">100%</output>
+      </div>
+      <div class="voice">
+        <label class="toggle"><input id="on-tune" type="checkbox" checked> The tune <small>(flute)</small></label>
+        <input id="vol-tune" type="range" min="0" max="2" step="0.05" value="1" aria-label="Flute volume">
+        <output id="vol-tune-out" for="vol-tune">100%</output>
+      </div>
+      <div class="voice">
+        <label class="toggle"><input id="on-drum" type="checkbox"> Bodhrán</label>
+        <input id="vol-drum" type="range" min="0" max="2" step="0.05" value="1" aria-label="Bodhrán volume">
+        <output id="vol-drum-out" for="vol-drum">100%</output>
+      </div>
     </div>
+    <p class="blurb">100% is the balance the demo was set to, with the guitar leading; each goes up to 200%.</p>
     <h3 class="sub-h">Strum</h3>
     <div id="strums" class="modes" role="radiogroup" aria-label="Strum">
       <button class="mode" type="button" role="radio" data-strum="lilt" aria-checked="true">Lilt</button>

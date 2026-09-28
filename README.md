@@ -90,7 +90,8 @@ against the real code:
 - **Offline copy** — its file list covers everything the page loads, and every
   file on it exists
 - **Guitar demo** — every bar of The Kesh is a full 6/8 bar; every chord has
-  a shape and the drone rings through; the guitar is in tune; the page builds; it shows its own version and the notes cover it
+  a shape and the drone rings through; the guitar is in tune; the page builds;
+  each sound's volume is heard straight away and remembered; it shows its own version and the notes cover it
 - **Release notes** (under The app) — `CHANGELOG.md` and `release-notes/` both
   have an entry for the current version, so bumping the version means adding
   the notes in the same change

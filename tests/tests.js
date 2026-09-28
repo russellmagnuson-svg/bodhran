@@ -1484,6 +1484,45 @@
       }).finally(function () { frame.remove(); });
     });
 
+  check('Guitar demo', 'Each sound has its own volume, heard straight away and remembered',
+    '100% is the measured balance. A slider must change the sound as it plays, not from the next tune, and come back the same next visit.',
+    function () {
+      var KEY = 'kesh.demo.volume', saved = localStorage.getItem(KEY);
+      localStorage.removeItem(KEY);
+      var frame = document.createElement('iframe');
+      frame.src = '../guitar/';
+      frame.style.cssText = 'position:absolute;left:-10000px;top:0;border:0;width:375px;height:812px';
+      document.body.appendChild(frame);
+      function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+      return new Promise(function (resolve, reject) {
+        var t = setTimeout(function () { reject(new Error('the demo page did not load')); }, 10000);
+        frame.onload = function () { clearTimeout(t); setTimeout(resolve, 200); };
+      }).then(function () {
+        var doc = frame.contentDocument, win = frame.contentWindow, D = win.KESH_DEMO;
+        function slide(id, v) { var el = doc.getElementById(id); el.value = v; el.dispatchEvent(new win.Event('input')); }
+        slide('vol-guitar', 0.5);                       // before playing
+        doc.getElementById('play').click();
+        return wait(400).then(function () {
+          var A = D.audio(), before = A.flute.gain.value;
+          slide('vol-tune', 0);                         // while playing
+          return wait(400).then(function () {
+            var g = A.guitar.level.gain.value, f = A.flute.gain.value;
+            var stored = JSON.parse(win.localStorage.getItem(KEY) || '{}');
+            var label = doc.getElementById('vol-guitar-out').textContent;
+            doc.getElementById('play').click();
+            expect(Math.abs(g - D.MIX.guitar * 0.5) < 0.01, 'guitar at 50% plays at ' + round(g, 3) + ', not ' + D.MIX.guitar * 0.5);
+            expect(Math.abs(before - D.MIX.tune) < 0.01, 'the flute did not start at its 100% level');
+            expect(f < 0.005, 'the flute slider at 0% mid-tune left it at ' + round(f, 3));
+            expect(stored.guitar === 0.5 && stored.tune === 0, 'not remembered: ' + JSON.stringify(stored));
+            expect(label === '50%', 'the guitar slider says "' + label + '"');
+          });
+        });
+      }).finally(function () {
+        frame.remove();
+        if (saved == null) localStorage.removeItem(KEY); else localStorage.setItem(KEY, saved);
+      });
+    });
+
   check('Guitar demo', 'It shows its own version, and the notes cover it',
     'The quickest way to tell whether a phone has the latest demo. Bump the demo’s version? Add it to CHANGELOG.md and the release notes in the same change.',
     function () {

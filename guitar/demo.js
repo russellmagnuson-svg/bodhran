@@ -13,7 +13,7 @@
    * with every change to the demo that gets pushed: the last number for a
    * fix, the middle one for something new. Add it to CHANGELOG.md and the
    * release notes in the same change (a check makes sure). */
-  var VERSION = '1.1.0';
+  var VERSION = '1.2.0';
 
   var $ = function (id) { return document.getElementById(id); };
   var K = window.KESH, G = window.GTR, T = window.TRAD;
@@ -36,6 +36,27 @@
     }
   };
   var strum = 'lilt';
+
+  /* ---------- how loud each sound is ----------
+   * MIX is the balance set by measurement, with the guitar leading: alone,
+   * guitar -21 dB, flute -22 and drum -24.5 on average, all three together
+   * peaking under full scale. The sliders scale it, 0 to 200%, and the page
+   * remembers them. */
+  var MIX = { guitar: 0.7, tune: 0.18, drum: 0.42 };
+  var vol = { guitar: 1, tune: 1, drum: 1 };
+  try {
+    var saved = JSON.parse(localStorage.getItem('kesh.demo.volume') || '{}');
+    Object.keys(vol).forEach(function (k) {
+      if (typeof saved[k] === 'number' && saved[k] >= 0 && saved[k] <= 2) vol[k] = saved[k];
+    });
+  } catch (e) { /* private window or storage blocked: start at 100% */ }
+
+  function applyLevels() {
+    if (!ctx) return;
+    guitar.setLevel(MIX.guitar * vol.guitar);
+    fluteBus.gain.setTargetAtTime(MIX.tune * vol.tune, ctx.currentTime, 0.03);
+    drum.setLevel(MIX.drum * vol.drum);
+  }
 
   var FORM = K.form();                     // one time through: AABB, 32 bars
   var VOICE = {};                          // chord -> the notes of its shape
@@ -70,20 +91,15 @@
     var wet = ctx.createGain(); wet.gain.value = 0.2;
     run.connect(room); room.connect(wet); wet.connect(out);
 
-    // Levels set by measurement, so the guitar leads: alone it averaged
-    // -21 dB, the flute -16.5 and the drum -22, and all three together went
-    // over full scale. Now the flute sits level with the guitar and the drum
-    // a few dB under, with room to spare.
     guitar = new G.Guitar(ctx, run);
-    guitar.setLevel(0.7);
     var all = {};
     Object.keys(VOICE).forEach(function (c) { VOICE[c].forEach(function (m) { if (m != null) all[m] = 1; }); });
     guitar.prepare(Object.keys(all).map(Number));
 
     drum = new T.Bodhran(ctx, run);
-    drum.setLevel(0.42); drum.setRoom(0.1);
+    drum.setRoom(0.1);
 
-    fluteBus = ctx.createGain(); fluteBus.gain.value = 0.18;
+    fluteBus = ctx.createGain(); fluteBus.gain.value = MIX.tune * vol.tune;
     var soft = ctx.createBiquadFilter(); soft.type = 'lowpass'; soft.frequency.value = 5200;
     fluteBus.connect(soft); soft.connect(run);
 
@@ -91,6 +107,7 @@
     var nd = noise.getChannelData(0);
     for (var i = 0; i < nd.length; i++) nd[i] = Math.random() * 2 - 1;
 
+    applyLevels();
     requestAnimationFrame(frame);
   }
 
@@ -379,6 +396,22 @@
     nowChord('G', 'D');
     $('play').addEventListener('click', toggle);
     $('bpm').addEventListener('input', function () { setBpm(this.value); });
+    ['guitar', 'tune', 'drum'].forEach(function (k) {
+      var el = $('vol-' + k), box = $('on-' + k);
+      function show() {
+        $('vol-' + k + '-out').textContent = Math.round(vol[k] * 100) + '%';
+        el.closest('.voice').classList.toggle('is-off', !box.checked);
+      }
+      el.value = vol[k];
+      show();
+      el.addEventListener('input', function () {
+        vol[k] = +el.value;
+        show();
+        applyLevels();   // straight away, while it plays
+        try { localStorage.setItem('kesh.demo.volume', JSON.stringify(vol)); } catch (e) {}
+      });
+      box.addEventListener('change', show);
+    });
     $('bpm-num').addEventListener('change', function () { setBpm(this.value); });
     Array.prototype.forEach.call($('strums').children, function (b) {
       b.addEventListener('click', function () {
@@ -399,7 +432,7 @@
 
   // For the checks page: what the demo plays, without playing it.
   window.KESH_DEMO = {
-    VERSION: VERSION, STRUMS: STRUMS, FORM: FORM, VOICE: VOICE,
+    VERSION: VERSION, STRUMS: STRUMS, FORM: FORM, VOICE: VOICE, MIX: MIX,
     audio: function () { return { ctx: ctx, run: run, guitar: guitar, flute: fluteBus, drum: drum }; },
     playing: function () { return playing; }
   };

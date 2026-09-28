@@ -97,6 +97,12 @@ that gets pushed (the last number for a fix, the middle one for a feature).
 
 The page at `/guitar/` has its own version number, shown next to its title.
 
+### Guitar demo 1.2.0 — 2026-09-28
+
+- A volume slider for each sound — guitar, flute and bodhrán — beside its
+  on/off tick. 100% is the measured balance with the guitar leading; each goes
+  up to 200%. Changes are heard straight away, and the page remembers them.
+
 ### Guitar demo 1.1.0 — 2026-09-28
 
 - A bigger, bassier guitar, more like a Martin dreadnought: a deeper body
