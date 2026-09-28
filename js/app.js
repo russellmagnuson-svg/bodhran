@@ -8,7 +8,7 @@
    * Bump it with every change that gets pushed: the last number for a fix,
    * the middle one for a new feature. It is also the quickest way to tell
    * whether a phone is running the latest deploy or an older copy. */
-  var VERSION = '1.4.0';
+  var VERSION = '1.5.0';
   TRAD.VERSION = VERSION;
 
   TRAD.validatePatterns();
@@ -125,6 +125,8 @@
     transport.humanize = +$('humanize').value;
     transport.backHand = +$('backhand').value;
     transport.phraseLength = +$('phrase').value;
+    transport.tuneBars = +$('tune-len').value;
+    transport.timesThrough = +$('times').value;
     transport.countInBars = +$('countin').value;
     transport.swingOverride = swingOverride();
     bodhran.setLevel(+$('level').value);
@@ -203,6 +205,11 @@
     // the default here used to overwrite the tempo it should have restored.)
     var saved = settings['bpm_' + id];
     setBpm(saved != null ? saved : tune.defaultBpm, true);
+
+    // Each tune type keeps its own length, like its own tempo.
+    var len = settings['len_' + id];
+    $('tune-len').value = len != null ? len : 32;
+    if (transport) transport.tuneBars = +$('tune-len').value;
 
     swingTouched = false;
     $('swing').value = tune.swing;
@@ -295,10 +302,11 @@
       $('bar-count').textContent = '—';
       return;
     }
-    var n = transport.phraseLength, bar = lastBar.bar;
-    var text = lastBar.countIn ? 'count-in'
-      : n ? 'bar ' + ((bar % n) + 1) + ' of ' + n
-          : 'bar ' + (bar + 1);
+    // Where you are in the tune, which is what the length and times count.
+    var pos = transport.position(), times = transport.timesThrough;
+    var text = lastBar.countIn || !pos ? 'count-in'
+      : 'bar ' + pos.bar + ' of ' + transport.tuneBars + ' \u00b7 time ' + pos.time +
+        (times > 0 ? ' of ' + times : '');
     if (transport.ending) text = 'last stroke';
     else if (transport.finishing) text += ' \u00b7 finishing';
     $('bar-count').textContent = text;
@@ -644,6 +652,17 @@
     $('midi-on').addEventListener('change', renderHints);
     arrowKeys($('modes'), function (b) { applyMode(b.dataset.mode); });
 
+    $('tune-len').addEventListener('change', function () {
+      if (transport) transport.tuneBars = +this.value;
+      remember('len_' + tune.id, +this.value);
+      showBarCount();
+    });
+    $('times').addEventListener('change', function () {
+      if (transport) transport.timesThrough = +this.value;
+      remember('times', +this.value);
+      showBarCount();
+    });
+
     $('countin').addEventListener('change', function () {
       if (transport) transport.countInBars = +this.value;
       remember('countin', this.value);
@@ -702,6 +721,7 @@
       }
     });
     if (settings.countin != null) $('countin').value = settings.countin;
+    if (settings.times != null) $('times').value = settings.times;
     // settings.simple predates the three modes; carry it over.
     applyMode(settings.mode ||
               (settings.simple ? 'simple' : 'full'));

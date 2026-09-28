@@ -107,6 +107,29 @@
       <span><i class="sw treble"></i> tak — up stroke, between the beats</span>
       <span><i class="sw ghost"></i> ghost</span>
     </div>
+    <!-- Start the tune as the drum comes in and it counts the tune with you,
+         ending on the last note of the last time through. -->
+    <div class="row">
+      <label class="inline">Length
+        <select id="tune-len">
+          <option value="16">16 bars (AB)</option>
+          <option value="32" selected>32 bars (AABB)</option>
+          <option value="48">48 bars (AABBCC)</option>
+          <option value="64">64 bars (AABB, 16-bar parts)</option>
+        </select>
+      </label>
+      <label class="inline">Play it
+        <select id="times">
+          <option value="0" selected>until I stop</option>
+          <option value="1">once through</option>
+          <option value="2">2 times</option>
+          <option value="3">3 times</option>
+          <option value="4">4 times</option>
+          <option value="5">5 times</option>
+          <option value="6">6 times</option>
+        </select>
+      </label>
+    </div>
   </section>
 
   <!-- Feel -->
@@ -294,7 +317,13 @@
       <li>Press <b>Play</b>. You get a bar of count-in clicks first; change
           that under <b>Count-in</b> in the <b>Feel</b> panel. Start the tune
           as the drum comes in, and the bar counter follows the tune.</li>
-      <li>Coming into the last phrase, press <b>Finish</b>. The drum plays on
+      <li>To play a tune a set number of times, choose its <b>Length</b> and
+          how many times to <b>Play it</b>, under the bar display. Start the
+          tune as the drum comes in: the counter shows the bar and the time
+          through, and on the last time the drum lands one hard stroke on the
+          first beat of the last bar, with the tune&rsquo;s final note, and
+          stops.</li>
+      <li>Or, coming into the last phrase, press <b>Finish</b>. The drum plays on
           to the phrase's last bar, lands one hard stroke on its first beat
           &mdash; with the tune's final note &mdash; and lets it ring. Press
           it again if you change your mind and want to go round again.</li>

@@ -64,13 +64,16 @@ against the real code:
 - **Back hand** — one smooth arc through each phrase, open at the top and
   letting go across the last bar; off means off, and never in Pulse, the
   count-in or the last stroke of a Finish
-- **Finish** — the last stroke lands on beat 1 of the phrase's last bar;
+- **Finish** — played N times, it ends on the last bar of the last time, and
+  lowered part-way it ends at the end of that time; the last stroke lands on
+  beat 1 of the phrase's last bar;
   pressed in that bar it waits for the next phrase; it can be taken back, and
   a stall cannot lose it
 - **MIDI** — one drum note; velocity tracks how hard the stroke is; the
   count-in goes to a note of its own
 - **The app** — version shown; each tune keeps its tempo; Space after a slider;
   modes grey out the right controls; Finish ends the tune and puts Play back;
+  length and times through are on show, counted, and kept per tune;
   the silent-switch setting is for phones only; every Play asks the sound to
   start; Mac Safari gets a nudge of silence, and nothing else does; every drone root plays the
   note it names; a tempo outside the range says so;
@@ -195,6 +198,13 @@ coarse 25 ms timer schedules notes *ahead* of the clock against
 `ctx.currentTime`, which is sample-accurate. Firing notes straight from a timer
 callback drifts audibly within a few bars. Measured drift here is about 0.1%
 over 17 seconds, which is the measurement noise floor rather than real drift.
+
+**Length** and **Play it** (under the bar display) end the tune by
+themselves: choose, say, 32 bars (AABB) and 3 times, start the tune as the
+drum comes in, and on the last time through the drum lands the same ending as
+Finish on beat 1 of bar 32. The counter shows the bar and the time through.
+Each tune type keeps its own length (32 to begin with). Lowering the number
+part-way through ends at the end of the time through you are on.
 
 **Finish** plays on to the last bar of the phrase and lands one hard down
 stroke on its first beat, where a tune's final note falls, then stops and lets

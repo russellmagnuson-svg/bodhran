@@ -522,6 +522,46 @@
              'with no phrases, last stroke in drum bar ' + (g.barOf(g.last.time) + 1) + ' (expected the next bar, 3)');
     });
 
+  /* The same reel, set to end by itself after `times` times through a tune of
+   * `bars` bars. */
+  function timesRun(bars, times, extra) {
+    var ended = 0;
+    var r = fakeRun(function (tr) {
+      tr.tune = TRAD.tuneById('reel'); tr.mode = 'simple'; tr.bpm = 120;
+      tr.countInBars = 1; tr.phraseLength = 4; tr.tuneBars = bars; tr.timesThrough = times;
+      tr.onEnd = function () { ended++; };
+    });
+    if (extra) extra(r);
+    r.advance(2 * (bars * 4 + 4));
+    return { run: r, last: r.hits[r.hits.length - 1], ended: ended };
+  }
+  function drumBar(t) { return Math.round((t - 0.08) / 2 - 1) + 1; }   // 1 = the tune's first bar
+
+  check('Finish', 'Played N times, it ends on the last bar of the last time',
+    'Start the tune with the drum, say three times through 32 bars, and it should land on the tune’s final note, beat 1 of bar 96, and stop.',
+    function () {
+      var f = timesRun(32, 3);
+      expect(Math.abs(f.last.time - (0.08 + 2 * 96)) < 1e-6,
+             'last stroke in drum bar ' + drumBar(f.last.time) + ' (expected the start of bar 96)');
+      expect(f.last.voice === 'bass' && f.last.vel === 1, 'the last stroke is a ' + f.last.voice + ' at ' + f.last.vel);
+      expect(!f.run.tr.running && f.ended === 1, 'the drum did not stop and say so after the last time through');
+      var g = timesRun(16, 1);
+      expect(Math.abs(g.last.time - (0.08 + 2 * 16)) < 1e-6,
+             'once through 16 bars ended in drum bar ' + drumBar(g.last.time) + ' (expected 16)');
+      var h = timesRun(32, 0);
+      expect(h.run.tr.running, '“until I stop” stopped by itself');
+      h.run.done();
+    });
+
+  check('Finish', 'Lowered part-way through, it ends at the end of this time',
+    'Change three times to once during the second time through: the end should come at the end of the second, not never.',
+    function () {
+      var f = timesRun(32, 3, function (r) { r.advance(0.08 + 2 * 40); r.tr.timesThrough = 1; });   // in bar 40
+      expect(Math.abs(f.last.time - (0.08 + 2 * 64)) < 1e-6,
+             'last stroke in drum bar ' + drumBar(f.last.time) + ' (expected the end of the second time, bar 64)');
+      expect(!f.run.tr.running, 'the drum played on');
+    });
+
   check('Finish', 'It can be taken back, and a stall cannot lose it',
     'Pressing Finish again means go round again. And a page that freezes through the last stroke must still stop, not play on.',
     function () {
@@ -1079,6 +1119,29 @@
         expect(jigBpm === TRAD.tuneById('jig').defaultBpm, 'the arrow also nudged the tempo, to ' + jigBpm);
         expect(wrapped === TRAD.tunes[TRAD.tunes.length - 1].id, '← from Reel went to ' + wrapped + ', not round to the end');
         expect(mode === 'simple', '→ from Full chose ' + mode);
+      });
+    });
+
+  check('The app', 'Length and times through are on show, counted, and kept per tune',
+    'They are everyday practice choices, so Basic shows them. Each tune type keeps its own length, as it keeps its own tempo.',
+    function () {
+      return withApp(function (win, doc) {
+        function $(id) { return doc.getElementById(id); }
+        function set(id, v) { $(id).value = v; $(id).dispatchEvent(new win.Event('change')); }
+        function chip(id) { doc.querySelector('.chip[data-id="' + id + '"]').click(); }
+        var inBasic = shown(win, $('tune-len')) && shown(win, $('times'));
+        chip('jig'); set('tune-len', 48);
+        chip('reel'); var reelLen = $('tune-len').value;
+        chip('jig'); var jigLen = $('tune-len').value;
+        set('countin', 0); set('times', 2);
+        $('play').click();
+        var counter = $('bar-count').textContent;
+        $('play').click();
+        var saved = JSON.parse(win.localStorage.getItem('bodhran.settings') || '{}');
+        expect(inBasic, 'Length or Play it is not on show in Basic');
+        expect(reelLen === '32' && jigLen === '48', 'reel came back at ' + reelLen + ' bars, jig at ' + jigLen);
+        expect(/bar 1 of 48/.test(counter) && /time 1 of 2/.test(counter), 'the counter says "' + counter + '"');
+        expect(saved.times === 2 && saved.len_jig === 48, 'not remembered: ' + JSON.stringify({ times: saved.times, len_jig: saved.len_jig }));
       });
     });
 

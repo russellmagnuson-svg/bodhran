@@ -30,6 +30,8 @@
     this.backHand = 0;      // 0 = open skin throughout, 1 = the most pressure
     this._phrasePeak = 1;   // how far this phrase's back hand presses in
     this.phraseLength = 4;
+    this.tuneBars = 32;       // one time through the tune: AABB of 8-bar parts
+    this.timesThrough = 0;    // 0 = until stopped; N = end on the Nth time
     this.countInBars = 1;
     this.swingOverride = null;  // null = use the tune's own swing
 
@@ -103,7 +105,7 @@
       this._grid = 'C' + 'c'.repeat(this.tune.beatsPerBar - 1);
       this._countIn = true;
       this._countInLeft--;
-    } else if (this.finishing && (L <= 0 || this._bar % L === L - 1)) {
+    } else if ((this.finishing && (L <= 0 || this._bar % L === L - 1)) || this._lastTime()) {
       // The ending. A tune's last note arrives at the start of its last bar,
       // so the drum lands one hard down stroke there, with it, lets it ring,
       // and stops. With no phrases set, it lands on the next bar.
@@ -183,6 +185,22 @@
     var L = this.phraseLength > 0 ? this.phraseLength : 4;
     var x = ((this._bar % L) + fractionOfBar) / L;
     return this.backHand * this._phrasePeak * TRAD.backHandShape(x);
+  };
+
+  /* Is this bar the last bar of the last time through? Counted so that
+   * lowering the number part-way through still ends at the end of the time
+   * through you are on, rather than never. */
+  Transport.prototype._lastTime = function () {
+    var n = this.tuneBars;
+    if (!(this.timesThrough > 0) || !(n > 0) || this._bar < 0) return false;
+    return this._bar % n === n - 1 && Math.floor(this._bar / n) + 1 >= this.timesThrough;
+  };
+
+  /* Where the drum is in the tune: bar 1.. of tuneBars, and which time
+   * through. Null during the count-in. */
+  Transport.prototype.position = function () {
+    if (this._bar < 0 || !(this.tuneBars > 0)) return null;
+    return { bar: this._bar % this.tuneBars + 1, time: Math.floor(this._bar / this.tuneBars) + 1 };
   };
 
   Transport.prototype._slotTime = function () {
