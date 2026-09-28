@@ -4,6 +4,16 @@ What changed in each version of Bodhrán, newest first. The version shows next
 to the title in the app; bump it at the top of `js/app.js` with every change
 that gets pushed (the last number for a fix, the middle one for a feature).
 
+## 1.6.2 — 2026-09-28
+
+- Fixed: in Safari, a tab left playing behind another tab in the same window
+  stumbled. Safari slows a background tab's timers to about once a second,
+  even while it plays, and the drum planned only a tenth of a second ahead.
+  Hidden, it now plans five seconds ahead, straight away; back on screen, a
+  tenth again. Stop still stops at once.
+- The bar display and counter now show the bar being heard, not the bar
+  planned, so they don't run ahead of the music after coming back to the tab.
+
 ## 1.6.1 — 2026-09-28
 
 - The fix for Mac Safari going silent after sleep now lives in one file,
@@ -102,6 +112,13 @@ that gets pushed (the last number for a fix, the middle one for a feature).
 ## Guitar demo
 
 The page at `/guitar/` has its own version number, shown next to its title.
+
+### Guitar demo 1.3.3 — 2026-09-28
+
+- Fixed: in Safari, the demo stumbled when left playing behind another tab in
+  the same window, the same as the app. Hidden, it now hands the audio notes
+  five seconds ahead, and Stop drops everything queued, guitar and flute as
+  well as the drum.
 
 ### Guitar demo 1.3.2 — 2026-09-28
 

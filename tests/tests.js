@@ -159,6 +159,17 @@
     target.dispatchEvent(new win.KeyboardEvent('keydown', { code: code, key: k, bubbles: true }));
   }
   function isPlaying(doc) { return doc.getElementById('play').classList.contains('playing'); }
+  /* The bar counter shows the bar being heard, so after Play it waits for
+   * the first one. Resolves with the counter's text once it names a bar. */
+  function heard(doc) {
+    var until = Date.now() + 4000;
+    return new Promise(function (resolve) {
+      (function poll() {
+        var t = doc.getElementById('bar-count').textContent;
+        if (/^bar /.test(t) || Date.now() > until) resolve(t); else setTimeout(poll, 50);
+      })();
+    });
+  }
 
   /* ================================================================
    * Patterns
@@ -609,6 +620,23 @@
       expect(all(offbeats(b, bar, bar * 2), reel), 'the reel did not get the swing set for it: ' + offbeats(b, bar, bar * 2).join(', '));
     });
 
+  check('Timing', 'A tab left playing behind another keeps every stroke',
+    'Safari slows a hidden tab’s timers to about once a second, even while it plays. Planning a tenth of a second ahead, a tab left playing behind another stumbled.',
+    function () {
+      function strokes(ahead) {
+        // Set before playing, as the page sets it the moment it is hidden.
+        var r = fakeRun(function (tr) { tr.tune = TRAD.tuneById('reel'); tr.mode = 'simple'; tr.bpm = 120; tr.ahead = ahead; });
+        for (var s = 0; s < 10; s++) r.jump(1);       // the timer, once a second
+        r.done();
+        return r.hits.filter(function (h) { return h.time < 10; }).length;
+      }
+      var want = Math.floor((10 - 0.08) / 0.25) + 1;  // a reel quaver every 0.25 s from 0.08 s
+      var hidden = strokes(TRAD.HIDDEN_AHEAD), onScreen = strokes(TRAD.SCHEDULE_AHEAD);
+      expect(TRAD.HIDDEN_AHEAD >= 3, 'a hidden page plans only ' + TRAD.HIDDEN_AHEAD + ' s ahead');
+      expect(hidden === want, 'hidden, with a once-a-second timer, ' + hidden + ' of ' + want + ' strokes played');
+      expect(onScreen < want, 'the check proves nothing: even the short plan kept every stroke');
+    });
+
   check('Timing', 'A stall never stacks strokes on one instant',
     'If the page freezes, missed strokes must be skipped. Firing them all at once was a loud crash (a 3 s freeze stacked 10).',
     function () {
@@ -905,6 +933,30 @@
       });
     });
 
+  check('The app', 'Hidden behind another tab, the drum plans seconds ahead at once',
+    'The moment the tab is hidden, before its timers slow: the next slowed timer could be a second away, and the strokes in between would be lost.',
+    function () {
+      var fake = 'window.__hidden = false;' +
+          'Object.defineProperty(Document.prototype, "hidden", { configurable: true, get: function () { return window.__hidden; } });' +
+          'Object.defineProperty(Document.prototype, "visibilityState", { configurable: true, get: function () { return window.__hidden ? "hidden" : "visible"; } });' +
+          'window.__lead = 0; var os = OscillatorNode.prototype.start;' +
+          'OscillatorNode.prototype.start = function (w) { if (w) window.__lead = Math.max(window.__lead, w - this.context.currentTime); return os.apply(this, arguments); };';
+      return withApp(function (win, doc) {
+        var cin = doc.getElementById('countin'); cin.value = '0'; cin.dispatchEvent(new win.Event('change'));
+        doc.getElementById('play').click();
+        var shown = win.__lead;
+        win.__hidden = true; doc.dispatchEvent(new win.Event('visibilitychange'));
+        var hidden = win.__lead;
+        return heard(doc).then(function (counter) {
+          doc.getElementById('play').click();
+          expect(shown < 1, 'on screen it already planned ' + round(shown, 2) + ' s ahead');
+          expect(hidden > 3, 'hidden, it planned only ' + round(hidden, 2) + ' s ahead');
+          // Planned seconds ahead, the counter must still name the bar being heard.
+          expect(/^bar 1 of/.test(counter), 'with bars planned ahead, the counter says "' + counter + '", not the bar being heard');
+        });
+      }, null, fake);
+    });
+
   check('The app', 'Each tune type keeps its own tempo',
     'Switching tune type used to throw away the tempo you had set.',
     function () {
@@ -990,12 +1042,13 @@
         var bpm = $('bpm'); bpm.value = 160; bpm.dispatchEvent(new win.Event('input'));   // 1.5 s a bar
         var offWhenStopped = $('finish').disabled && $('mini-finish').disabled;
         $('play').click();
-        var onWhenPlaying = !$('finish').disabled;
+        var onWhenPlaying = !$('finish').disabled, pressed, counter, start;
+        return heard(doc).then(function () {
         key(win, doc, 'KeyF', 'f');                      // F does what the button does
-        var pressed = $('finish').getAttribute('aria-pressed') === 'true' &&
-                      $('mini-finish').getAttribute('aria-pressed') === 'true';
-        var counter = $('bar-count').textContent;
-        var start = Date.now();
+        pressed = $('finish').getAttribute('aria-pressed') === 'true' &&
+                  $('mini-finish').getAttribute('aria-pressed') === 'true';
+        counter = $('bar-count').textContent;
+        start = Date.now();
         return new Promise(function (resolve) {
           (function wait() {
             if (!isPlaying(doc) || Date.now() - start > 8000) resolve(); else setTimeout(wait, 100);
@@ -1009,6 +1062,7 @@
           expect($('play').textContent.trim() === 'Play', 'the button says "' + $('play').textContent.trim() + '"');
           expect($('finish').disabled && $('finish').textContent === 'Finish', 'Finish did not go back to how it started');
           expect($('bar-count').textContent === '—', 'the bar counter still says "' + $('bar-count').textContent + '"');
+        });
         });
       });
     });
@@ -1160,7 +1214,7 @@
         chip('jig'); var jigLen = $('tune-len').value;
         set('countin', 0); set('times', 2);
         $('play').click();
-        var counter = $('bar-count').textContent;
+        return heard(doc).then(function (counter) {
         $('play').click();
         var saved = JSON.parse(win.localStorage.getItem('bodhran.settings') || '{}');
         expect(inBasic, 'Length or Play it is not on show in Basic');
@@ -1168,6 +1222,7 @@
         expect(waltzFirst === '64', 'a first visit to waltz gave ' + waltzFirst + ' bars, not 64');
         expect(/bar 1 of 48/.test(counter) && /time 1 of 2/.test(counter), 'the counter says "' + counter + '"');
         expect(saved.times === 2 && saved.len_jig === 48, 'not remembered: ' + JSON.stringify({ times: saved.times, len_jig: saved.len_jig }));
+        });
       });
     });
 
@@ -1669,6 +1724,40 @@
           expect(chrome.plays === 0, 'Chrome was nudged too');
         });
       });
+    });
+
+  check('Guitar demo', 'Hidden behind another tab, it plans ahead, and Stop drops the lot',
+    'Safari slows a hidden tab’s timers to about once a second, and the demo stumbled. Hidden, it hands notes seconds ahead; Stop must drop them or they come back with the next Play.',
+    function () {
+      var first = 'window.__hidden = false;' +
+          'Object.defineProperty(Document.prototype, "hidden", { configurable: true, get: function () { return window.__hidden; } });' +
+          'Object.defineProperty(Document.prototype, "visibilityState", { configurable: true, get: function () { return window.__hidden ? "hidden" : "visible"; } });' +
+          'window.__lead = 0; var os = OscillatorNode.prototype.start;' +
+          'OscillatorNode.prototype.start = function (w) { if (w) window.__lead = Math.max(window.__lead, w - this.context.currentTime); return os.apply(this, arguments); };';
+      var frame = document.createElement('iframe');
+      frame.style.cssText = 'position:absolute;left:-10000px;top:0;border:0;width:375px;height:812px';
+      document.body.appendChild(frame);
+      return text('../guitar/').then(function (html) {
+        return new Promise(function (resolve, reject) {
+          var t = setTimeout(function () { reject(new Error('the demo page did not load')); }, 10000);
+          frame.onload = function () { clearTimeout(t); setTimeout(resolve, 200); };
+          frame.srcdoc = html.replace('<head>', '<head><base href="' + new URL('../guitar/', location.href).href +
+            '"><script>' + first + '<\/script>');
+        });
+      }).then(function () {
+        var win = frame.contentWindow, doc = frame.contentDocument, D = win.KESH_DEMO;
+        doc.getElementById('play').click();
+        var shown = win.__lead;
+        win.__hidden = true; doc.dispatchEvent(new win.Event('visibilitychange'));
+        var hidden = win.__lead, ahead = D.ahead(), A = D.audio();
+        var queued = A.guitar.queued.filter(function (q) { return q.t > A.ctx.currentTime + 1; }).length;
+        doc.getElementById('play').click();          // Stop
+        var left = A.guitar.queued.filter(function (q) { return q.t > A.ctx.currentTime; }).length;
+        expect(shown < 1, 'on screen it already handed notes ' + round(shown, 2) + ' s ahead');
+        expect(ahead === window.TRAD.HIDDEN_AHEAD && hidden > 3, 'hidden, it handed notes only ' + round(hidden, 2) + ' s ahead');
+        expect(queued > 0, 'no guitar notes were queued ahead, so this proves nothing');
+        expect(left === 0, left + ' guitar notes were still queued after Stop');
+      }).finally(function () { frame.remove(); });
     });
 
   check('Guitar demo', 'It shows its own version, and the notes cover it',

@@ -12,7 +12,7 @@
   'use strict';
 
   var LOOKAHEAD_MS = 25;      // how often the scheduler wakes up
-  var SCHEDULE_AHEAD = 0.12;  // how far ahead of the clock it schedules
+  var SCHEDULE_AHEAD = 0.12;  // how far ahead of the clock it schedules, on screen
   var LATE = 0.05;            // a slot this far in the past is skipped, not played
 
   function Transport(ctx, bodhran, midi) {
@@ -35,6 +35,7 @@
     this.countInBars = 1;
     this.swingOverride = null;  // null = use the tune's own swing
 
+    this.ahead = SCHEDULE_AHEAD;   // longer while the page is hidden: see js/wake.js
     this.running = false;
     this._timer = null;
     this._grid = null;
@@ -51,7 +52,8 @@
     this._endTime = 0;
 
     this.events = [];   // {time, slot, len, char, bar, countIn} for the UI
-    this.onBar = null;  // called when a new bar's grid is chosen
+    this.onBar = null;  // called when a new bar's grid is chosen: (grid, bar, countIn, startTime)
+    this.onTick = null; // called after each wake of the scheduler
     this.onEnd = null;  // called when a Finish has played its last stroke
   }
 
@@ -132,7 +134,7 @@
       this._countIn = false;
     }
     this._barDur = this._barDuration();
-    if (this.onBar) this.onBar(this._grid, this._bar, this._countIn);
+    if (this.onBar) this.onBar(this._grid, this._bar, this._countIn, this._barStart);
   };
 
   Transport.prototype._scheduleSlot = function (slot) {
@@ -236,7 +238,7 @@
       this._startBar();
     }
 
-    var horizon = now + SCHEDULE_AHEAD;
+    var horizon = now + this.ahead;
     var guard = 0;
     while (this.running && !this.ending && guard++ < 256) {
       if (this._slotTime() >= horizon) break;
@@ -257,6 +259,7 @@
         if (this.onEnd) this.onEnd();
       }
     }
+    if (this.onTick) this.onTick();
   };
 
   /* Finish: play on to the last bar of the phrase and end there. Pressing it
@@ -329,5 +332,6 @@
     return out;
   };
 
+  TRAD.SCHEDULE_AHEAD = SCHEDULE_AHEAD;
   TRAD.Transport = Transport;
 })(window.TRAD = window.TRAD || {});

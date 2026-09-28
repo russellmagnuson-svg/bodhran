@@ -16,6 +16,20 @@
     }
   };
 
+  /* How far ahead, in seconds, to hand sound to the audio clock.
+   *
+   * A visible page plans a tenth of a second or so ahead, so a change of
+   * tempo or a press of Stop is heard at once. But a hidden page — a tab in
+   * the background — has its timers slowed by the browser, and Safari slows
+   * them to about once a second even while the tab is playing (Chrome leaves
+   * a sounding tab alone). Planning a tenth of a second ahead, a tab left
+   * playing behind another stumbled: strokes came due between the slowed
+   * timers and were skipped. Hidden, plan well past that instead. */
+  TRAD.HIDDEN_AHEAD = 5;
+  TRAD.lookahead = function (visible) {
+    return document.hidden ? TRAD.HIDDEN_AHEAD : visible;
+  };
+
   /* Safari on a Mac, the one browser that needs the nudge below. */
   TRAD.isMacSafari = function () {
     var ua = navigator.userAgent || '';

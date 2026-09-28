@@ -8,7 +8,7 @@
    * Bump it with every change that gets pushed: the last number for a fix,
    * the middle one for a new feature. It is also the quickest way to tell
    * whether a phone is running the latest deploy or an older copy. */
-  var VERSION = '1.6.1';
+  var VERSION = '1.6.2';
   TRAD.VERSION = VERSION;
 
   TRAD.validatePatterns();
@@ -62,7 +62,9 @@
     drone = new TRAD.Drone(ctx, out);
     transport = new TRAD.Transport(ctx, bodhran, midi);
     transport.onBar = onBar;
+    transport.onTick = drawBars;
     transport.onEnd = showState;
+    fitLookahead();
 
     applyAll();
     requestAnimationFrame(frame);
@@ -241,12 +243,25 @@
     }
   }
 
-  var lastBar = null;
-  function onBar(grid, bar, countIn) {
-    renderGrid(grid);
-    lastBar = { bar: bar, countIn: countIn };
-    if (transport.ending) showState();   // the Finish buttons have done their job
-    else showBarCount();
+  /* The transport chooses each bar ahead of time — seconds ahead, while the
+   * tab is hidden — so the bar display and the counter wait for the bar to
+   * be heard. Shown when chosen, they ran up to five seconds ahead of the
+   * music after coming back to a tab left playing. */
+  var lastBar = null, barQueue = [];
+  function onBar(grid, bar, countIn, at) {
+    barQueue.push({ grid: grid, bar: bar, countIn: countIn, at: at, ending: transport.ending });
+    drawBars();
+  }
+  function drawBars() {
+    if (!ctx || !transport || !transport.running) return;
+    var now = ctx.currentTime;
+    while (barQueue.length && barQueue[0].at <= now + 0.02) {
+      var b = barQueue.shift();
+      renderGrid(b.grid);
+      lastBar = b;
+      if (b.ending) showState();   // the Finish buttons have done their job
+      else showBarCount();
+    }
   }
 
   /* The bar counter is absolute; show it as a position within the phrase,
@@ -256,12 +271,13 @@
       $('bar-count').textContent = '—';
       return;
     }
-    // Where you are in the tune, which is what the length and times count.
-    var pos = transport.position(), times = transport.timesThrough;
-    var text = lastBar.countIn || !pos ? 'count-in'
-      : 'bar ' + pos.bar + ' of ' + transport.tuneBars + ' \u00b7 time ' + pos.time +
+    // Where you are in the tune, which is what the length and times count:
+    // the bar being heard, not the one the transport has got to.
+    var n = transport.tuneBars, b = lastBar.bar, times = transport.timesThrough;
+    var text = lastBar.countIn || b < 0 || !(n > 0) ? 'count-in'
+      : 'bar ' + (b % n + 1) + ' of ' + n + ' \u00b7 time ' + (Math.floor(b / n) + 1) +
         (times > 0 ? ' of ' + times : '');
-    if (transport.ending) text = 'last stroke';
+    if (lastBar.ending) text = 'last stroke';
     else if (transport.finishing) text += ' \u00b7 finishing';
     $('bar-count').textContent = text;
   }
@@ -269,6 +285,7 @@
   function frame() {
     requestAnimationFrame(frame);
     if (!transport || !transport.running) return;
+    drawBars();
     var due = transport.due();
     for (var i = 0; i < due.length; i++) {
       var ev = due[i];
@@ -324,11 +341,23 @@
   // the page comes back if the drum is still going.
   // Coming back to the page is also when to wake audio an interruption parked.
   document.addEventListener('visibilitychange', function () {
+    fitLookahead();
     if (document.visibilityState === 'visible' && transport && transport.running) {
       wakeAudio();
       holdScreen();
     }
   });
+
+  /* Hidden behind another tab, the browser slows this page's timers, so plan
+   * the drum further ahead; back on screen, plan just ahead again (js/wake.js).
+   * Going hidden, plan at once: the next slowed timer could be a second off,
+   * and the strokes in between would be lost. Stop still stops at once, since
+   * it drops strokes planned but not yet played. */
+  function fitLookahead() {
+    if (!transport) return;
+    transport.ahead = TRAD.lookahead(TRAD.SCHEDULE_AHEAD);
+    if (document.hidden && transport.running) transport._tick();
+  }
 
   /* ---------- play / stop ---------- */
   function toggle() {
@@ -354,7 +383,7 @@
     });
     syncMini();
     showBarCount();
-    if (!on) { lastBar = null; renderGrid(idleGrid()); }
+    if (!on) { lastBar = null; barQueue = []; renderGrid(idleGrid()); }
   }
 
   function finish() {

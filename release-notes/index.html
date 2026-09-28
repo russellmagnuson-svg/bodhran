@@ -161,7 +161,7 @@
       The version number shows next to the title in the app, so you can check which one
       your phone or browser is running.</p>
       <ul class="facts">
-        <li><b>1.1.0 → 1.6.1</b> over three days, 26–28 September 2026</li>
+        <li><b>1.1.0 → 1.6.2</b> over three days, 26–28 September 2026</li>
         <li><b>36 → 71</b> automated checks</li>
       </ul>
     </div>
@@ -173,6 +173,17 @@
   </div>
 
   <main class="releases">
+
+    <article class="release">
+      <div class="when"><span class="ver">1.6.2</span><span class="date">28 Sep</span></div>
+      <div>
+        <h2>No stumble in a background tab</h2>
+        <ul class="changes">
+          <li>In Safari, a tab left playing behind another tab in the same window used to stumble: Safari slows a background tab’s timers to about once a second, even while it plays. The drum now plans several seconds ahead the moment its tab is hidden. Stop still stops at once.</li>
+          <li>The bar display and counter show the bar being heard, so they don’t run ahead of the music when you come back to the tab.</li>
+        </ul>
+      </div>
+    </article>
 
     <article class="release">
       <div class="when"><span class="ver">1.6.1</span><span class="date">28 Sep</span></div>
@@ -317,6 +328,15 @@
   <section class="demo-notes" id="guitar">
     <h2 class="section-h">Guitar demo</h2>
     <p class="section-note">The guitar backing page at <code>/guitar/</code> has its own version number, shown next to its title.</p>
+    <article class="release">
+      <div class="when"><span class="ver">Guitar demo 1.3.3</span><span class="date">28 Sep</span></div>
+      <div>
+        <h2>No stumble in a background tab</h2>
+        <ul class="changes">
+          <li>Like the app, the demo no longer stumbles in Safari when left playing behind another tab, and Stop drops every note already queued.</li>
+        </ul>
+      </div>
+    </article>
     <article class="release">
       <div class="when"><span class="ver">Guitar demo 1.3.2</span><span class="date">28 Sep</span></div>
       <div>

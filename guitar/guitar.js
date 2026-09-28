@@ -51,6 +51,7 @@
     this.ctx = ctx;
     this.notes = {};         // midi -> [{ buffer, rate }]
     this.voices = [];        // per string: { gain, src } of what is ringing
+    this.queued = [];        // every string note handed to the audio but not yet sounding
     this.shape = null;       // the notes of the shape currently held
 
     // The body, shaped like a big dreadnought (the Martin sound): a deep air
@@ -123,6 +124,21 @@
     src.connect(g); g.connect(this.input);
     src.start(t);
     this.voices[string] = { gain: g, src: src };
+    var now = ctx.currentTime;
+    this.queued = this.queued.filter(function (q) { return q.t > now; });
+    this.queued.push({ t: t, gain: g, src: src });
+  };
+
+  /* Drop every note due at or after time t: handed to the audio ahead of
+   * time, but not yet sounding. Notes already ringing are left to Stop's
+   * fade. (A tab in the background hands notes seconds ahead.) */
+  Guitar.prototype.cancelFrom = function (t) {
+    this.queued = this.queued.filter(function (q) {
+      if (q.t < t) return true;
+      q.gain.disconnect();
+      try { q.src.stop(); } catch (e) {}
+      return false;
+    });
   };
 
   /* Strum a shape at time t.

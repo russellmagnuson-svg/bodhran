@@ -53,7 +53,8 @@ against the real code:
   drum only; every style reaches 60 bpm; triplet fills are well formed
 - **Choosing patterns** — fills only on the last bar of a phrase; Busyness
   behaves at both ends
-- **Timing** — quavers and triplets land exactly; tempo changes wait for the
+- **Timing** — a tab left playing behind another keeps every stroke; quavers
+  and triplets land exactly; tempo changes wait for the
   next bar, and so do tune changes and the swing that goes with them; phrases count from the first bar the drum
   plays, not the count-in; a frozen page never stacks strokes; Pulse is dead straight; Simple
   never wanders; the count-in is one bar
@@ -94,7 +95,8 @@ against the real code:
   each sound's volume is heard straight away and remembered; DADGAD is
   D A D G A D with the top D open in every shape; the tuning switch changes the
   shapes and is remembered; the bodhrán is not buried under the guitar; it
-  wakes a silent Safari tab the way the app does; it shows its own version and the notes cover it
+  wakes a silent Safari tab the way the app does; hidden, it plans ahead and
+  Stop drops the lot; it shows its own version and the notes cover it
 - **Release notes** (under The app) — `CHANGELOG.md` and `release-notes/` both
   have an entry for the current version, so bumping the version means adding
   the notes in the same change
@@ -219,6 +221,11 @@ part-way through ends at the end of the time through you are on.
 stroke on its first beat, where a tune's final note falls, then stops and lets
 it ring. Pressed during that last bar, it goes round to the next phrase's last
 bar instead; pressed again, it is taken back.
+
+While the page is hidden behind another tab, the scheduler plans five seconds
+ahead instead of a tenth of a second (Safari slows a background tab's timers to
+about once a second, even while it plays). The bar display and counter show
+the bar being heard, not the one planned.
 
 Tempo, tune type and busyness changes land on the **next bar boundary**, which
 is where a musician expects them to land. Stop drops any strokes already

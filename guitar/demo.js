@@ -13,7 +13,7 @@
    * with every change to the demo that gets pushed: the last number for a
    * fix, the middle one for something new. Add it to CHANGELOG.md and the
    * release notes in the same change (a check makes sure). */
-  var VERSION = '1.3.2';
+  var VERSION = '1.3.3';
 
   var $ = function (id) { return document.getElementById(id); };
   var K = window.KESH, G = window.GTR, T = window.TRAD;
@@ -144,14 +144,25 @@
   }
 
   /* ---------- the tune: a simple flute ---------- */
+  // Flute notes handed to the audio but not yet sounding, so Stop can drop them.
+  var queuedFlute = [];
+  function cancelFlute(t) {
+    queuedFlute = queuedFlute.filter(function (n) {
+      if (n.t < t) return false;           // sounding or gone: Stop's fade deals with it
+      n.nodes.forEach(function (x) { x.disconnect(); });
+      return false;
+    });
+  }
   function flute(t, dur, midi, vel) {
     var f = G.hz(midi), end = t + dur;
+    queuedFlute = queuedFlute.filter(function (n) { return n.t > ctx.currentTime - 1; });
     var amp = ctx.createGain();
     amp.gain.setValueAtTime(0.0001, t);
     amp.gain.exponentialRampToValueAtTime(vel, t + 0.03);
     amp.gain.setValueAtTime(vel, Math.max(t + 0.031, end - 0.05));
     amp.gain.exponentialRampToValueAtTime(0.0001, end);
     amp.connect(fluteBus);
+    queuedFlute.push({ t: t, nodes: [amp] });
     [[1, 1], [2, 0.16], [3, 0.05]].forEach(function (h) {
       var o = ctx.createOscillator(), g = ctx.createGain();
       o.frequency.value = f * h[0]; g.gain.value = h[1];
@@ -174,6 +185,7 @@
     bg.gain.exponentialRampToValueAtTime(vel * 0.018, t + 0.08);
     bg.gain.exponentialRampToValueAtTime(0.0001, end);
     b.connect(bp); bp.connect(bg); bg.connect(fluteBus);
+    queuedFlute[queuedFlute.length - 1].nodes.push(bg);
     b.start(t, Math.random() * 0.5, dur + 0.05);
   }
 
@@ -181,6 +193,8 @@
   var playing = false, timer = null;
   var barN = 0, nextBar = 0, pending = [], shown = [], endAt = null;
   var heard = -1;                          // the bar you are hearing now
+  var AHEAD = 0.12;                        // how far ahead the audio is handed notes, on screen
+  var ahead = AHEAD;                       // longer while hidden: see js/wake.js
 
   function quaver() { return 60 / +$('bpm').value / 3; }
   function times() { return +$('times').value; }
@@ -243,13 +257,13 @@
     var now = ctx.currentTime;
     if (endAt == null) {
       var limit = times() > 0 ? times() * FORM.length : Infinity;
-      while (nextBar < now + 0.3 && barN < limit) {
+      while (nextBar < now + ahead + 0.18 && barN < limit) {
         nextBar += layBar(barN, nextBar);
         barN++;
       }
     }
     pending.sort(function (a, b) { return a.t - b.t; });
-    while (pending.length && pending[0].t < now + 0.12) {
+    while (pending.length && pending[0].t < now + ahead) {
       var e = pending.shift();
       if (e.t > now - 0.05) e.fn(Math.max(e.t, now));   // too late: skip, never pile up
     }
@@ -264,6 +278,7 @@
     playing = true;
     barN = -1;                              // one bar of count-in clicks first
     nextBar = ctx.currentTime + 0.12;
+    ahead = T.lookahead(AHEAD);
     pending = []; shown = []; endAt = null;
     tick();
     timer = setInterval(tick, 25);
@@ -277,12 +292,26 @@
     if (ctx) {
       var now = ctx.currentTime;
       if (!ended) run.gain.setTargetAtTime(0, now, 0.04);   // a press of Stop: quickly quiet
+      // Drop everything handed to the audio ahead of time — seconds of it, if
+      // the tab was hidden — or it would come back with the next Play.
+      guitar.cancelFrom(now); cancelFlute(now);
+      drum.cancelFrom(now); clicker.cancelFrom(now);
       guitar.silence(now + (ended ? 0 : 0.05));
     }
     showState();
   }
 
   function toggle() { if (playing) stop(false); else start(); }
+
+  /* Hidden behind another tab, Safari slows this page's timers to about once
+   * a second, and the demo stumbled: notes came due between them and were
+   * skipped. So hidden, hand the audio notes several seconds ahead, at once;
+   * back on screen, just ahead again (js/wake.js). */
+  function fitLookahead() {
+    ahead = T.lookahead(AHEAD);
+    if (document.hidden && playing) tick();
+  }
+  document.addEventListener('visibilitychange', fitLookahead);
 
   /* ---------- drawing ---------- */
   function diagram(chord, big) {
@@ -491,6 +520,7 @@
   window.KESH_DEMO = {
     VERSION: VERSION, STRUMS: STRUMS, FORM: FORM, VOICE: VOICE, MIX: MIX, DRUM: DRUM,
     tuning: function () { return tuning; },
+    ahead: function () { return ahead; },
     audio: function () { return { ctx: ctx, run: run, guitar: guitar, flute: fluteBus, drum: drum }; },
     playing: function () { return playing; }
   };
