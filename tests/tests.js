@@ -1434,10 +1434,30 @@
       expect(K.voicing('D')[5] === 66, 'the D shape has no F sharp on top');
     });
 
+  check('Guitar demo', 'DADGAD: D A D G A D, with the top D open in every shape',
+    'In DADGAD the open strings are the point: the top D rings through every chord, the open G through three. A fretted top string would lose it.',
+    function () {
+      var K = window.KESH, t = K.tunings.dadgad;
+      expect(t.strings.join() === [38, 45, 50, 55, 57, 62].join(), 'the strings are ' + t.strings.join() + ', not D2 A2 D3 G3 A3 D4');
+      var missing = [];
+      ['A', 'B'].forEach(function (p) {
+        K.chords[p].forEach(function (c, i) {
+          c.split(' ').forEach(function (x) { if (!t.shapes[x]) missing.push(p + (i + 1) + ': ' + x); });
+        });
+      });
+      expect(missing.length === 0, 'no DADGAD shape for ' + missing.join(', '));
+      var closed = Object.keys(t.shapes).filter(function (c) { return t.shapes[c].frets[5] !== 0; });
+      expect(closed.length === 0, 'the top D is not open in: ' + closed.join(', '));
+      var noG = Object.keys(t.shapes).filter(function (c) { return c !== 'D' && t.shapes[c].frets[3] !== 0; });
+      expect(noG.length === 0, 'the G string is not open in: ' + noG.join(', '));
+      expect(K.voicing('G', 'dadgad').indexOf(59) === -1 && K.voicing('D', 'dadgad').indexOf(66) === -1,
+             'the DADGAD shapes are not the open ones intended');
+    });
+
   check('Guitar demo', 'The guitar is in tune',
     'A plucked-string model sounds a little flat unless its loop is corrected. Strings more than a few cents apart beat against each other in a chord.',
     function () {
-      var SRG = 48000, notes = [40, 47, 55, 62, 66], out = [];
+      var SRG = 48000, notes = [38, 40, 47, 55, 57, 62, 66], out = [];
       var chain = Promise.resolve();
       notes.forEach(function (m) {
         chain = chain.then(function () {
@@ -1517,6 +1537,35 @@
             expect(label === '50%', 'the guitar slider says "' + label + '"');
           });
         });
+      }).finally(function () {
+        frame.remove();
+        if (saved == null) localStorage.removeItem(KEY); else localStorage.setItem(KEY, saved);
+      });
+    });
+
+  check('Guitar demo', 'The tuning switch changes the shapes, and is remembered',
+    'DADGAD to begin with. Switching must redraw the shapes for the new tuning and play them, and come back the same next visit.',
+    function () {
+      var KEY = 'kesh.demo.tuning', saved = localStorage.getItem(KEY);
+      localStorage.removeItem(KEY);
+      var frame = document.createElement('iframe');
+      frame.src = '../guitar/';
+      frame.style.cssText = 'position:absolute;left:-10000px;top:0;border:0;width:375px;height:812px';
+      document.body.appendChild(frame);
+      return new Promise(function (resolve, reject) {
+        var t = setTimeout(function () { reject(new Error('the demo page did not load')); }, 10000);
+        frame.onload = function () { clearTimeout(t); setTimeout(resolve, 200); };
+      }).then(function () {
+        var doc = frame.contentDocument, win = frame.contentWindow, D = win.KESH_DEMO;
+        function first() { return doc.querySelector('#shapes svg').getAttribute('aria-label'); }
+        var start = D.tuning(), startShape = first();
+        doc.querySelector('#tunings [data-tuning="standard"]').click();
+        var after = D.tuning(), afterShape = first(), stored = win.localStorage.getItem(KEY);
+        var label = doc.getElementById('shapes-tuning').textContent;
+        expect(start === 'dadgad' && startShape === 'Gadd9 chord shape', 'a first visit starts in ' + start + ' showing ' + startShape);
+        expect(after === 'standard' && afterShape === 'G chord shape', 'switching gave ' + after + ' showing ' + afterShape);
+        expect(label === 'Standard', 'the shapes are labelled ' + label);
+        expect(stored === 'standard', 'the choice was saved as ' + stored);
       }).finally(function () {
         frame.remove();
         if (saved == null) localStorage.removeItem(KEY); else localStorage.setItem(KEY, saved);

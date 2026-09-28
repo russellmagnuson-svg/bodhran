@@ -13,7 +13,7 @@
    * with every change to the demo that gets pushed: the last number for a
    * fix, the middle one for something new. Add it to CHANGELOG.md and the
    * release notes in the same change (a check makes sure). */
-  var VERSION = '1.2.0';
+  var VERSION = '1.3.0';
 
   var $ = function (id) { return document.getElementById(id); };
   var K = window.KESH, G = window.GTR, T = window.TRAD;
@@ -59,8 +59,18 @@
   }
 
   var FORM = K.form();                     // one time through: AABB, 32 bars
-  var VOICE = {};                          // chord -> the notes of its shape
-  Object.keys(K.shapes).forEach(function (c) { VOICE[c] = K.voicing(c); });
+  /* The tuning, standard or DADGAD. DADGAD to begin with; the page remembers
+   * a choice. Each tuning's shapes as notes: VOICE[tuning][chord]. */
+  var tuning = 'dadgad';
+  try {
+    var t = localStorage.getItem('kesh.demo.tuning');
+    if (K.tunings[t]) tuning = t;
+  } catch (e) {}
+  var VOICE = {};
+  Object.keys(K.tunings).forEach(function (tn) {
+    VOICE[tn] = {};
+    Object.keys(K.tunings[tn].shapes).forEach(function (c) { VOICE[tn][c] = K.voicing(c, tn); });
+  });
 
   /* ---------- audio, built on the first press of Play ---------- */
   var ctx = null, run = null, guitar = null, drum = null, fluteBus = null, noise = null;
@@ -93,7 +103,11 @@
 
     guitar = new G.Guitar(ctx, run);
     var all = {};
-    Object.keys(VOICE).forEach(function (c) { VOICE[c].forEach(function (m) { if (m != null) all[m] = 1; }); });
+    Object.keys(VOICE).forEach(function (tn) {
+      Object.keys(VOICE[tn]).forEach(function (c) {
+        VOICE[tn][c].forEach(function (m) { if (m != null) all[m] = 1; });
+      });
+    });
     guitar.prepare(Object.keys(all).map(Number));
 
     drum = new T.Bodhran(ctx, run);
@@ -185,9 +199,9 @@
     if ($('on-guitar').checked) {
       slots.forEach(function (x) {
         var chord = bar.chords.length > 1 && x.s >= 3 ? bar.chords[1] : bar.chords[0];
-        (function (at, c, dir, v, s) {
-          pending.push({ t: at, fn: function (t) { guitar.strum(VOICE[c], t, dir, v, 4); }, strum: s });
-        })(t0 + x.s * q, chord, x.d, x.v, x.s);
+        (function (at, notes, dir, v, s) {
+          pending.push({ t: at, fn: function (t) { guitar.strum(notes, t, dir, v, 4); }, strum: s });
+        })(t0 + x.s * q, VOICE[tuning][chord], x.d, x.v, x.s);
       });
     }
 
@@ -254,29 +268,37 @@
 
   /* ---------- drawing ---------- */
   function diagram(chord, big) {
-    var sh = K.shapes[chord], w = big ? 132 : 96, h = big ? 160 : 118;
-    var left = big ? 22 : 16, top = big ? 30 : 24, gapX = (w - 2 * left) / 5, gapY = big ? 24 : 17;
+    var tn = K.tunings[tuning], sh = tn.shapes[chord], w = big ? 132 : 96, h = big ? 174 : 130;
+    var left = big ? 26 : 20, top = big ? 30 : 24, gapX = (w - 2 * left) / 5, gapY = big ? 24 : 17;
     var svg = '<svg viewBox="0 0 ' + w + ' ' + h + '" width="' + w + '" height="' + h + '" role="img" aria-label="' +
               sh.name + ' chord shape">';
+    // Four frets shown. A shape reaching past the fourth (DADGAD's G, up to
+    // the fifth) is drawn from its lowest fret, marked "2fr", as chord books do.
+    var fretted = sh.frets.filter(function (f) { return f > 0; });
+    var base = Math.max.apply(null, fretted) > 4 ? Math.min.apply(null, fretted) : 1;
     for (var f = 0; f <= 4; f++) {
-      var y = top + f * gapY;
-      svg += '<line class="' + (f ? 'fret' : 'nut') + '" x1="' + left + '" x2="' + (w - left) + '" y1="' + y + '" y2="' + y +
-             '" stroke-width="' + (f ? 1 : 3) + '"/>';
+      var y = top + f * gapY, nut = f === 0 && base === 1;
+      svg += '<line class="' + (nut ? 'nut' : 'fret') + '" x1="' + left + '" x2="' + (w - left) + '" y1="' + y + '" y2="' + y +
+             '" stroke-width="' + (nut ? 3 : 1) + '"/>';
+    }
+    if (base > 1) {
+      svg += '<text class="num" x="' + (left - 4) + '" y="' + (top + 0.5 * gapY + 3.5) + '" text-anchor="end">' + base + 'fr</text>';
     }
     for (var s = 0; s < 6; s++) {
       var x = left + s * gapX;
       svg += '<line class="str" x1="' + x + '" x2="' + x + '" y1="' + top + '" y2="' + (top + 4 * gapY) + '" stroke-width="' +
              (1.6 - s * 0.15) + '"/>';
-      var fr = sh.frets[s], my = top - 10;
+      var fr = sh.frets[s], my = top - 10, drone = sh.drone.indexOf(s) !== -1 ? ' drone' : '';
       if (fr < 0) {
         svg += '<path class="x" d="M' + (x - 4) + ' ' + (my - 4) + 'l8 8M' + (x + 4) + ' ' + (my - 4) + 'l-8 8" stroke-width="1.5"/>';
       } else if (fr === 0) {
-        svg += '<circle class="mark" cx="' + x + '" cy="' + my + '" r="4" stroke-width="1.5"/>';
+        svg += '<circle class="mark' + drone + '" cx="' + x + '" cy="' + my + '" r="4" stroke-width="1.5"/>';
       } else {
-        var drone = s >= 4 && fr === 3 && chord !== 'D';
-        svg += '<circle class="dot' + (drone ? ' drone' : '') + '" cx="' + x + '" cy="' + (top + (fr - 0.5) * gapY) +
+        svg += '<circle class="dot' + drone + '" cx="' + x + '" cy="' + (top + (fr - base + 0.5) * gapY) +
                '" r="' + (big ? 7.5 : 5.5) + '"/>';
       }
+      svg += '<text class="num" x="' + x + '" y="' + (top + 4 * gapY + 13) + '" text-anchor="middle">' +
+             tn.letters.split(' ')[s] + '</text>';
     }
     svg += '<text class="nm" x="' + (w / 2) + '" y="' + (h - 6) + '" text-anchor="middle">' + sh.name + '</text></svg>';
     return svg;
@@ -301,9 +323,18 @@
       row.appendChild(bars);
       host.appendChild(row);
     });
+    drawShapes();
+  }
+
+  function drawShapes() {
     $('shapes').innerHTML = ['G', 'C', 'D', 'Em'].map(function (c) {
       return '<div class="diagram">' + diagram(c) + '</div>';
     }).join('');
+    $('shapes-tuning').textContent = K.tunings[tuning].name;
+    $('shapes-note').textContent = K.tunings[tuning].note;
+    Array.prototype.forEach.call($('tunings').children, function (b) {
+      b.setAttribute('aria-checked', String(b.dataset.tuning === tuning));
+    });
   }
 
   function drawStrum() {
@@ -413,6 +444,14 @@
       box.addEventListener('change', show);
     });
     $('bpm-num').addEventListener('change', function () { setBpm(this.value); });
+    Array.prototype.forEach.call($('tunings').children, function (b) {
+      b.addEventListener('click', function () {
+        tuning = b.dataset.tuning;
+        try { localStorage.setItem('kesh.demo.tuning', tuning); } catch (e) {}
+        drawShapes();
+        if (!playing) nowChord('G', 'D');
+      });
+    });
     Array.prototype.forEach.call($('strums').children, function (b) {
       b.addEventListener('click', function () {
         strum = b.dataset.strum;
@@ -433,6 +472,7 @@
   // For the checks page: what the demo plays, without playing it.
   window.KESH_DEMO = {
     VERSION: VERSION, STRUMS: STRUMS, FORM: FORM, VOICE: VOICE, MIX: MIX,
+    tuning: function () { return tuning; },
     audio: function () { return { ctx: ctx, run: run, guitar: guitar, flute: fluteBus, drum: drum }; },
     playing: function () { return playing; }
   };

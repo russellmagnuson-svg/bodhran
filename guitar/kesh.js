@@ -2,8 +2,9 @@
  *
  * Melody: setting 1 of The Kesh on thesession.org (tune 55), note for note.
  * Chords: chosen for this demonstration, one or two to a bar, in the drone
- * shapes Irish guitarists favour in G — the top two strings held at the
- * third fret (D and G) under G, C and Em, so they ring through the changes.
+ * shapes Irish guitarists favour in G: in standard tuning the top two strings
+ * held at the third fret (D and G) under G, C and Em; in DADGAD the open top
+ * D and G strings left ringing.
  */
 (function (KESH) {
   'use strict';
@@ -25,19 +26,49 @@
     B: ['G', 'C D', 'G', 'D', 'G', 'C G', 'Em D', 'G']
   };
 
-  /* Guitar shapes in standard tuning, low string first; -1 = not played. */
-  KESH.shapes = {
-    G:  { name: 'G',     frets: [3, 2, 0, 0, 3, 3] },
-    C:  { name: 'Cadd9', frets: [-1, 3, 2, 0, 3, 3] },
-    D:  { name: 'D',     frets: [-1, 0, 0, 2, 3, 2] },
-    Em: { name: 'Em7',   frets: [0, 2, 2, 0, 3, 3] }
+  /* Guitar shapes in two tunings, low string first; -1 = not played.
+   * `drone` lists the strings that ring through the changes in that tuning. */
+  KESH.tunings = {
+    standard: {
+      name: 'Standard', strings: [40, 45, 50, 55, 59, 64], letters: 'E A D G B E',
+      note: 'Standard tuning. G, Cadd9 and Em7 keep the top two strings at the third fret, ' +
+            'so a D and a G ring through every change: the open, droning sound of a lot of ' +
+            'Irish guitar. D lets them go for its F sharp.',
+      shapes: {
+        G:  { name: 'G',     frets: [3, 2, 0, 0, 3, 3],  drone: [4, 5] },
+        C:  { name: 'Cadd9', frets: [-1, 3, 2, 0, 3, 3], drone: [4, 5] },
+        D:  { name: 'D',     frets: [-1, 0, 0, 2, 3, 2], drone: [] },
+        Em: { name: 'Em7',   frets: [0, 2, 2, 0, 3, 3],  drone: [4, 5] }
+      }
+    },
+    /* DADGAD: D A D G A D, low to high, the tuning a great deal of Irish guitar
+     * backing is played in. The shapes leave strings open: the top D rings
+     * through every chord, and the open G through three of them. G and C carry
+     * an added ninth, D is an open fifth with no third at all, so the chords
+     * sit under the melody without pinning it down. */
+    dadgad: {
+      name: 'DADGAD', strings: [38, 45, 50, 55, 57, 62], letters: 'D A D G A D',
+      note: 'DADGAD tuning: D A D G A D, low to high. The shapes leave strings open, so the ' +
+            'top D rings through every chord and the open G through three of them. G and C ' +
+            'carry an added ninth and D is an open fifth, with no third: chords that sit ' +
+            'under the tune without pinning it down.',
+      shapes: {
+        G:  { name: 'Gadd9', frets: [5, 2, 0, 0, 0, 0],  drone: [3, 5] },
+        C:  { name: 'Cadd9', frets: [-1, 3, 2, 0, 3, 0], drone: [3, 5] },
+        D:  { name: 'D5',    frets: [0, 0, 0, 2, 0, 0],  drone: [5] },
+        Em: { name: 'Em7',   frets: [2, 2, 2, 0, 2, 0],  drone: [3, 5] }
+      }
+    }
   };
-  KESH.tuning = [40, 45, 50, 55, 59, 64];   // E2 A2 D3 G3 B3 E4, as MIDI notes
+  // Standard tuning, under the names the first version used.
+  KESH.shapes = KESH.tunings.standard.shapes;
+  KESH.tuning = KESH.tunings.standard.strings;
 
   /* The notes of a shape, string by string (null where a string is silent). */
-  KESH.voicing = function (chord) {
-    return KESH.shapes[chord].frets.map(function (f, i) {
-      return f < 0 ? null : KESH.tuning[i] + f;
+  KESH.voicing = function (chord, tuning) {
+    var t = KESH.tunings[tuning || 'standard'];
+    return t.shapes[chord].frets.map(function (f, i) {
+      return f < 0 ? null : t.strings[i] + f;
     });
   };
 

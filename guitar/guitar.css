@@ -95,6 +95,7 @@
 .diagram .dot { fill: var(--amber); }
 .diagram .dot.drone { fill: var(--skin); }
 .diagram .mark { fill: none; stroke: var(--muted); }
+.diagram .mark.drone { fill: var(--skin); stroke: var(--skin); }
 .diagram .x { stroke: var(--muted); }
 .diagram .num { fill: var(--muted); font: 10px ui-sans-serif, -apple-system, sans-serif; }
 

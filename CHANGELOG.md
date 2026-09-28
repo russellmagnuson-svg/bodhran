@@ -97,6 +97,16 @@ that gets pushed (the last number for a fix, the middle one for a feature).
 
 The page at `/guitar/` has its own version number, shown next to its title.
 
+### Guitar demo 1.3.0 — 2026-09-28
+
+- DADGAD tuning (D A D G A D), now the starting tuning, with a switch back to
+  standard to compare. The DADGAD shapes leave strings open: the top D rings
+  through every chord and the open G through three. G and C carry an added
+  ninth (Gadd9, Cadd9), D is an open fifth (D5), Em is Em7.
+- The shape diagrams follow the tuning, with each string's note under it and
+  the strings that ring through highlighted. The switch takes effect at the
+  next bar, so you can compare while it plays.
+
 ### Guitar demo 1.2.0 — 2026-09-28
 
 - A volume slider for each sound — guitar, flute and bodhrán — beside its

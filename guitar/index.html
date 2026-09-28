@@ -86,6 +86,12 @@
       <button class="mode" type="button" role="radio" data-strum="drive" aria-checked="false">Driving</button>
     </div>
     <p id="strum-desc" class="blurb"></p>
+    <h3 class="sub-h">Tuning</h3>
+    <div id="tunings" class="modes" role="radiogroup" aria-label="Guitar tuning">
+      <button class="mode" type="button" role="radio" data-tuning="standard" aria-checked="false">Standard</button>
+      <button class="mode" type="button" role="radio" data-tuning="dadgad" aria-checked="true">DADGAD</button>
+    </div>
+    <p class="blurb">Switch while it plays to hear the difference: the new tuning comes in at the next bar.</p>
   </section>
 
   <!-- Now -->
@@ -114,11 +120,10 @@
 
   <!-- Shapes -->
   <section class="panel">
-    <h2>The shapes</h2>
+    <h2>The shapes <span id="shapes-tuning" class="tag muted">DADGAD</span></h2>
     <div id="shapes" class="shapes"></div>
-    <p class="blurb">Standard tuning. G, Cadd9 and Em7 keep the top two strings at the
-    third fret, so a D and a G ring through every change: the open, droning sound
-    of a lot of Irish guitar. D lets them go for its F sharp.</p>
+    <p id="shapes-note" class="blurb"></p>
+    <p class="blurb">Highlighted strings are the ones that ring through the changes.</p>
   </section>
 
   <footer class="foot">

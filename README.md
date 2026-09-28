@@ -91,7 +91,9 @@ against the real code:
   file on it exists
 - **Guitar demo** — every bar of The Kesh is a full 6/8 bar; every chord has
   a shape and the drone rings through; the guitar is in tune; the page builds;
-  each sound's volume is heard straight away and remembered; it shows its own version and the notes cover it
+  each sound's volume is heard straight away and remembered; DADGAD is
+  D A D G A D with the top D open in every shape; the tuning switch changes the
+  shapes and is remembered; it shows its own version and the notes cover it
 - **Release notes** (under The app) — `CHANGELOG.md` and `release-notes/` both
   have an entry for the current version, so bumping the version means adding
   the notes in the same change
@@ -342,8 +344,10 @@ change. A check makes sure. The guitar's sound is shaped like a dreadnought:
 by measurement, the bass below 150 Hz is its strongest band.
 
 Chords: A part G | D | C | D | G | D | C | D G, B part G | C D | G | D |
-G | C G | Em D | G, in drone shapes (G, Cadd9, Em7 hold D and G on the top
-two strings; D takes F sharp). The checks cover the tune's bars, the shapes,
+G | C G | Em D | G, in two tunings, switchable on the page: DADGAD (the
+default: Gadd9 520000, Cadd9 x32030, D5 000200, Em7 222020, the top D open in
+every shape and the G in three) and standard (G, Cadd9 and Em7 hold D and G on
+the top two strings; D takes F sharp). The checks cover the tune's bars, the shapes,
 the guitar's tuning and the page itself.
 
 ## Roadmap
