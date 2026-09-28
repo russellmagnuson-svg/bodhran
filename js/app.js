@@ -8,7 +8,7 @@
    * Bump it with every change that gets pushed: the last number for a fix,
    * the middle one for a new feature. It is also the quickest way to tell
    * whether a phone is running the latest deploy or an older copy. */
-  var VERSION = '1.3.1';
+  var VERSION = '1.3.2';
   TRAD.VERSION = VERSION;
 
   TRAD.validatePatterns();
@@ -50,7 +50,10 @@
     // On iPhone, web audio follows the ring/silent switch by default, so a
     // phone on silent — which is most phones at a session — plays nothing.
     // Declaring this as playback audio (Safari 17+) makes it ignore the switch.
-    if (navigator.audioSession) {
+    // Phones and tablets only (they have touch; no Mac does): a Mac has no
+    // silent switch, so there it had no job, and it was the one piece of
+    // Safari-only sound code running while Mac Safari went silent.
+    if (navigator.audioSession && navigator.maxTouchPoints > 0) {
       try { navigator.audioSession.type = 'playback'; } catch (e) {}
     }
     var AC = window.AudioContext || window.webkitAudioContext;

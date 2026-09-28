@@ -949,6 +949,27 @@
       });
     });
 
+  check('The app', 'The silent-switch setting is for phones only',
+    'An iPhone on silent plays nothing unless the page declares itself playback audio. A Mac has no silent switch, so it is left alone there.',
+    function () {
+      function sessionAfterPlay(touchPoints) {
+        var fake = 'Object.defineProperty(Navigator.prototype, "maxTouchPoints", { configurable: true, get: function () { return ' +
+                   touchPoints + '; } });' +
+                   'window.__session = { type: "auto" };' +
+                   'Object.defineProperty(Navigator.prototype, "audioSession", { configurable: true, get: function () { return window.__session; } });';
+        return withApp(function (win, doc) {
+          doc.getElementById('play').click();
+          return win.__session.type;
+        }, null, fake);
+      }
+      return sessionAfterPlay(5).then(function (phone) {
+        return sessionAfterPlay(0).then(function (mac) {
+          expect(phone === 'playback', 'on a phone the audio session was left as "' + phone + '", so the silent switch would mute it');
+          expect(mac === 'auto', 'on a Mac the audio session was changed to "' + mac + '"');
+        });
+      });
+    });
+
   check('The app', 'Every drone root plays the note it names, B included',
     'B minor is one of the commonest keys in the music and was missing. And a label that says D must play a D.',
     function () {

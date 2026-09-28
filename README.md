@@ -61,7 +61,8 @@ against the real code:
   count-in goes to a note of its own
 - **The app** — version shown; each tune keeps its tempo; Space after a slider;
   modes grey out the right controls; Finish ends the tune and puts Play back;
-  every drone root plays the note it names; a tempo outside the range says so;
+  the silent-switch setting is for phones only; every drone root plays the
+  note it names; a tempo outside the range says so;
   arrow keys move the choice of tune type and rhythm;
   the About names the panels as they are;
   Space ignored while About is open
