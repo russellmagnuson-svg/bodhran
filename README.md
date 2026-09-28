@@ -350,3 +350,4 @@ patterns sound the way you want.
 | `manifest.webmanifest` | home-screen app metadata |
 | `serve.py`        | local server that turns caching off, for editing |
 | `tests/`          | the checks page: open it and press Run |
+| `CHANGELOG.md`    | what changed in each version |
