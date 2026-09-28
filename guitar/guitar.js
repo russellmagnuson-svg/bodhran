@@ -22,8 +22,8 @@
   function pluck(sr, f, bright, seed) {
     var N = Math.max(2, Math.floor(sr / f - 0.5));
     var len = Math.floor(sr * SECONDS), out = new Float32Array(len);
-    // Lower strings ring longer, as they do.
-    var t60 = 1.4 + 2.2 * Math.max(0, Math.min(1, (400 - f) / 320));
+    // Lower strings ring longer, as they do; on a dreadnought the bass rings on.
+    var t60 = 1.6 + 3.2 * Math.max(0, Math.min(1, (400 - f) / 320));
     var rho = Math.pow(0.001, 1 / (t60 * f));
     // One period and one sample of noise to start: the loop below reads a
     // period and a sample back, so it needs both before it can begin.
@@ -53,18 +53,26 @@
     this.voices = [];        // per string: { gain, src } of what is ringing
     this.shape = null;       // the notes of the shape currently held
 
-    // The body: a warm low resonance, a little presence, the top rolled off.
+    // The body, shaped like a big dreadnought (the Martin sound): a deep air
+    // resonance near 100 Hz and a full low end, the mids scooped a little,
+    // and a crisp but gentle top. It used to be a small bright guitar, loudest
+    // between 1.5 and 5 kHz, with the bass 12 dB under that.
     var input = ctx.createGain();
-    var hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 75;
+    var hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 60;
+    var low = ctx.createBiquadFilter(); low.type = 'lowshelf';
+    low.frequency.value = 280; low.gain.value = 6;
     var body = ctx.createBiquadFilter(); body.type = 'peaking';
-    body.frequency.value = 115; body.Q.value = 1.1; body.gain.value = 4;
+    body.frequency.value = 100; body.Q.value = 1.3; body.gain.value = 5;
+    var scoop = ctx.createBiquadFilter(); scoop.type = 'peaking';
+    scoop.frequency.value = 750; scoop.Q.value = 0.9; scoop.gain.value = -3;
     var air = ctx.createBiquadFilter(); air.type = 'peaking';
-    air.frequency.value = 2800; air.Q.value = 0.8; air.gain.value = 2.5;
+    air.frequency.value = 3400; air.Q.value = 0.9; air.gain.value = -1;
     var lp = ctx.createBiquadFilter(); lp.type = 'lowpass';
-    lp.frequency.value = 7000; lp.Q.value = 0.5;
+    lp.frequency.value = 5800; lp.Q.value = 0.5;
     this.level = ctx.createGain();
     this.level.gain.value = 0.8;
-    input.connect(hp); hp.connect(body); body.connect(air); air.connect(lp);
+    input.connect(hp); hp.connect(low); low.connect(body); body.connect(scoop);
+    scoop.connect(air); air.connect(lp);
     lp.connect(this.level); this.level.connect(destination);
     this.input = input;
   }
@@ -75,8 +83,11 @@
     midis.forEach(function (m) {
       if (self.notes[m]) return;
       var f = hz(m), list = [];
+      // A softer pick on the bass strings, brighter towards the treble: the
+      // attack of a big-bodied guitar is round at the bottom.
+      var bright = 0.24 + 0.2 * Math.min(1, f / 400);
       for (var v = 0; v < VARIANTS; v++) {
-        var p = pluck(ctx.sampleRate, f, 0.55 + 0.15 * v, 1 + m * 97 + v * 7919);
+        var p = pluck(ctx.sampleRate, f, bright + 0.06 * v, 1 + m * 97 + v * 7919);
         var buf = ctx.createBuffer(1, p.data.length, ctx.sampleRate);
         buf.getChannelData(0).set(p.data);
         list.push({ buffer: buf, rate: f / p.sounds });
@@ -131,7 +142,7 @@
     for (var i = 0; i < strings.length; i++) {
       var k = strings[i];
       // Down strums lean on the bass, up strums catch the treble.
-      var weight = dir === 'U' ? 0.75 + 0.25 * (i === 0) : 0.8 + 0.2 * (k < 3);
+      var weight = dir === 'U' ? 0.75 + 0.25 * (i === 0) : (k < 3 ? 1.05 : 0.75);
       var v = vel * weight * (0.9 + Math.random() * 0.2) * 0.34;
       this._string(k, notes[k], t + i * gap + Math.random() * 0.002, v);
     }

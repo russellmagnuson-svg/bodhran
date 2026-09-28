@@ -18,5 +18,11 @@
 /css/*
   Cache-Control: public, max-age=0, must-revalidate
 
+/guitar/*
+  Cache-Control: public, max-age=0, must-revalidate
+
+/release-notes/*
+  Cache-Control: public, max-age=0, must-revalidate
+
 /icons/*
   Cache-Control: public, max-age=604800

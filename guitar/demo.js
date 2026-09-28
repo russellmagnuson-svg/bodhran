@@ -8,6 +8,13 @@
 (function () {
   'use strict';
 
+  /* The demo's own version, apart from the app's: shown next to the title
+   * and at the foot, so you can tell whether a phone has the latest. Bump it
+   * with every change to the demo that gets pushed: the last number for a
+   * fix, the middle one for something new. Add it to CHANGELOG.md and the
+   * release notes in the same change (a check makes sure). */
+  var VERSION = '1.1.0';
+
   var $ = function (id) { return document.getElementById(id); };
   var K = window.KESH, G = window.GTR, T = window.TRAD;
 
@@ -365,6 +372,8 @@
   }
 
   function init() {
+    $('demo-version').textContent = 'v' + VERSION;
+    $('foot-version').textContent = 'Guitar demo version ' + VERSION + '.';
     buildChart();
     drawStrum();
     nowChord('G', 'D');
@@ -390,7 +399,7 @@
 
   // For the checks page: what the demo plays, without playing it.
   window.KESH_DEMO = {
-    STRUMS: STRUMS, FORM: FORM, VOICE: VOICE,
+    VERSION: VERSION, STRUMS: STRUMS, FORM: FORM, VOICE: VOICE,
     audio: function () { return { ctx: ctx, run: run, guitar: guitar, flute: fluteBus, drum: drum }; },
     playing: function () { return playing; }
   };

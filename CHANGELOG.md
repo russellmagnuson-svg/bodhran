@@ -93,6 +93,23 @@ that gets pushed (the last number for a fix, the middle one for a feature).
 - Phone layout: the rhythm choice on the first screen, Play beside the tempo,
   and a pinned Play/Stop bar when scrolled down.
 
+## Guitar demo
+
+The page at `/guitar/` has its own version number, shown next to its title.
+
+### Guitar demo 1.1.0 — 2026-09-28
+
+- A bigger, bassier guitar, more like a Martin dreadnought: a deeper body
+  resonance and fuller low end, the mids scooped a little, a softer pick on
+  the bass strings, and bass notes that ring on. Measured, the bass below
+  150 Hz came up by 9 dB against the rest; the guitar used to be loudest
+  between 1.5 and 5 kHz.
+- The demo's own version number, next to its title and at the foot.
+
+### Guitar demo 1.0.0 — 2026-09-28
+
+- The first version: The Kesh with a guitar backing (released with app 1.6.0).
+
 Behind the scenes, the automated checks at `/tests/` grew from 36 at 1.1.0 to
 71 at 1.6.0, and each new one was shown to catch the fault it guards against.
 Earlier history is in the git log.

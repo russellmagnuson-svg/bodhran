@@ -1484,6 +1484,28 @@
       }).finally(function () { frame.remove(); });
     });
 
+  check('Guitar demo', 'It shows its own version, and the notes cover it',
+    'The quickest way to tell whether a phone has the latest demo. Bump the demo’s version? Add it to CHANGELOG.md and the release notes in the same change.',
+    function () {
+      var frame = document.createElement('iframe');
+      frame.src = '../guitar/';
+      frame.style.cssText = 'position:absolute;left:-10000px;top:0;border:0;width:375px;height:812px';
+      document.body.appendChild(frame);
+      return new Promise(function (resolve, reject) {
+        var t = setTimeout(function () { reject(new Error('the demo page did not load')); }, 10000);
+        frame.onload = function () { clearTimeout(t); setTimeout(resolve, 200); };
+      }).then(function () {
+        var doc = frame.contentDocument, v = frame.contentWindow.KESH_DEMO && frame.contentWindow.KESH_DEMO.VERSION;
+        expect(!!v, 'the demo has no version');
+        expect(doc.getElementById('demo-version').textContent === 'v' + v, 'the title shows "' + doc.getElementById('demo-version').textContent + '"');
+        expect(doc.getElementById('foot-version').textContent.indexOf(v) !== -1, 'the foot of the page does not show ' + v);
+        return Promise.all([text('../CHANGELOG.md'), text('../release-notes/')]).then(function (r) {
+          expect(r[0].indexOf('### Guitar demo ' + v + ' ') !== -1, 'CHANGELOG.md has no entry for guitar demo ' + v);
+          expect(r[1].indexOf('<span class="ver">Guitar demo ' + v + '</span>') !== -1, 'the release notes have no entry for guitar demo ' + v);
+        });
+      }).finally(function () { frame.remove(); });
+    });
+
   /* ================================================================
    * Runner
    * ================================================================ */

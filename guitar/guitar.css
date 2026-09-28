@@ -9,6 +9,7 @@
   color: var(--amber);
 }
 .head .sub { max-width: 60ch; }
+.tune-facts { margin: 4px 0 0; font-size: 13.5px; color: var(--muted); }
 .row.tight { margin-top: 10px; }
 
 .toggles { display: flex; flex-wrap: wrap; gap: 10px 22px; }

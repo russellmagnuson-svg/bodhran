@@ -90,7 +90,7 @@ against the real code:
 - **Offline copy** — its file list covers everything the page loads, and every
   file on it exists
 - **Guitar demo** — every bar of The Kesh is a full 6/8 bar; every chord has
-  a shape and the drone rings through; the guitar is in tune; the page builds
+  a shape and the drone rings through; the guitar is in tune; the page builds; it shows its own version and the notes cover it
 - **Release notes** (under The app) — `CHANGELOG.md` and `release-notes/` both
   have an entry for the current version, so bumping the version means adding
   the notes in the same change
@@ -332,6 +332,13 @@ app's styles, its bodhrán and its output limiter.
   string, rendered once and pitch-corrected to within a cent, strummed down
   from the bass or up from the treble a few milliseconds apart
 - `guitar/demo.js` — the clock, the flute, the chart and the shape diagrams
+
+The demo has its own version number, at the top of `guitar/demo.js` and shown
+next to its title, apart from the app's: bump it with every pushed change to
+the demo (last number for a fix, middle for something new) and add it to the
+"Guitar demo" section of `CHANGELOG.md` and the release notes in the same
+change. A check makes sure. The guitar's sound is shaped like a dreadnought:
+by measurement, the bass below 150 Hz is its strongest band.
 
 Chords: A part G | D | C | D | G | D | C | D G, B part G | C D | G | D |
 G | C G | Em D | G, in drone shapes (G, Cadd9, Em7 hold D and G on the top

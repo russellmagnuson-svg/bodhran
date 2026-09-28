@@ -124,13 +124,21 @@
   .back:hover, .back:focus-visible { border-color: var(--amber); }
   a:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
   footer a { color: var(--amber); }
+  .demo-notes { display: flex; flex-direction: column; gap: 12px; }
+  .section-h {
+    font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+    font-weight: 700; font-size: 24px; color: var(--brand); margin: 12px 0 0;
+  }
+  .section-note { margin: 0; color: var(--muted); font-size: 14.5px; }
+  .release .ver { white-space: nowrap; }
+  .demo-notes .release { grid-template-columns: 150px 1fr; }
   footer { font-size: 14px; color: var(--muted); border-top: 1px solid var(--line); padding-top: 18px; }
   footer p { margin: 0 0 8px; max-width: 62ch; }
 
   @media (max-width: 520px) {
     body { padding-block: 28px 48px; }
     h1 { font-size: 28px; }
-    .release { grid-template-columns: 1fr; padding: 16px; }
+    .release, .demo-notes .release { grid-template-columns: 1fr; padding: 16px; }
     .when { flex-direction: row; align-items: center; gap: 10px; margin-bottom: 4px; }
   }
 </style>
@@ -295,6 +303,30 @@
     </article>
 
   </main>
+
+  <section class="demo-notes" id="guitar">
+    <h2 class="section-h">Guitar demo</h2>
+    <p class="section-note">The guitar backing page at <code>/guitar/</code> has its own version number, shown next to its title.</p>
+    <article class="release feature">
+      <div class="when"><span class="ver">Guitar demo 1.1.0</span><span class="date">28 Sep</span></div>
+      <div>
+        <h2>A bigger, bassier guitar</h2>
+        <ul class="changes">
+          <li>More like a Martin dreadnought: a deeper body resonance and a fuller low end, the mids scooped a little, a softer pick on the bass strings, and bass notes that ring on. Measured, the bass came up by 9 dB against the rest.</li>
+          <li>The demo’s own version number, next to its title and at the foot of its page.</li>
+        </ul>
+      </div>
+    </article>
+    <article class="release">
+      <div class="when"><span class="ver">Guitar demo 1.0.0</span><span class="date">28 Sep</span></div>
+      <div>
+        <h2>The first version</h2>
+        <ul class="changes">
+          <li>The Kesh with a guitar backing, released alongside app 1.6.0.</li>
+        </ul>
+      </div>
+    </article>
+  </section>
 
   <footer>
     <p>The musical changes (the back hand, the new fills, how Finish ends) follow bodhrán
