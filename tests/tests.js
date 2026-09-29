@@ -1872,6 +1872,9 @@
       function render(tn, mute) {
         var o = new OfflineAudioContext(1, Math.ceil(SRG * (chords.length * 6 * q + 1)), SRG), g = new G.Guitar(o, o.destination);
         g.sympathy = true;
+        // Sympathy on its own: with ringing through on, an open string the next
+        // chord leaves out keeps its hum, on purpose (checked separately).
+        g.ringOn = false;
         if (mute) g._string = function () {};          // the struck strings silent: the hum alone
         var notes = {};
         chords.forEach(function (c) { K.voicing(c, tn).forEach(function (m) { if (m != null) notes[m] = 1; }); });
@@ -1894,6 +1897,66 @@
         expect(dad > -16 && std > -20, 'the hum is too faint to hear: ' + round(-dad) + ' dB under the playing in DADGAD, ' + round(-std) + ' in standard');
         expect(dad < -5, 'the hum is ' + round(-dad) + ' dB under the playing in DADGAD: it would swamp the chords');
         expect(dad - std > 2, 'DADGAD hums only ' + round(dad - std) + ' dB more than standard tuning');
+      });
+    });
+
+  check('Guitar demo', 'Open strings ring through a chord change; fretted ones still stop',
+    'A string the next chord leaves out rings on if it was sounding open (DADGAD’s low D under C), and stops if it was fretted (lifting the finger stops it).',
+    function () {
+      var SRG = 48000, K = window.KESH, G = window.GTR, q = 60 / 100 / 3;
+      function level(d, f, a, b) {
+        var s = Math.floor(a * SRG), e = Math.floor(b * SRG), k = 2 * Math.cos(2 * Math.PI * f / SRG), q1 = 0, q2 = 0;
+        for (var i = s; i < e; i++) { var q0 = k * q1 - q2 + d[i]; q2 = q1; q1 = q0; }
+        return Math.sqrt(Math.max(0, q1 * q1 + q2 * q2 - k * q1 * q2)) / (e - s);
+      }
+      function change(tn, from, to, ringOn) {
+        var o = new OfflineAudioContext(1, SRG * 3, SRG), g = new G.Guitar(o, o.destination);
+        g.ringOn = ringOn;
+        var notes = {};
+        [from, to].forEach(function (c) { K.voicing(c, tn).forEach(function (m) { if (m != null) notes[m] = 1; }); });
+        g.prepare(Object.keys(notes).map(Number));
+        var open = K.tunings[tn].strings, a = K.voicing(from, tn), b = K.voicing(to, tn), t0 = 0.05, t1 = t0 + 6 * q;
+        g.strum(a, t0, 'D', 1, 4, open); g.strum(a, t0 + 3 * q, 'D', 0.8, 4, open);
+        g.strum(b, t1, 'D', 1, 4, open);
+        return o.startRendering().then(function (r) { return { d: r.getChannelData(0), t1: t1 }; });
+      }
+      function after(r, midi) { var f = G.hz(midi); return 20 * Math.log10(level(r.d, f, r.t1 + 0.1, r.t1 + 0.6) / level(r.d, f, r.t1 - 0.5, r.t1)); }
+      return Promise.all([change('dadgad', 'D', 'C', true), change('dadgad', 'D', 'C', false),
+                          change('dadgad', 'G', 'C', true)]).then(function (r) {
+        var ringsOn = after(r[0], 38), stoppedOff = after(r[1], 38), fretted = after(r[2], 43);
+        expect(ringsOn > -15, 'the open low D stopped under the C (' + round(ringsOn) + ' dB)');
+        expect(ringsOn - stoppedOff > 20, 'switched off, the low D should stop: it fell only ' + round(ringsOn - stoppedOff) + ' dB further');
+        expect(fretted < -25, 'the fretted low G rang on under the C (' + round(fretted) + ' dB)');
+      });
+    });
+
+  check('Guitar demo', 'The ring-through switch works, and is remembered',
+    'On to begin with. Off must reach the guitar, and the choice come back the same next visit.',
+    function () {
+      var KEY = 'kesh.demo.ringon', saved = localStorage.getItem(KEY);
+      localStorage.removeItem(KEY);
+      var frame = document.createElement('iframe');
+      frame.src = '../guitar/';
+      frame.style.cssText = 'position:absolute;left:-10000px;top:0;border:0;width:375px;height:812px';
+      document.body.appendChild(frame);
+      return new Promise(function (resolve, reject) {
+        var t = setTimeout(function () { reject(new Error('the demo page did not load')); }, 10000);
+        frame.onload = function () { clearTimeout(t); setTimeout(resolve, 200); };
+      }).then(function () {
+        var win = frame.contentWindow, doc = frame.contentDocument, D = win.KESH_DEMO;
+        var startOn = D.ringOn();
+        doc.getElementById('play').click();
+        var guitarOn = D.audio().guitar.ringOn;
+        doc.querySelector('#ringon [data-ringon="off"]').click();
+        var guitarOff = D.audio().guitar.ringOn;
+        doc.getElementById('play').click();
+        var stored = win.localStorage.getItem(KEY);
+        expect(startOn && guitarOn === true, 'a first visit does not start with open strings ringing through');
+        expect(guitarOff === false, 'switching it off did not reach the guitar');
+        expect(stored === 'off', 'the choice was saved as ' + stored);
+      }).finally(function () {
+        frame.remove();
+        if (saved == null) localStorage.removeItem(KEY); else localStorage.setItem(KEY, saved);
       });
     });
 

@@ -113,6 +113,17 @@ that gets pushed (the last number for a fix, the middle one for a feature).
 
 The page at `/guitar/` has its own version number, shown next to its title.
 
+### Guitar demo 1.8.0 — 2026-09-28
+
+- Open strings ring through chord changes, with a switch to compare (on to
+  begin with; remembered). A string the next chord leaves out is only
+  stopped if it was fretted; ringing open, nothing holds it, so it carries
+  on under the new chord, its sympathetic hum with it. In DADGAD, as D goes
+  to C in the A part, the open low D rings on under the C (measured: 7 dB
+  down over the C's first beat, where before it was cut by 39 dB). An open
+  string struck again at the same note now carries on into the new stroke
+  instead of being cut off and restarted.
+
 ### Guitar demo 1.7.0 — 2026-09-28
 
 - Open strings ring in sympathy, with a switch to compare (on to begin

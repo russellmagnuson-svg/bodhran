@@ -224,6 +224,7 @@
     this.picks = {};         // midi -> renderings for single picked notes (bass runs)
     this.voices = [];        // per string: { gain, src } of what is ringing
     this.sympathy = true;    // open strings ringing along with the rest (see _sympathize)
+    this.ringOn = true;      // open strings left out of the next chord ring on (see strum)
     this.sym = [];           // per string: the sympathetic ring it carries now
     this.symNotes = {};      // midi -> a long, pure rendering for sympathetic ringing
     this.queued = [];        // every string note handed to the audio but not yet sounding
@@ -344,7 +345,17 @@
   Guitar.prototype._string = function (string, midi, t, vel) {
     var ctx = this.ctx, list = this.notes[midi];
     if (!list) return;
-    this._damp(string, t, true);
+    // Struck again while it rings at the same note (an open string, chord
+    // after chord), a string carries on into the new stroke: the old note
+    // gives way over a few hundredths of a second instead of being cut.
+    var prev = this.voices[string];
+    if (prev && prev.midi === midi && this.ringOn) {
+      prev.gain.gain.setTargetAtTime(0, t, 0.05);
+      try { prev.src.stop(t + 0.5); } catch (e) {}
+      this.voices[string] = null;
+    } else {
+      this._damp(string, t, true);
+    }
     var pick = list[(Math.random() * list.length) | 0];
     var src = ctx.createBufferSource();
     src.buffer = pick.buffer;
@@ -354,7 +365,7 @@
     g.gain.linearRampToValueAtTime(vel, t + 0.002);
     src.connect(g); g.connect(this.input);
     src.start(t);
-    this.voices[string] = { gain: g, src: src };
+    this.voices[string] = { gain: g, src: src, midi: midi };
     var now = ctx.currentTime;
     this.queued = this.queued.filter(function (q) { return q.t > now; });
     this.queued.push({ t: t, gain: g, src: src });
@@ -379,10 +390,15 @@
   Guitar.prototype.strum = function (notes, t, dir, vel, reach, open) {
     // A new shape: the fretting hand lets go of strings it no longer plays,
     // and a string that is open no longer rings freely once it is fretted.
+    // Ringing through: a string the new chord leaves out is only stopped if
+    // it was fretted (lifting the finger stops it); sounding open, nothing
+    // holds it, and it rings on under the new chord, its hum with it.
     if (notes !== this.shape) {
       for (var s = 0; s < 6; s++) {
-        if (notes[s] == null) this._damp(s, t, false);
-        if (!open || notes[s] !== open[s]) this._unsym(s, t);
+        var v = this.voices[s];
+        var ringing = this.ringOn && open && v && v.midi === open[s];
+        if (notes[s] == null && !ringing) this._damp(s, t, false);
+        if (!open || (notes[s] !== open[s] && !(notes[s] == null && ringing))) this._unsym(s, t);
       }
       this.shape = notes;
     }
