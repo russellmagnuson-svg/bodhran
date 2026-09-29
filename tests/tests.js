@@ -1901,7 +1901,7 @@
     });
 
   check('Guitar demo', 'Open strings ring through a chord change; fretted ones still stop',
-    'A string the next chord leaves out rings on if it was sounding open (DADGAD’s low D under C), and stops if it was fretted (lifting the finger stops it).',
+    'A string the next chord leaves out stays unmuted if it was sounding open, so it rings on and the strum keeps sounding it (DADGAD’s low D droning under C); fretted, it stops. Only fading, it was barely audible.',
     function () {
       var SRG = 48000, K = window.KESH, G = window.GTR, q = 60 / 100 / 3;
       function level(d, f, a, b) {
@@ -1917,14 +1917,16 @@
         g.prepare(Object.keys(notes).map(Number));
         var open = K.tunings[tn].strings, a = K.voicing(from, tn), b = K.voicing(to, tn), t0 = 0.05, t1 = t0 + 6 * q;
         g.strum(a, t0, 'D', 1, 4, open); g.strum(a, t0 + 3 * q, 'D', 0.8, 4, open);
-        g.strum(b, t1, 'D', 1, 4, open);
+        g.strum(b, t1, 'D', 1, 4, open); g.strum(b, t1 + 3 * q, 'D', 0.8, 4, open);
         return o.startRendering().then(function (r) { return { d: r.getChannelData(0), t1: t1 }; });
       }
-      function after(r, midi) { var f = G.hz(midi); return 20 * Math.log10(level(r.d, f, r.t1 + 0.1, r.t1 + 0.6) / level(r.d, f, r.t1 - 0.5, r.t1)); }
+      function after(r, midi, a, z) { var f = G.hz(midi); return 20 * Math.log10(level(r.d, f, r.t1 + (a || 0.1), r.t1 + (z || 0.6)) / level(r.d, f, r.t1 - 0.5, r.t1)); }
       return Promise.all([change('dadgad', 'D', 'C', true), change('dadgad', 'D', 'C', false),
                           change('dadgad', 'G', 'C', true)]).then(function (r) {
         var ringsOn = after(r[0], 38), stoppedOff = after(r[1], 38), fretted = after(r[2], 43);
+        var holds = after(r[0], 38, 3 * q + 0.1, 3 * q + 0.6);      // the C's second beat
         expect(ringsOn > -15, 'the open low D stopped under the C (' + round(ringsOn) + ' dB)');
+        expect(holds > -8, 'the low D fades under the C instead of droning: ' + round(holds) + ' dB by its second beat');
         expect(ringsOn - stoppedOff > 20, 'switched off, the low D should stop: it fell only ' + round(ringsOn - stoppedOff) + ' dB further');
         expect(fretted < -25, 'the fretted low G rang on under the C (' + round(fretted) + ' dB)');
       });

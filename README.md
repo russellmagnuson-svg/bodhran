@@ -368,8 +368,9 @@ the top two strings; D takes F sharp). Open strings ring in sympathy
 (switchable): each open string in a shape hums along, fed by how many of the
 other sounding notes it is in tune with (`GTR.coupling`), so DADGAD, with more
 open D, A and G strings, rings more than standard. Open strings also ring through chord changes
-(switchable): a string the next chord leaves out stops only if it was fretted,
-so in DADGAD the open low D rings on under the C. Bass runs were tried (1.4.0-1.5.0) and
+(switchable): a string the next chord leaves out is muted only if it was
+fretted; ringing open, it stays unmuted and the down strums keep sounding it,
+so in DADGAD the open low D drones under the C. Bass runs were tried (1.4.0-1.5.0) and
 taken off the page in 1.6.0; their data (`KESH.runs`, `KESH.runFrom`) and the
 thumb-plucked string (`pluckThumb`, `Guitar.pick`) are kept, with their checks,
 for later. The checks cover the tune's bars, the shapes,

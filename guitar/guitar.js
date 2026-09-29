@@ -402,18 +402,34 @@
       }
       this.shape = notes;
     }
+    // Unmuted, an open string the chord leaves out is still under the pick:
+    // ringing open into the change, it is struck along with the new chord on
+    // the down strums, a little more lightly (the drone under a DADGAD C).
+    // Ring-through that only let it fade was barely audible (measured: 2.5 to
+    // 4.7 dB more of the low D over the C bar).
+    var play = notes, extra = {};
+    if (this.ringOn && open && dir !== 'U') {
+      for (s = 0; s < 6; s++) {
+        var rv = this.voices[s];
+        if (notes[s] == null && rv && rv.midi === open[s]) {
+          if (play === notes) play = notes.slice();
+          play[s] = open[s]; extra[s] = true;
+        }
+      }
+    }
     // Only the firm down strums feed it; the light up strums let it ring on.
-    if (open && this.sympathy && dir !== 'U') this._sympathize(notes, t, vel, open);
+    if (open && this.sympathy && dir !== 'U') this._sympathize(play, t, vel, open);
     var strings = [];
-    for (s = 0; s < 6; s++) if (notes[s] != null) strings.push(s);
+    for (s = 0; s < 6; s++) if (play[s] != null) strings.push(s);
     if (dir === 'U') strings = strings.slice(-(reach || 4)).reverse();
     var gap = (dir === 'U' ? 0.009 : 0.012) - 0.004 * vel;
     for (var i = 0; i < strings.length; i++) {
       var k = strings[i];
       // Down strums lean on the bass, up strums catch the treble.
       var weight = dir === 'U' ? 0.75 + 0.25 * (i === 0) : (k < 3 ? 1.05 : 0.75);
+      if (extra[k]) weight *= 0.8;
       var v = vel * weight * (0.9 + Math.random() * 0.2) * 0.34;
-      this._string(k, notes[k], t + i * gap + Math.random() * 0.002, v);
+      this._string(k, play[k], t + i * gap + Math.random() * 0.002, v);
     }
   };
 

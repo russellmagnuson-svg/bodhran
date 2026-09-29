@@ -113,6 +113,15 @@ that gets pushed (the last number for a fix, the middle one for a feature).
 
 The page at `/guitar/` has its own version number, shown next to its title.
 
+### Guitar demo 1.8.1 — 2026-09-28
+
+- Ringing through made easy to hear: it was barely audible, because the
+  left-out open string only faded (measured: 2.5 to 4.7 dB more of the low D
+  over the C bar). Unmuted, an open string is still under the pick, so the
+  down strums now sound it along with the new chord, a little more lightly:
+  in DADGAD the open low D drones through the C in A-part bars 3 and 7, about
+  9 dB under the whole guitar. A fretted string is still muted at a change.
+
 ### Guitar demo 1.8.0 — 2026-09-28
 
 - Open strings ring through chord changes, with a switch to compare (on to
