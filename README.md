@@ -76,7 +76,8 @@ against the real code:
   modes grey out the right controls; Finish ends the tune and puts Play back;
   length and times through are on show, counted, and kept per tune;
   the silent-switch setting is for phones only; every Play asks the sound to
-  start; Mac Safari gets a nudge of silence, and nothing else does; every drone root plays the
+  start; stopped and quiet, it lets go of the speaker; Mac Safari gets a nudge
+  of silence, and nothing else does; every drone root plays the
   note it names; a tempo outside the range says so;
   arrow keys move the choice of tune type and rhythm;
   the About names the panels as they are;
@@ -96,7 +97,8 @@ against the real code:
   D A D G A D with the low D and top D open in every shape, and the low D
   drones under every chord (standard has none); the tuning switch changes the
   shapes and is remembered; the bodhrán is not buried under the guitar; it
-  wakes a silent Safari tab the way the app does; hidden, it plans ahead and
+  wakes a silent Safari tab the way the app does; stopped, it lets go of the
+  speaker; hidden, it plans ahead and
   Stop drops the lot; open strings ring in sympathy, DADGAD more, and the
   switch works and is remembered; a fretted string the next chord leaves out
   stops; the page plays no bass
@@ -332,6 +334,15 @@ npx wrangler pages deploy . --project-name=bodhran
   happens again, open the app in a new tab, and open `/tests/sound.html` in
   the stuck tab: it plays test tones several ways and meters the real drum,
   which shows which route is getting through.
+- **Letting go of the speaker.** Stopped (and, in the app, with the drone
+  off), each page suspends its audio a few seconds after the last note
+  (`TRAD.restAudio` in `js/wake.js`), and the next Play resumes it. Left
+  running, a stopped tab held the speaker, and kept the Mac from idle sleep,
+  for as long as it stayed open. To see what Safari's audio is really doing,
+  the Mac's log is the place to look: `/usr/bin/log show --last 30m
+  --predicate 'process == "coreaudiod"'` reports the speaker's level every ten
+  seconds (`node=-Output ... rms`) and which process holds it (`power
+  assertion ... on behalf of <pid>`).
 - Deleting `sw.js`, the `icons/` folder, `manifest.webmanifest` and the two
   tags that reference them in `index.html` removes all of that cleanly if you
   would rather not have it.

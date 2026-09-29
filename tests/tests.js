@@ -1109,6 +1109,40 @@
       }, null, fake);
     });
 
+  check('The app', 'Stopped and quiet, it lets go of the speaker',
+    'Left running after Stop, a page held the speaker open indefinitely: the Mac’s own log showed Safari holding it for over half an hour after the demo stopped, keeping the Mac from idle sleep. Play takes it back; the drone, while on, keeps it.',
+    function () {
+      var fake = 'window.__suspends = 0; Object.defineProperty(BaseAudioContext.prototype, "state", { configurable: true, get: function () { return "running"; } });' +
+        'AudioContext.prototype.suspend = function () { window.__suspends++; return Promise.resolve(); };';
+      function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+      return withApp(function (win, doc) {
+        win.TRAD.REST_AFTER = 0.15;
+        var play = doc.getElementById('play'), drone = doc.getElementById('drone-on'), n = {};
+        play.click(); play.click();                 // play, stop,
+        play.click();                               // and play again before it rests
+        return wait(400).then(function () {
+          n.playing = win.__suspends;
+          play.click();                             // stop
+          return wait(400);
+        }).then(function () {
+          n.stopped = win.__suspends;
+          drone.click();                            // the drone on,
+          play.click(); play.click();               // and the drum played and stopped under it
+          return wait(400);
+        }).then(function () {
+          n.drone = win.__suspends;
+          drone.click();                            // and off
+          return wait(400);
+        }).then(function () {
+          n.quiet = win.__suspends;
+          expect(n.playing === 0, 'it let go of the speaker while playing');
+          expect(n.stopped === 1, 'stopped, it kept hold of the speaker');
+          expect(n.drone === 1, 'stopping the drum let go of the speaker under the drone');
+          expect(n.quiet === 2, 'with the drone turned off too, it kept hold of the speaker');
+        });
+      }, null, fake);
+    });
+
   check('The app', 'Mac Safari also gets a nudge of silence, and nothing else does',
     'In a stuck Safari tab, sound played the way a video plays still came through. Chrome and the iPhone never needed it.',
     function () {
@@ -1726,6 +1760,38 @@
           expect(chrome.plays === 0, 'Chrome was nudged too');
         });
       });
+    });
+
+  check('Guitar demo', 'Stopped, it lets go of the speaker',
+    'The same as the app: left running after Stop, the demo kept the speaker open, and the Mac awake, for as long as the tab stayed open.',
+    function () {
+      var first = 'window.__suspends = 0; Object.defineProperty(BaseAudioContext.prototype, "state", { configurable: true, get: function () { return "running"; } });' +
+        'AudioContext.prototype.suspend = function () { window.__suspends++; return Promise.resolve(); };';
+      function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+      var frame = document.createElement('iframe');
+      frame.style.cssText = 'position:absolute;left:-10000px;top:0;border:0;width:375px;height:812px';
+      document.body.appendChild(frame);
+      return text('../guitar/').then(function (html) {
+        return new Promise(function (resolve, reject) {
+          var t = setTimeout(function () { reject(new Error('the demo page did not load')); }, 10000);
+          frame.onload = function () { clearTimeout(t); setTimeout(resolve, 200); };
+          frame.srcdoc = html.replace('<head>', '<head><base href="' + new URL('../guitar/', location.href).href +
+            '"><script>' + first + '<\/script>');
+        });
+      }).then(function () {
+        var win = frame.contentWindow, play = frame.contentDocument.getElementById('play'), n = {};
+        win.TRAD.REST_AFTER = 0.15;
+        play.click(); play.click(); play.click();   // play, stop, and play again before it rests
+        return wait(400).then(function () {
+          n.playing = win.__suspends;
+          play.click();                             // stop
+          return wait(400);
+        }).then(function () {
+          n.stopped = win.__suspends;
+          expect(n.playing === 0, 'it let go of the speaker while playing');
+          expect(n.stopped === 1, 'stopped, it kept hold of the speaker');
+        });
+      }).finally(function () { frame.remove(); });
     });
 
   check('Guitar demo', 'Hidden behind another tab, it plans ahead, and Stop drops the lot',

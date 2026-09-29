@@ -60,6 +60,7 @@
    * stuck tab still came through. The demo, with only the first, stayed
    * silent, so it is the second that does the waking. */
   TRAD.startSound = function (ctx) {
+    if (ctx) clearTimeout(ctx.__rest);
     if (ctx && ctx.state !== 'closed') ctx.resume().catch(function () {});
     if (!TRAD.isMacSafari()) return;
     try {
@@ -68,5 +69,25 @@
       var p = a.play();
       if (p && p.catch) p.catch(function () {});
     } catch (e) { /* only ever a nudge */ }
+  };
+
+  /* Call when the page goes quiet (Stop, or the drone turned off). Once the
+   * last notes have rung out, and if nothing has started again (`busy`),
+   * the audio is suspended: the page lets go of the speaker until the next
+   * Play, whose TRAD.startSound resumes it.
+   *
+   * Left running, a stopped page kept the speaker open indefinitely: the
+   * Mac's own log showed Safari holding it for over half an hour after the
+   * demo stopped, keeping the Mac from idle sleep all the while. And a tab
+   * that has gone silent is left alone, then, until Play asks for it
+   * afresh, rather than sitting on an output that may have stopped
+   * reaching the speaker. */
+  TRAD.REST_AFTER = 5;   // seconds: longer than any note, drone or room tail
+  TRAD.restAudio = function (ctx, busy) {
+    if (!ctx) return;
+    clearTimeout(ctx.__rest);
+    ctx.__rest = setTimeout(function () {
+      if (ctx.state === 'running' && !busy()) ctx.suspend().catch(function () {});
+    }, TRAD.REST_AFTER * 1000);
   };
 })(window.TRAD = window.TRAD || {});

@@ -8,7 +8,7 @@
    * Bump it with every change that gets pushed: the last number for a fix,
    * the middle one for a new feature. It is also the quickest way to tell
    * whether a phone is running the latest deploy or an older copy. */
-  var VERSION = '1.6.2';
+  var VERSION = '1.6.3';
   TRAD.VERSION = VERSION;
 
   TRAD.validatePatterns();
@@ -48,6 +48,11 @@
    * page start sound. The waking itself lives in js/wake.js, shared with the
    * guitar demo. */
   function startSound() { TRAD.startSound(ctx); }
+
+  /* Quiet — stopped, and the drone off: let go of the speaker once the last
+   * stroke has rung out (js/wake.js). The next Play or drone wakes it. */
+  function sounding() { return !!(transport && transport.running) || $('drone-on').checked; }
+  function restIfQuiet() { if (!sounding()) TRAD.restAudio(ctx, sounding); }
 
   function ensureAudio() {
     if (ctx) { startSound(); return; }
@@ -370,7 +375,7 @@
    * pressed or taken back, and when a Finish has played its last stroke. */
   function showState() {
     var on = !!(transport && transport.running);
-    if (on) holdScreen(); else releaseScreen();
+    if (on) holdScreen(); else { releaseScreen(); restIfQuiet(); }
     var b = $('play');
     b.classList.toggle('playing', on);
     b.setAttribute('aria-pressed', String(on));
@@ -654,7 +659,7 @@
     $('drone-on').addEventListener('change', function () {
       ensureAudio();
       if (this.checked) drone.start(+$('drone-root').value);
-      else drone.stop();
+      else { drone.stop(); restIfQuiet(); }
       remember('droneOn', this.checked);
     });
     $('drone-root').addEventListener('change', function () {

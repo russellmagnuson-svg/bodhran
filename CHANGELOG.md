@@ -4,6 +4,17 @@ What changed in each version of Bodhrán, newest first. The version shows next
 to the title in the app; bump it at the top of `js/app.js` with every change
 that gets pushed (the last number for a fix, the middle one for a feature).
 
+## 1.6.3 — 2026-09-29
+
+- Stopped, with the drone off, the app now lets go of the speaker a few
+  seconds after the last stroke, and takes it back on the next Play. Left
+  running, it held the speaker open for as long as the tab stayed open: the
+  Mac's own log showed Safari holding it for over half an hour after playing
+  stopped, which also kept the Mac from going to sleep on its own. It also
+  means each Play starts Safari's sound afresh. This is aimed at Safari tabs
+  that go silent after playing in another tab; it isn't yet known to cure
+  that.
+
 ## 1.6.2 — 2026-09-28
 
 - Fixed: in Safari, a tab left playing behind another tab in the same window
@@ -112,6 +123,13 @@ that gets pushed (the last number for a fix, the middle one for a feature).
 ## Guitar demo
 
 The page at `/guitar/` has its own version number, shown next to its title.
+
+### Guitar demo 1.9.1 — 2026-09-29
+
+- Stopped, the demo now lets go of the speaker once the last notes have rung
+  out, and takes it back on the next Play, the same as the app (1.6.3). Left
+  running, it held the speaker, and kept the Mac awake, for as long as the tab
+  stayed open.
 
 ### Guitar demo 1.9.0 — 2026-09-29 — DADGAD drones on D
 

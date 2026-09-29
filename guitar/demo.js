@@ -13,7 +13,7 @@
    * with every change to the demo that gets pushed: the last number for a
    * fix, the middle one for something new. Add it to CHANGELOG.md and the
    * release notes in the same change (a check makes sure). */
-  var VERSION = '1.9.0';
+  var VERSION = '1.9.1';
 
   var $ = function (id) { return document.getElementById(id); };
   var K = window.KESH, G = window.GTR, T = window.TRAD;
@@ -302,6 +302,8 @@
       guitar.cancelFrom(now); cancelFlute(now);
       drum.cancelFrom(now); clicker.cancelFrom(now);
       guitar.silence(now + (ended ? 0 : 0.05));
+      // Once it has rung out, let go of the speaker until the next Play (js/wake.js).
+      T.restAudio(ctx, function () { return playing; });
     }
     showState();
   }
