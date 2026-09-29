@@ -4,6 +4,18 @@ What changed in each version of Bodhrán, newest first. The version shows next
 to the title in the app; bump it at the top of `js/app.js` with every change
 that gets pushed (the last number for a fix, the middle one for a feature).
 
+## 1.6.6 — 2026-09-29 — Safari's other way to the speaker
+
+- In Safari on a Mac, the app's sound now reaches the speaker through an
+  audio element, the way a song or video plays, instead of straight out.
+  With the sound check in place, a silent Safari tab said it was making
+  sound, so Safari was losing it on the way. In that stuck tab the sound
+  test's direct beep (A) was silent and the same beep through an audio
+  element (C) played, and brought A back; a plain audio file (B) had done the
+  same the two times before. Chrome and the iPhone are unchanged.
+- Tested in Safari's own engine: the sound reaches the speaker this way, the
+  app still lets go of the speaker after Stop, and Play takes it back.
+
 ## 1.6.5 — 2026-09-29
 
 - A **Sound check** line under Play, while it plays, says whether the app
@@ -143,6 +155,11 @@ that gets pushed (the last number for a fix, the middle one for a feature).
 ## Guitar demo
 
 The page at `/guitar/` has its own version number, shown next to its title.
+
+### Guitar demo 1.9.4 — 2026-09-29
+
+- The same route to the speaker as the app (1.6.6): in Safari on a Mac,
+  through an audio element.
 
 ### Guitar demo 1.9.3 — 2026-09-29
 

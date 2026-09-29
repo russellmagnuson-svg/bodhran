@@ -267,7 +267,8 @@
     limiter.attack.value = 0.001;
     limiter.release.value = 0.1;
     out.connect(limiter);
-    limiter.connect(ctx.destination);
+    // The speaker: in Safari on a Mac, by way of an audio element (js/wake.js).
+    limiter.connect(TRAD.speaker ? TRAD.speaker(ctx) : ctx.destination);
     out.last = limiter;     // what the speaker gets, for TRAD.soundCheck
     return out;
   };

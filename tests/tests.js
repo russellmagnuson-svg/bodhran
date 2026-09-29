@@ -1179,28 +1179,34 @@
       });
     });
 
-  check('The app', 'Mac Safari also gets a nudge of silence, and nothing else does',
-    'In a stuck Safari tab, sound played the way a video plays still came through. Chrome and the iPhone never needed it.',
+  check('The app', 'In Mac Safari the sound goes out through an audio element, and nowhere else',
+    'Three times a Safari tab went silent while the page was making sound. In the stuck tab a direct beep stayed silent and the same beep through an audio element played, and woke the direct one. Chrome and the iPhone never needed it.',
     function () {
-      function nudges(ua, touch) {
+      function route(ua, touch) {
         var fake = 'Object.defineProperty(Navigator.prototype, "userAgent", { configurable: true, get: function () { return ' +
           JSON.stringify(ua) + '; } });' +
           'Object.defineProperty(Navigator.prototype, "maxTouchPoints", { configurable: true, get: function () { return ' + touch + '; } });' +
-          'window.__plays = 0; HTMLMediaElement.prototype.play = function () { window.__plays++; return Promise.resolve(); };';
+          'window.__streams = 0; var mk = AudioContext.prototype.createMediaStreamDestination;' +
+          'AudioContext.prototype.createMediaStreamDestination = function () { window.__streams++; return mk.call(this); };' +
+          'window.__routed = 0; HTMLMediaElement.prototype.play = function () { if (this.srcObject) window.__routed++; return Promise.resolve(); };';
         return withApp(function (win, doc) {
-          doc.getElementById('play').click();
-          return win.__plays;
+          var play = doc.getElementById('play');
+          play.click(); var first = { streams: win.__streams, routed: win.__routed };
+          play.click(); play.click();                  // stop, and play again
+          first.again = win.__routed;
+          return first;
         }, null, fake);
       }
       var SAFARI = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Safari/605.1.15';
       var CHROME = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36';
       var IPAD = SAFARI;   // an iPad's Safari says Macintosh too; only touch tells it apart
-      return nudges(SAFARI, 0).then(function (mac) {
-        return nudges(CHROME, 0).then(function (chrome) {
-          return nudges(IPAD, 5).then(function (ipad) {
-            expect(mac === 1, 'Mac Safari was nudged ' + mac + ' times on Play');
-            expect(chrome === 0, 'Chrome was nudged too');
-            expect(ipad === 0, 'an iPad or iPhone was nudged too');
+      return route(SAFARI, 0).then(function (mac) {
+        return route(CHROME, 0).then(function (chrome) {
+          return route(IPAD, 5).then(function (ipad) {
+            expect(mac.streams === 1 && mac.routed === 1, 'Mac Safari’s sound did not go out through an audio element: ' + JSON.stringify(mac));
+            expect(mac.again > mac.routed, 'playing again did not start the audio element again: ' + JSON.stringify(mac));
+            expect(chrome.streams === 0 && chrome.routed === 0, 'Chrome’s sound went through an audio element too');
+            expect(ipad.streams === 0 && ipad.routed === 0, 'an iPad or iPhone’s sound went through an audio element too');
           });
         });
       });
@@ -1758,7 +1764,7 @@
     });
 
   check('Guitar demo', 'It wakes a silent Safari tab the way the app does',
-    'The demo only resumed its audio, and went silent in Mac Safari after sleep as the app once did. Both now share js/wake.js: resume on every press, and in Mac Safari a moment of silence played the way a video plays.',
+    'The demo only resumed its audio, and went silent in Mac Safari after sleep as the app once did. Both now share js/wake.js: resume on every press, and in Mac Safari the sound goes out through an audio element, started from each press.',
     function () {
       function run(ua, touch) {
         var first = 'Object.defineProperty(Navigator.prototype, "userAgent", { configurable: true, get: function () { return ' +
@@ -1792,8 +1798,8 @@
       return run(SAFARI, 0).then(function (mac) {
         return run(CHROME, 0).then(function (chrome) {
           expect(mac.resumes >= 1 && mac.resumes2 > mac.resumes, 'Play did not ask the sound to start each time: ' + JSON.stringify(mac));
-          expect(mac.plays === 1 && mac.plays2 === 2, 'Mac Safari was not nudged on each Play: ' + JSON.stringify(mac));
-          expect(chrome.plays === 0, 'Chrome was nudged too');
+          expect(mac.plays === 1 && mac.plays2 === 2, 'in Mac Safari the audio element was not started on each Play: ' + JSON.stringify(mac));
+          expect(chrome.plays === 0, 'Chrome played an audio element too');
         });
       });
     });

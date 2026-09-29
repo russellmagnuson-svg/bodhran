@@ -77,9 +77,9 @@ against the real code:
   length and times through are on show, counted, and kept per tune;
   the silent-switch setting is for phones only; every Play asks the sound to
   start; while playing it says whether it is making sound; stopped and
-  quiet, it lets go of the speaker; Mac Safari gets a nudge
-  of silence, and nothing else does; the nudge is a second long and far below
-  hearing; every drone root plays the
+  quiet, it lets go of the speaker; in Mac Safari the sound goes out through
+  an audio element, and nowhere else; the fallback nudge is a second long and
+  far below hearing; every drone root plays the
   note it names; a tempo outside the range says so;
   arrow keys move the choice of tune type and rhythm;
   the About names the panels as they are;
@@ -342,7 +342,12 @@ npx wrangler pages deploy . --project-name=bodhran
   wakes it. First, though, read the **Sound check** line under Play
   (`TRAD.soundCheck`, an analyser on the limiter at the end of
   `TRAD.makeOutput`): "making sound" while nothing is heard means Safari is
-  losing it; "no sound" or "broken" means the fault is in the page.
+  losing it; "no sound" or "broken" means the fault is in the page. On 29
+  September the stuck tab said "making sound", and in it the sound page's
+  direct beep (A) was silent while the audio-element beep (C) played and
+  woke A. So since 1.6.6, in Mac Safari the output chain ends in a
+  MediaStream played by an audio element (`TRAD.speaker`), started from each
+  Play and paused at rest.
 - **Letting go of the speaker.** Stopped (and, in the app, with the drone
   off), each page suspends its audio a few seconds after the last note
   (`TRAD.restAudio` in `js/wake.js`), and the next Play resumes it. Left

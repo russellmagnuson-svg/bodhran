@@ -71,6 +71,11 @@
   TRAD.startSound = function (ctx) {
     if (ctx) clearTimeout(ctx.__rest);
     if (ctx && ctx.state !== 'closed') ctx.resume().catch(function () {});
+    if (ctx && ctx.__route) {                       // Mac Safari: see TRAD.speaker
+      var r = ctx.__route.play();
+      if (r && r.catch) r.catch(function () {});
+      return;
+    }
     if (!TRAD.isMacSafari()) return;
     try {
       if (!nudge) nudge = URL.createObjectURL(new Blob([TRAD.nudgeWav()], { type: 'audio/wav' }));
@@ -78,6 +83,28 @@
       var p = a.play();
       if (p && p.catch) p.catch(function () {});
     } catch (e) { /* only ever a nudge */ }
+  };
+
+  /* Where the page's sound goes to reach the speaker.
+   *
+   * In Safari on a Mac, through an audio element (a MediaStream played the
+   * way a song plays) rather than straight out. On 29 September a Safari tab
+   * went silent three times while the page was making sound (its own sound
+   * check said so) and the Mac was running the tab's stream. In the stuck
+   * tab the sound test's direct beep (A) stayed silent, while the same beep
+   * through an audio element (C) played, and woke A up; a plain audio file
+   * (B) had woken it the two times before. Safari's audio element route kept
+   * working when its direct route did not, so on a Mac that is the route the
+   * page takes. Elsewhere, straight out, as before.
+   *
+   * The element is played from each press of Play (TRAD.startSound) and
+   * paused when the page rests (TRAD.restAudio). */
+  TRAD.speaker = function (ctx) {
+    if (!TRAD.isMacSafari() || !ctx.createMediaStreamDestination) return ctx.destination;
+    var dest = ctx.createMediaStreamDestination(), el = new Audio();
+    el.srcObject = dest.stream;
+    ctx.__route = el;
+    return dest;
   };
 
   /* A line on the page, while it plays, saying whether the page itself is
@@ -136,7 +163,9 @@
     if (!ctx) return;
     clearTimeout(ctx.__rest);
     ctx.__rest = setTimeout(function () {
-      if (ctx.state === 'running' && !busy()) ctx.suspend().catch(function () {});
+      if (ctx.state !== 'running' || busy()) return;
+      ctx.suspend().catch(function () {});
+      if (ctx.__route) ctx.__route.pause();
     }, TRAD.REST_AFTER * 1000);
   };
 })(window.TRAD = window.TRAD || {});
