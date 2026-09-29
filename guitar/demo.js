@@ -13,7 +13,7 @@
    * with every change to the demo that gets pushed: the last number for a
    * fix, the middle one for something new. Add it to CHANGELOG.md and the
    * release notes in the same change (a check makes sure). */
-  var VERSION = '1.8.1';
+  var VERSION = '1.9.0';
 
   var $ = function (id) { return document.getElementById(id); };
   var K = window.KESH, G = window.GTR, T = window.TRAD;
@@ -73,13 +73,9 @@
     var t = localStorage.getItem('kesh.demo.tuning');
     if (K.tunings[t]) tuning = t;
   } catch (e) {}
-  /* Open strings ringing in sympathy, and ringing through chord changes:
-   * both on to begin with; remembered. */
-  var sympathy = true, ringOn = true;
-  try {
-    if (localStorage.getItem('kesh.demo.sympathy') === 'off') sympathy = false;
-    if (localStorage.getItem('kesh.demo.ringon') === 'off') ringOn = false;
-  } catch (e) {}
+  /* Open strings ringing in sympathy: on to begin with; remembered. */
+  var sympathy = true;
+  try { if (localStorage.getItem('kesh.demo.sympathy') === 'off') sympathy = false; } catch (e) {}
 
   var VOICE = {};
   Object.keys(K.tunings).forEach(function (tn) {
@@ -119,7 +115,6 @@
 
     guitar = new G.Guitar(ctx, run);
     guitar.sympathy = sympathy;
-    guitar.ringOn = ringOn;
     var all = {};
     Object.keys(VOICE).forEach(function (tn) {
       Object.keys(VOICE[tn]).forEach(function (c) {
@@ -501,17 +496,6 @@
       box.addEventListener('change', show);
     });
     $('bpm-num').addEventListener('change', function () { setBpm(this.value); });
-    Array.prototype.forEach.call($('ringon').children, function (b) {
-      b.setAttribute('aria-checked', String((b.dataset.ringon === 'on') === ringOn));
-      b.addEventListener('click', function () {
-        ringOn = b.dataset.ringon === 'on';
-        if (guitar) guitar.ringOn = ringOn;
-        try { localStorage.setItem('kesh.demo.ringon', ringOn ? 'on' : 'off'); } catch (e) {}
-        Array.prototype.forEach.call($('ringon').children, function (x) {
-          x.setAttribute('aria-checked', String((x.dataset.ringon === 'on') === ringOn));
-        });
-      });
-    });
     Array.prototype.forEach.call($('sympathy').children, function (b) {
       b.setAttribute('aria-checked', String((b.dataset.sympathy === 'on') === sympathy));
       b.addEventListener('click', function () {
@@ -553,7 +537,6 @@
     VERSION: VERSION, STRUMS: STRUMS, FORM: FORM, VOICE: VOICE, MIX: MIX, DRUM: DRUM,
     tuning: function () { return tuning; },
     sympathy: function () { return sympathy; },
-    ringOn: function () { return ringOn; },
     ahead: function () { return ahead; },
     audio: function () { return { ctx: ctx, run: run, guitar: guitar, flute: fluteBus, drum: drum }; },
     playing: function () { return playing; }

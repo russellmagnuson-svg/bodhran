@@ -93,12 +93,13 @@ against the real code:
 - **Guitar demo** — every bar of The Kesh is a full 6/8 bar; every chord has
   a shape and the drone rings through; the guitar is in tune; the page builds;
   each sound's volume is heard straight away and remembered; DADGAD is
-  D A D G A D with the top D open in every shape; the tuning switch changes the
+  D A D G A D with the low D and top D open in every shape, and the low D
+  drones under every chord (standard has none); the tuning switch changes the
   shapes and is remembered; the bodhrán is not buried under the guitar; it
   wakes a silent Safari tab the way the app does; hidden, it plans ahead and
   Stop drops the lot; open strings ring in sympathy, DADGAD more, and the
-  switch works and is remembered; open strings ring through a chord change and
-  fretted ones still stop, and that switch works too; the page plays no bass
+  switch works and is remembered; a fretted string the next chord leaves out
+  stops; the page plays no bass
   runs, for now; the parked bass-run
   engine still walks up into the next chord, settles like a guitar string, and
   starts from a thumb pluck; it shows its own version and the notes cover it
@@ -362,15 +363,14 @@ by measurement, the bass below 150 Hz is its strongest band.
 
 Chords: A part G | D | C | D | G | D | C | D G, B part G | C D | G | D |
 G | C G | Em D | G, in two tunings, switchable on the page: DADGAD (the
-default: Gadd9 520000, Cadd9 x32030, D5 000200, Em7 222020, the top D open in
-every shape and the G in three) and standard (G, Cadd9 and Em7 hold D and G on
+default: G/D 020000, Cadd9/D 032030, D5 000200, Em7/D 022020, the low D and
+top D open in every shape, so they drone under every chord, and the G in three) and standard (G, Cadd9 and Em7 hold D and G on
 the top two strings; D takes F sharp). Open strings ring in sympathy
 (switchable): each open string in a shape hums along, fed by how many of the
 other sounding notes it is in tune with (`GTR.coupling`), so DADGAD, with more
-open D, A and G strings, rings more than standard. Open strings also ring through chord changes
-(switchable): a string the next chord leaves out is muted only if it was
-fretted; ringing open, it stays unmuted and the down strums keep sounding it,
-so in DADGAD the open low D drones under the C. Bass runs were tried (1.4.0-1.5.0) and
+open D, A and G strings, rings more than standard. (1.8 also let open strings
+ring through chord changes; it was dropped in 1.9.0 for the drone shapes, as
+its re-strike cancelled part of the sound.) Bass runs were tried (1.4.0-1.5.0) and
 taken off the page in 1.6.0; their data (`KESH.runs`, `KESH.runFrom`) and the
 thumb-plucked string (`pluckThumb`, `Guitar.pick`) are kept, with their checks,
 for later. The checks cover the tune's bars, the shapes,

@@ -113,6 +113,22 @@ that gets pushed (the last number for a fix, the middle one for a feature).
 
 The page at `/guitar/` has its own version number, shown next to its title.
 
+### Guitar demo 1.9.0 — 2026-09-29 — DADGAD drones on D
+
+- In DADGAD, the open low D and the open top D now drone under every chord,
+  the way DADGAD backing is known for: G, C and Em are played over the open
+  low D (G/D 020000, Cadd9/D 032030, Em7/D 022020; D5 as before). The first
+  shapes started G and C on their own roots, as in standard tuning, which is
+  why the two tunings sounded alike. Measured across the A part, the low D now
+  sits 5 to 11 dB under the whole guitar in every bar; before, it was 35 to
+  44 dB under in the G and C bars (standard: 35 to 56 dB under). The chord
+  chart is unchanged.
+- The "Open strings ring through changes" switch is gone. It was heard in only
+  two bars of the tune, and striking an open string again while it rang put
+  two copies of the note on top of each other, which cancelled part of the
+  sound (dips of up to 8 or 9 dB). The drone shapes do its job in every bar.
+  "Open strings ring in sympathy" stays.
+
 ### Guitar demo 1.8.1 — 2026-09-28
 
 - Ringing through made easy to hear: it was barely audible, because the

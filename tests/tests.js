@@ -1489,8 +1489,8 @@
       expect(K.voicing('D')[5] === 66, 'the D shape has no F sharp on top');
     });
 
-  check('Guitar demo', 'DADGAD: D A D G A D, with the top D open in every shape',
-    'In DADGAD the open strings are the point: the top D rings through every chord, the open G through three. A fretted top string would lose it.',
+  check('Guitar demo', 'DADGAD: D A D G A D, with the low D and top D open in every shape',
+    'In DADGAD the open strings are the point: the low D and top D drone under every chord, the open G rings in three. Started on their own roots, G, C and Em sounded much as in standard tuning.',
     function () {
       var K = window.KESH, t = K.tunings.dadgad;
       expect(t.strings.join() === [38, 45, 50, 55, 57, 62].join(), 'the strings are ' + t.strings.join() + ', not D2 A2 D3 G3 A3 D4');
@@ -1503,6 +1503,8 @@
       expect(missing.length === 0, 'no DADGAD shape for ' + missing.join(', '));
       var closed = Object.keys(t.shapes).filter(function (c) { return t.shapes[c].frets[5] !== 0; });
       expect(closed.length === 0, 'the top D is not open in: ' + closed.join(', '));
+      var low = Object.keys(t.shapes).filter(function (c) { return t.shapes[c].frets[0] !== 0; });
+      expect(low.length === 0, 'the low D is not open in: ' + low.join(', '));
       var noG = Object.keys(t.shapes).filter(function (c) { return c !== 'D' && t.shapes[c].frets[3] !== 0; });
       expect(noG.length === 0, 'the G string is not open in: ' + noG.join(', '));
       expect(K.voicing('G', 'dadgad').indexOf(59) === -1 && K.voicing('D', 'dadgad').indexOf(66) === -1,
@@ -1617,7 +1619,7 @@
         doc.querySelector('#tunings [data-tuning="standard"]').click();
         var after = D.tuning(), afterShape = first(), stored = win.localStorage.getItem(KEY);
         var label = doc.getElementById('shapes-tuning').textContent;
-        expect(start === 'dadgad' && startShape === 'Gadd9 chord shape', 'a first visit starts in ' + start + ' showing ' + startShape);
+        expect(start === 'dadgad' && startShape === 'G/D chord shape', 'a first visit starts in ' + start + ' showing ' + startShape);
         expect(after === 'standard' && afterShape === 'G chord shape', 'switching gave ' + after + ' showing ' + afterShape);
         expect(label === 'Standard', 'the shapes are labelled ' + label);
         expect(stored === 'standard', 'the choice was saved as ' + stored);
@@ -1872,9 +1874,6 @@
       function render(tn, mute) {
         var o = new OfflineAudioContext(1, Math.ceil(SRG * (chords.length * 6 * q + 1)), SRG), g = new G.Guitar(o, o.destination);
         g.sympathy = true;
-        // Sympathy on its own: with ringing through on, an open string the next
-        // chord leaves out keeps its hum, on purpose (checked separately).
-        g.ringOn = false;
         if (mute) g._string = function () {};          // the struck strings silent: the hum alone
         var notes = {};
         chords.forEach(function (c) { K.voicing(c, tn).forEach(function (m) { if (m != null) notes[m] = 1; }); });
@@ -1900,8 +1899,53 @@
       });
     });
 
-  check('Guitar demo', 'Open strings ring through a chord change; fretted ones still stop',
-    'A string the next chord leaves out stays unmuted if it was sounding open, so it rings on and the strum keeps sounding it (DADGAD’s low D droning under C); fretted, it stops. Only fading, it was barely audible.',
+  check('Guitar demo', 'In DADGAD the low D drones under every chord',
+    'What DADGAD backing is known for: the open low D sounding under G, C and Em as well as D. The first shapes left it out of G and C, 35 to 44 dB down there, and DADGAD was hard to tell from standard.',
+    function () {
+      var SRG = 48000, K = window.KESH, G = window.GTR, q = 60 / 100 / 3;
+      var chords = ['G', 'D', 'C', 'D', 'G', 'C', 'Em', 'D'];
+      function level(d, f, a, b) {
+        var s = Math.floor(a * SRG), e = Math.floor(b * SRG), k = 2 * Math.cos(2 * Math.PI * f / SRG), q1 = 0, q2 = 0;
+        for (var i = s; i < e; i++) { var q0 = k * q1 - q2 + d[i]; q2 = q1; q1 = q0; }
+        return 2 * Math.sqrt(Math.max(0, q1 * q1 + q2 * q2 - k * q1 * q2)) / (e - s);
+      }
+      function rms(d, a, b) { var s = 0, n = 0; for (var i = Math.floor(a * SRG); i < Math.floor(b * SRG); i++) { s += d[i] * d[i]; n++; } return Math.sqrt(s / n); }
+      function render(tn) {
+        var o = new OfflineAudioContext(1, Math.ceil(SRG * (chords.length * 6 * q + 1)), SRG), g = new G.Guitar(o, o.destination);
+        var notes = {};
+        chords.forEach(function (c) { K.voicing(c, tn).forEach(function (m) { if (m != null) notes[m] = 1; }); });
+        g.prepare(Object.keys(notes).map(Number));
+        var open = K.tunings[tn].strings, t = 0.05, bars = [];
+        chords.forEach(function (c) {
+          var v = K.voicing(c, tn);
+          g.strum(v, t, 'D', 1, 4, open); g.strum(v, t + 2 * q, 'U', 0.5, 4, open);
+          g.strum(v, t + 3 * q, 'D', 0.8, 4, open); g.strum(v, t + 5 * q, 'U', 0.5, 4, open);
+          bars.push(t); t += 6 * q;
+        });
+        return o.startRendering().then(function (b) {
+          var d = b.getChannelData(0);
+          // The low D against the whole guitar, bar by bar, in dB.
+          return bars.map(function (s) { return 20 * Math.log10(level(d, G.hz(38), s + 0.05, s + 6 * q) / rms(d, s + 0.05, s + 6 * q)); });
+        });
+      }
+      return Promise.all([render('dadgad'), render('standard')]).then(function (r) {
+        var faint = [], loud = [];
+        chords.forEach(function (c, i) {
+          if (r[0][i] < -15) faint.push(c + ' (bar ' + (i + 1) + '): ' + round(-r[0][i]) + ' dB under');
+          if (r[1][i] > -25) loud.push(c + ' (bar ' + (i + 1) + '): ' + round(-r[1][i]) + ' dB under');
+        });
+        expect(faint.length === 0, 'in DADGAD the low D is too faint under ' + faint.join(', '));
+        expect(loud.length === 0, 'standard tuning has a low D droning too, so the tunings sound alike: ' + loud.join(', '));
+        var oc = new OfflineAudioContext(1, 128, SRG);
+        expect(new G.Guitar(oc, oc.destination).ringOn === undefined, 'the guitar has a ring-through setting again (dropped in 1.9.0)');
+        return fetch('../guitar/', { cache: 'no-store' }).then(function (res) { return res.text(); });
+      }).then(function (html) {
+        expect(html.indexOf('id="ringon"') === -1, 'the page has a ring-through switch again (dropped in 1.9.0)');
+      });
+    });
+
+  check('Guitar demo', 'A fretted string the next chord leaves out stops',
+    'Lifting the finger stops a fretted string. In standard tuning, G to C: the low G, fretted, is not in the C and must not ring on under it.',
     function () {
       var SRG = 48000, K = window.KESH, G = window.GTR, q = 60 / 100 / 3;
       function level(d, f, a, b) {
@@ -1909,56 +1953,17 @@
         for (var i = s; i < e; i++) { var q0 = k * q1 - q2 + d[i]; q2 = q1; q1 = q0; }
         return Math.sqrt(Math.max(0, q1 * q1 + q2 * q2 - k * q1 * q2)) / (e - s);
       }
-      function change(tn, from, to, ringOn) {
-        var o = new OfflineAudioContext(1, SRG * 3, SRG), g = new G.Guitar(o, o.destination);
-        g.ringOn = ringOn;
-        var notes = {};
-        [from, to].forEach(function (c) { K.voicing(c, tn).forEach(function (m) { if (m != null) notes[m] = 1; }); });
-        g.prepare(Object.keys(notes).map(Number));
-        var open = K.tunings[tn].strings, a = K.voicing(from, tn), b = K.voicing(to, tn), t0 = 0.05, t1 = t0 + 6 * q;
-        g.strum(a, t0, 'D', 1, 4, open); g.strum(a, t0 + 3 * q, 'D', 0.8, 4, open);
-        g.strum(b, t1, 'D', 1, 4, open); g.strum(b, t1 + 3 * q, 'D', 0.8, 4, open);
-        return o.startRendering().then(function (r) { return { d: r.getChannelData(0), t1: t1 }; });
-      }
-      function after(r, midi, a, z) { var f = G.hz(midi); return 20 * Math.log10(level(r.d, f, r.t1 + (a || 0.1), r.t1 + (z || 0.6)) / level(r.d, f, r.t1 - 0.5, r.t1)); }
-      return Promise.all([change('dadgad', 'D', 'C', true), change('dadgad', 'D', 'C', false),
-                          change('dadgad', 'G', 'C', true)]).then(function (r) {
-        var ringsOn = after(r[0], 38), stoppedOff = after(r[1], 38), fretted = after(r[2], 43);
-        var holds = after(r[0], 38, 3 * q + 0.1, 3 * q + 0.6);      // the C's second beat
-        expect(ringsOn > -15, 'the open low D stopped under the C (' + round(ringsOn) + ' dB)');
-        expect(holds > -8, 'the low D fades under the C instead of droning: ' + round(holds) + ' dB by its second beat');
-        expect(ringsOn - stoppedOff > 20, 'switched off, the low D should stop: it fell only ' + round(ringsOn - stoppedOff) + ' dB further');
-        expect(fretted < -25, 'the fretted low G rang on under the C (' + round(fretted) + ' dB)');
-      });
-    });
-
-  check('Guitar demo', 'The ring-through switch works, and is remembered',
-    'On to begin with. Off must reach the guitar, and the choice come back the same next visit.',
-    function () {
-      var KEY = 'kesh.demo.ringon', saved = localStorage.getItem(KEY);
-      localStorage.removeItem(KEY);
-      var frame = document.createElement('iframe');
-      frame.src = '../guitar/';
-      frame.style.cssText = 'position:absolute;left:-10000px;top:0;border:0;width:375px;height:812px';
-      document.body.appendChild(frame);
-      return new Promise(function (resolve, reject) {
-        var t = setTimeout(function () { reject(new Error('the demo page did not load')); }, 10000);
-        frame.onload = function () { clearTimeout(t); setTimeout(resolve, 200); };
-      }).then(function () {
-        var win = frame.contentWindow, doc = frame.contentDocument, D = win.KESH_DEMO;
-        var startOn = D.ringOn();
-        doc.getElementById('play').click();
-        var guitarOn = D.audio().guitar.ringOn;
-        doc.querySelector('#ringon [data-ringon="off"]').click();
-        var guitarOff = D.audio().guitar.ringOn;
-        doc.getElementById('play').click();
-        var stored = win.localStorage.getItem(KEY);
-        expect(startOn && guitarOn === true, 'a first visit does not start with open strings ringing through');
-        expect(guitarOff === false, 'switching it off did not reach the guitar');
-        expect(stored === 'off', 'the choice was saved as ' + stored);
-      }).finally(function () {
-        frame.remove();
-        if (saved == null) localStorage.removeItem(KEY); else localStorage.setItem(KEY, saved);
+      var o = new OfflineAudioContext(1, SRG * 3, SRG), g = new G.Guitar(o, o.destination), tn = 'standard';
+      var notes = {};
+      ['G', 'C'].forEach(function (c) { K.voicing(c, tn).forEach(function (m) { if (m != null) notes[m] = 1; }); });
+      g.prepare(Object.keys(notes).map(Number));
+      var open = K.tunings[tn].strings, a = K.voicing('G', tn), b = K.voicing('C', tn), t0 = 0.05, t1 = t0 + 6 * q;
+      g.strum(a, t0, 'D', 1, 4, open); g.strum(a, t0 + 3 * q, 'D', 0.8, 4, open);
+      g.strum(b, t1, 'D', 1, 4, open); g.strum(b, t1 + 3 * q, 'D', 0.8, 4, open);
+      return o.startRendering().then(function (r) {
+        var d = r.getChannelData(0), f = G.hz(43);
+        var fell = 20 * Math.log10(level(d, f, t1 + 0.1, t1 + 0.6) / level(d, f, t1 - 0.5, t1));
+        expect(fell < -25, 'the fretted low G rang on under the C (' + round(fell) + ' dB)');
       });
     });
 

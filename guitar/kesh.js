@@ -42,21 +42,23 @@
       }
     },
     /* DADGAD: D A D G A D, low to high, the tuning a great deal of Irish guitar
-     * backing is played in. The shapes leave strings open: the top D rings
-     * through every chord, and the open G through three of them. G and C carry
-     * an added ninth, D is an open fifth with no third at all, so the chords
-     * sit under the melody without pinning it down. */
+     * backing is played in, and played the way it is known for: the open low D
+     * and the open top D drone under every chord (G, C and Em "over D"), with
+     * the open G ringing in three of them. G and C carry an added ninth, D is
+     * an open fifth with no third at all, so the chords sit under the melody
+     * without pinning it down. (The first shapes started G, C and Em on their
+     * own roots, like standard tuning, and the two tunings sounded alike.) */
     dadgad: {
       name: 'DADGAD', strings: [38, 45, 50, 55, 57, 62], letters: 'D A D G A D',
-      note: 'DADGAD tuning: D A D G A D, low to high. The shapes leave strings open, so the ' +
-            'top D rings through every chord and the open G through three of them. G and C ' +
-            'carry an added ninth and D is an open fifth, with no third: chords that sit ' +
-            'under the tune without pinning it down.',
+      note: 'DADGAD tuning: D A D G A D, low to high. The open low D and top D drone under ' +
+            'every chord, the way DADGAD backing is known for, and the open G rings in three ' +
+            'of them. G and C carry an added ninth and D is an open fifth, with no third: ' +
+            'chords that sit under the tune without pinning it down.',
       shapes: {
-        G:  { name: 'Gadd9', frets: [5, 2, 0, 0, 0, 0],  drone: [3, 5] },
-        C:  { name: 'Cadd9', frets: [-1, 3, 2, 0, 3, 0], drone: [3, 5] },
-        D:  { name: 'D5',    frets: [0, 0, 0, 2, 0, 0],  drone: [5] },
-        Em: { name: 'Em7',   frets: [2, 2, 2, 0, 2, 0],  drone: [3, 5] }
+        G:  { name: 'G/D',     frets: [0, 2, 0, 0, 0, 0],  drone: [0, 3, 5] },
+        C:  { name: 'Cadd9/D', frets: [0, 3, 2, 0, 3, 0],  drone: [0, 3, 5] },
+        D:  { name: 'D5',      frets: [0, 0, 0, 2, 0, 0],  drone: [0, 5] },
+        Em: { name: 'Em7/D',   frets: [0, 2, 2, 0, 2, 0],  drone: [0, 3, 5] }
       }
     }
   };
@@ -110,12 +112,13 @@
    * On the last beat before a chord change, three single bass notes walking
    * up into the new chord, in place of that beat's strum. Into bars 2 and 5 of
    * each part: enough to hear, not so many that they crowd the backing. The
-   * notes sit where each tuning plays them: in DADGAD the walk into G starts
-   * on the open low D; in standard it climbs the D string to the open G. */
+   * notes sit where each tuning plays them. The walk into G climbs the D
+   * string to the open G in both tunings (in DADGAD it used to start on the
+   * open low D and land on a low G, until the G shape began on D in 1.9.0). */
   KESH.runBars = { A: [0, 3], B: [0, 3] };     // the bar whose last beat walks on
   KESH.runs = {
     standard: { G: [50, 52, 54], C: [43, 45, 47], D: [45, 47, 49] },   // D E F#, G A B, A B C#
-    dadgad:   { G: [38, 40, 42], C: [43, 45, 47], D: [45, 47, 49] }
+    dadgad:   { G: [50, 52, 54], C: [43, 45, 47], D: [45, 47, 49] }
   };
   /* The run out of this bar, or null: { to, notes, strings }. `strings` says
    * which string plays each note: the one with the lowest fret for it. */
