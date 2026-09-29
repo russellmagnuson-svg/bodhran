@@ -4,16 +4,26 @@ What changed in each version of Bodhrán, newest first. The version shows next
 to the title in the app; bump it at the top of `js/app.js` with every change
 that gets pushed (the last number for a fix, the middle one for a feature).
 
+## 1.6.4 — 2026-09-29
+
+- In Safari on a Mac, the wake-up that each Play sends is now a second of
+  sound, far too quiet to hear, in place of a twentieth of a second of pure
+  silence. A Safari tab went silent again with 1.6.3; the sound test's plain
+  one-second audio file got it going, as it had the first time, and the old
+  wake-up didn't. Whether the new one does is not yet known.
+- The sound test page (`/tests/sound.html`) has a new button, F, that plays
+  just the wake-up, and says what to press, in what order, when the app has
+  gone silent.
+
 ## 1.6.3 — 2026-09-29
 
 - Stopped, with the drone off, the app now lets go of the speaker a few
-  seconds after the last stroke, and takes it back on the next Play. Left
-  running, it held the speaker open for as long as the tab stayed open: the
-  Mac's own log showed Safari holding it for over half an hour after playing
-  stopped, which also kept the Mac from going to sleep on its own. It also
-  means each Play starts Safari's sound afresh. This is aimed at Safari tabs
-  that go silent after playing in another tab; it isn't yet known to cure
-  that.
+  seconds after the last stroke, and takes it back on the next Play, so each
+  Play starts Safari's sound afresh. Left running, a stopped tab kept its
+  audio open, and the Mac from going to sleep on its own, for as long as it
+  stayed open. (The half hour of Safari holding the speaker seen in the Mac's
+  log that day turned out to be mostly an open YouTube tab, which holds it
+  whenever a player is loaded.) It didn't cure the silent tab.
 
 ## 1.6.2 — 2026-09-28
 
@@ -123,6 +133,11 @@ that gets pushed (the last number for a fix, the middle one for a feature).
 ## Guitar demo
 
 The page at `/guitar/` has its own version number, shown next to its title.
+
+### Guitar demo 1.9.2 — 2026-09-29
+
+- The same Safari wake-up as the app (1.6.4): a second of sound too quiet to
+  hear, in place of a twentieth of a second of silence.
 
 ### Guitar demo 1.9.1 — 2026-09-29
 

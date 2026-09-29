@@ -21,6 +21,9 @@
   <h1>Sound test</h1>
   <p>Press each button in turn. Each plays a one-second beep, about as loud as a
   quiet drum stroke. Note which ones you hear.</p>
+  <p><b>If the app has gone silent,</b> start with A. If A is silent, press F
+  (you will hear nothing), then A again, and note whether A now plays. That
+  tells us whether the app’s own wake-up can bring the sound back.</p>
 
   <div class="test">
     <button id="a">A — the drum’s way</button>
@@ -54,6 +57,13 @@
   </div>
 
   <div class="test">
+    <button id="f">F — the app’s wake-up</button>
+    <div class="what">What Play does in Safari on a Mac to wake the sound: a
+    second of near-silence played as an audio file. You should hear nothing.</div>
+    <div class="state" id="f-state"></div>
+  </div>
+
+  <div class="test">
     <div class="what">Settings this browser has saved for the app, at this address:</div>
     <div class="state" id="saved"></div>
   </div>
@@ -61,6 +71,7 @@
 
 <script src="../js/patterns.js"></script>
 <script src="../js/bodhran.js"></script>
+<script src="../js/wake.js"></script>
 <script>
 (function () {
   'use strict';
@@ -195,6 +206,14 @@
   }
 
   $('d').addEventListener('click', function () { drum(saved, $('d-state')); });
+  $('f').addEventListener('click', function () {
+    var a = new Audio(URL.createObjectURL(new Blob([TRAD.nudgeWav()], { type: 'audio/wav' })));
+    a.play().then(function () {
+      $('f-state').textContent = 'played, as far as the browser knows · now press A again';
+    }, function (e) {
+      $('f-state').textContent = 'the browser refused to play it: ' + e.name;
+    });
+  });
   $('e').addEventListener('click', function () { drum({}, $('e-state')); });
 })();
 </script>

@@ -1143,6 +1143,21 @@
       }, null, fake);
     });
 
+  check('The app', 'The Safari wake-up is a second of sound, far below hearing',
+    'A plain one-second audio file got a stuck Safari tab sounding again both times it happened; the old nudge, a twentieth of a second of pure silence, did not. It must never be heard.',
+    function () {
+      var v = new DataView(TRAD.nudgeWav()), sr = v.getUint32(24, true), n = v.getUint32(40, true) / 2;
+      var peak = 0, nonzero = 0;
+      for (var i = 0; i < n; i++) {
+        var x = Math.abs(v.getInt16(44 + i * 2, true));
+        peak = Math.max(peak, x); if (x) nonzero++;
+      }
+      expect(sr === 44100, 'it is at ' + sr + ' Hz, not the 44.1 kHz of the file that woke the tab');
+      expect(n / sr >= 1, 'it lasts ' + round(n / sr) + ' s, not a second');
+      expect(nonzero > n / 2, 'it is pure silence, like the nudge that did not wake the tab');
+      expect(20 * Math.log10(peak / 32768) < -80, 'it peaks at ' + round(20 * Math.log10(peak / 32768)) + ' dB: loud enough to hear');
+    });
+
   check('The app', 'Mac Safari also gets a nudge of silence, and nothing else does',
     'In a stuck Safari tab, sound played the way a video plays still came through. Chrome and the iPhone never needed it.',
     function () {

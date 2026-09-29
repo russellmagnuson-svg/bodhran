@@ -77,7 +77,8 @@ against the real code:
   length and times through are on show, counted, and kept per tune;
   the silent-switch setting is for phones only; every Play asks the sound to
   start; stopped and quiet, it lets go of the speaker; Mac Safari gets a nudge
-  of silence, and nothing else does; every drone root plays the
+  of silence, and nothing else does; the nudge is a second long and far below
+  hearing; every drone root plays the
   note it names; a tempo outside the range says so;
   arrow keys move the choice of tune type and rhythm;
   the About names the panels as they are;
@@ -329,16 +330,21 @@ npx wrangler pages deploy . --project-name=bodhran
   quiet: the app looks as if it is playing, the drone and count-in are silent
   too, reloading does not help, and a new tab works. Safari says its audio is
   running while holding it back. Every press of Play (or the drone) now asks
-  it to resume anyway, and in Mac Safari also plays a moment of silence the
-  way a video plays, since that route still worked in a stuck tab. If it ever
-  happens again, open the app in a new tab, and open `/tests/sound.html` in
-  the stuck tab: it plays test tones several ways and meters the real drum,
-  which shows which route is getting through.
+  it to resume anyway, and in Mac Safari also plays a second of near-silence
+  (`TRAD.nudgeWav`, one step of hiss at 44.1 kHz) the way a video plays,
+  since that route still worked in a stuck tab. It went silent again on
+  29 September with the old nudge (a twentieth of a second of pure silence);
+  the sound page's plain one-second file (B) woke it. If it happens again,
+  open `/tests/sound.html` in the stuck tab and press A; if A is silent,
+  press F (the nudge alone), then A again. That shows whether the nudge
+  wakes it.
 - **Letting go of the speaker.** Stopped (and, in the app, with the drone
   off), each page suspends its audio a few seconds after the last note
   (`TRAD.restAudio` in `js/wake.js`), and the next Play resumes it. Left
-  running, a stopped tab held the speaker, and kept the Mac from idle sleep,
-  for as long as it stayed open. To see what Safari's audio is really doing,
+  running, a stopped tab kept its audio open, and the Mac from idle sleep,
+  for as long as it stayed open. (An open YouTube tab holds Safari's speaker
+  too, whenever its player is loaded, so a long hold in the log may not be
+  ours.) To see what Safari's audio is really doing,
   the Mac's log is the place to look: `/usr/bin/log show --last 30m
   --predicate 'process == "coreaudiod"'` reports the speaker's level every ten
   seconds (`node=-Output ... rms`) and which process holds it (`power
