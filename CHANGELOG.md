@@ -113,6 +113,17 @@ that gets pushed (the last number for a fix, the middle one for a feature).
 
 The page at `/guitar/` has its own version number, shown next to its title.
 
+### Guitar demo 1.7.0 — 2026-09-28
+
+- Open strings ring in sympathy, with a switch to compare (on to begin
+  with; remembered). On a real guitar the open strings hum along with the
+  notes they share, and that is much of DADGAD's sound; without it, the two
+  tunings differed only in which notes were played. Each open string is fed
+  by how many of the other sounding notes it is in tune with, so neither
+  tuning is favoured, and DADGAD, with more strings open, all D, A and G,
+  comes out ringing about 4 dB more than standard across the tune, most of
+  all on its open-fifth D. Chords now hang on 3-4 dB longer after a strum.
+
 ### Guitar demo 1.6.0 — 2026-09-28
 
 - Bass runs taken off the page for now: no runs, no switch, no marks in the

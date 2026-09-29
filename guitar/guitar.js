@@ -68,13 +68,13 @@
    * The loop filter delays the note a little too, which would pull it flat,
    * so the delay is worked out exactly at the note's own pitch and taken off
    * the delay line, and the remainder corrected by the playback rate. */
-  function pluckDark(sr, f, seed, cutoff, pos) {
+  function pluckDark(sr, f, seed, cutoff, pos, sustain, seconds) {
     var a = Math.exp(-2 * Math.PI * cutoff / sr), c = 1 - a;   // one-pole lowpass
     var w = 2 * Math.PI * f / sr;
     var lag = Math.atan2(a * Math.sin(w), 1 - a * Math.cos(w)) / w;   // its delay, in samples
     var N = Math.max(2, Math.floor(sr / f - lag));
-    var len = Math.floor(sr * SECONDS), out = new Float32Array(len);
-    var t60 = 1.8 + 2.6 * Math.max(0, Math.min(1, (400 - f) / 320));
+    var len = Math.floor(sr * (seconds || SECONDS)), out = new Float32Array(len);
+    var t60 = (1.8 + 2.6 * Math.max(0, Math.min(1, (400 - f) / 320))) * (sustain || 1);
     // The filter takes a little off the fundamental too; allow for it.
     var gain = Math.sqrt(1 + a * a - 2 * a * Math.cos(w)) / c;
     var rho = Math.min(0.99995, Math.pow(0.001, 1 / (t60 * f)) * gain);
@@ -223,6 +223,9 @@
     this.notes = {};         // midi -> [{ buffer, rate }]
     this.picks = {};         // midi -> renderings for single picked notes (bass runs)
     this.voices = [];        // per string: { gain, src } of what is ringing
+    this.sympathy = true;    // open strings ringing along with the rest (see _sympathize)
+    this.sym = [];           // per string: the sympathetic ring it carries now
+    this.symNotes = {};      // midi -> a long, pure rendering for sympathetic ringing
     this.queued = [];        // every string note handed to the audio but not yet sounding
     this.shape = null;       // the notes of the shape currently held
 
@@ -301,6 +304,30 @@
     });
   };
 
+  /* An open string's sympathetic ring: the string humming at its own pitch,
+   * mostly its lowest overtones, dying slowly, since the other strings keep
+   * feeding it. Built as just that. (A damped string's rendering was tried
+   * first; its level, set by the burst it starts with, left the ring itself
+   * 25-33 dB lower than meant: a click with a faint tail.) */
+  Guitar.prototype._symNote = function (midi) {
+    if (!this.symNotes[midi]) {
+      var ctx = this.ctx, sr = ctx.sampleRate, f = hz(midi), len = Math.floor(sr * 5);
+      var buf = ctx.createBuffer(1, len, sr), d = buf.getChannelData(0);
+      var t60 = 3 + 3 * Math.max(0, Math.min(1, (400 - f) / 320));
+      var parts = [[1, 1, 1], [2, 0.35, 0.7], [3, 0.12, 0.5]];   // [harmonic, level, how long, of t60]
+      for (var i = 0; i < len; i++) {
+        var t = i / sr, v = 0;
+        for (var k = 0; k < parts.length; k++) {
+          var h = parts[k];
+          v += h[1] * Math.pow(0.001, t / (t60 * h[2])) * Math.sin(2 * Math.PI * f * h[0] * t);
+        }
+        d[i] = v / 1.47;
+      }
+      this.symNotes[midi] = { buffer: buf, rate: 1 };
+    }
+    return this.symNotes[midi];
+  };
+
   Guitar.prototype.setLevel = function (v) {
     this.level.gain.setTargetAtTime(v, this.ctx.currentTime, 0.03);
   };
@@ -349,12 +376,18 @@
    *   dir 'D' goes bass to treble through every string the shape plays;
    *   dir 'U' comes back from the treble through the top `reach` strings.
    *   vel is how hard, 0..1. Harder strums sweep faster. */
-  Guitar.prototype.strum = function (notes, t, dir, vel, reach) {
-    // A new shape: the fretting hand lets go of strings it no longer plays.
+  Guitar.prototype.strum = function (notes, t, dir, vel, reach, open) {
+    // A new shape: the fretting hand lets go of strings it no longer plays,
+    // and a string that is open no longer rings freely once it is fretted.
     if (notes !== this.shape) {
-      for (var s = 0; s < 6; s++) if (notes[s] == null) this._damp(s, t, false);
+      for (var s = 0; s < 6; s++) {
+        if (notes[s] == null) this._damp(s, t, false);
+        if (!open || notes[s] !== open[s]) this._unsym(s, t);
+      }
       this.shape = notes;
     }
+    // Only the firm down strums feed it; the light up strums let it ring on.
+    if (open && this.sympathy && dir !== 'U') this._sympathize(notes, t, vel, open);
     var strings = [];
     for (s = 0; s < 6; s++) if (notes[s] != null) strings.push(s);
     if (dir === 'U') strings = strings.slice(-(reach || 4)).reverse();
@@ -408,8 +441,70 @@
 
   /* Stop everything ringing, quickly, from time t. */
   Guitar.prototype.silence = function (t) {
-    for (var s = 0; s < 6; s++) this._damp(s, t, false);
+    for (var s = 0; s < 6; s++) { this._damp(s, t, false); this._unsym(s, t); }
     this.shape = null;
+  };
+
+  /* ---- sympathetic ringing ----
+   * On a real guitar the open strings ring freely, and keep taking up energy
+   * from the other strings wherever their overtones line up: at the same
+   * note, an octave, a fifth or a fourth. So an open string in a chord blooms
+   * a little after the strum and hangs on, a drone under the chord. A fretted
+   * string is pinned by a finger and dies sooner, and a string left out of the
+   * shape is muted, so only the open strings get it.
+   *
+   * It favours neither tuning: each open string is fed by how many of the
+   * other sounding notes it is in tune with. DADGAD comes out ringing more
+   * because its shapes leave more strings open, and those strings are D, A and
+   * G, the notes G-major chords are made of; standard's open Es have much less
+   * in common with them. */
+  var COUPLING = { 0: 1, 12: 0.8, 24: 0.6, 7: 0.5, 19: 0.5, 5: 0.3, 17: 0.3 };
+  var SYMPATHY = 0.035;  // how loud a string's sympathetic ring can grow, against a struck one's 0.34
+  GTR.coupling = function (notes, s) {
+    var c = 0;
+    for (var j = 0; j < 6; j++) {
+      if (j === s || notes[j] == null) continue;
+      var d = Math.abs(notes[j] - notes[s]);
+      c += COUPLING[d] || 0;
+    }
+    return c;
+  };
+
+  Guitar.prototype._sympathize = function (notes, t, vel, open) {
+    var ctx = this.ctx;
+    for (var s = 0; s < 6; s++) {
+      if (notes[s] == null || notes[s] !== open[s]) continue;   // only open strings ring freely
+      var c = GTR.coupling(notes, s);
+      if (c < 0.3) continue;
+      // More in tune with the rest, more ring, but not in proportion: a
+      // string sharing notes with five others does not ring five times over.
+      var strength = Math.sqrt(Math.min(c, 3) / 3);
+      var note = this._symNote(notes[s]);
+      // The next excitation takes over from the last, gently.
+      this._unsym(s, t, 0.35);
+      var src = ctx.createBufferSource();
+      src.buffer = note.buffer;
+      src.playbackRate.value = note.rate;
+      var pure = ctx.createBiquadFilter();   // sympathy is mostly the low partials
+      pure.type = 'lowpass'; pure.frequency.value = 1100; pure.Q.value = 0.5;
+      var g = ctx.createGain();
+      g.gain.setValueAtTime(0, t);
+      g.gain.setTargetAtTime(SYMPATHY * strength * vel, t + 0.01, 0.12);   // it builds up; it is not struck
+      src.connect(pure); pure.connect(g); g.connect(this.input);
+      src.start(t);
+      this.sym[s] = { gain: g, src: src };
+      var now = ctx.currentTime;
+      this.queued = this.queued.filter(function (q) { return q.t > now; });
+      this.queued.push({ t: t, gain: g, src: src });
+    }
+  };
+
+  Guitar.prototype._unsym = function (s, t, tc) {
+    var v = this.sym[s];
+    if (!v) return;
+    v.gain.gain.setTargetAtTime(0, t, tc || 0.04);
+    try { v.src.stop(t + (tc ? 2.5 : 0.4)); } catch (e) {}
+    this.sym[s] = null;
   };
 
   GTR.Guitar = Guitar;

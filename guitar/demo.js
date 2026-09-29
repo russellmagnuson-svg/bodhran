@@ -13,7 +13,7 @@
    * with every change to the demo that gets pushed: the last number for a
    * fix, the middle one for something new. Add it to CHANGELOG.md and the
    * release notes in the same change (a check makes sure). */
-  var VERSION = '1.6.0';
+  var VERSION = '1.7.0';
 
   var $ = function (id) { return document.getElementById(id); };
   var K = window.KESH, G = window.GTR, T = window.TRAD;
@@ -73,6 +73,10 @@
     var t = localStorage.getItem('kesh.demo.tuning');
     if (K.tunings[t]) tuning = t;
   } catch (e) {}
+  /* Open strings ringing in sympathy: on to begin with; remembered. */
+  var sympathy = true;
+  try { if (localStorage.getItem('kesh.demo.sympathy') === 'off') sympathy = false; } catch (e) {}
+
   var VOICE = {};
   Object.keys(K.tunings).forEach(function (tn) {
     VOICE[tn] = {};
@@ -110,6 +114,7 @@
     run.connect(room); room.connect(wet); wet.connect(out);
 
     guitar = new G.Guitar(ctx, run);
+    guitar.sympathy = sympathy;
     var all = {};
     Object.keys(VOICE).forEach(function (tn) {
       Object.keys(VOICE[tn]).forEach(function (c) {
@@ -231,9 +236,9 @@
     if ($('on-guitar').checked) {
       slots.forEach(function (x) {
         var chord = bar.chords.length > 1 && x.s >= 3 ? bar.chords[1] : bar.chords[0];
-        (function (at, notes, dir, v, s) {
-          pending.push({ t: at, fn: function (t) { guitar.strum(notes, t, dir, v, 4); }, strum: s });
-        })(t0 + x.s * q, VOICE[tuning][chord], x.d, x.v, x.s);
+        (function (at, notes, dir, v, s, open) {
+          pending.push({ t: at, fn: function (t) { guitar.strum(notes, t, dir, v, 4, open); }, strum: s });
+        })(t0 + x.s * q, VOICE[tuning][chord], x.d, x.v, x.s, K.tunings[tuning].strings);
       });
     }
 
@@ -491,6 +496,17 @@
       box.addEventListener('change', show);
     });
     $('bpm-num').addEventListener('change', function () { setBpm(this.value); });
+    Array.prototype.forEach.call($('sympathy').children, function (b) {
+      b.setAttribute('aria-checked', String((b.dataset.sympathy === 'on') === sympathy));
+      b.addEventListener('click', function () {
+        sympathy = b.dataset.sympathy === 'on';
+        if (guitar) guitar.sympathy = sympathy;
+        try { localStorage.setItem('kesh.demo.sympathy', sympathy ? 'on' : 'off'); } catch (e) {}
+        Array.prototype.forEach.call($('sympathy').children, function (x) {
+          x.setAttribute('aria-checked', String((x.dataset.sympathy === 'on') === sympathy));
+        });
+      });
+    });
     Array.prototype.forEach.call($('tunings').children, function (b) {
       b.addEventListener('click', function () {
         tuning = b.dataset.tuning;
@@ -520,6 +536,7 @@
   window.KESH_DEMO = {
     VERSION: VERSION, STRUMS: STRUMS, FORM: FORM, VOICE: VOICE, MIX: MIX, DRUM: DRUM,
     tuning: function () { return tuning; },
+    sympathy: function () { return sympathy; },
     ahead: function () { return ahead; },
     audio: function () { return { ctx: ctx, run: run, guitar: guitar, flute: fluteBus, drum: drum }; },
     playing: function () { return playing; }

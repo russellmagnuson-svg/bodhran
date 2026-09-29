@@ -1864,6 +1864,69 @@
       return chain.then(function () { expect(bad.length === 0, bad.join('\n')); });
     });
 
+  check('Guitar demo', 'Open strings ring in sympathy, and DADGAD rings more',
+    'On a real guitar the open strings hum along with the notes they share, which is much of DADGAD’s sound. Without it the two tunings differed only in which notes were played. Only open strings may ring; a fretted or muted one cannot.',
+    function () {
+      var SRG = 48000, K = window.KESH, G = window.GTR, q = 60 / 100 / 3, chords = ['G', 'D', 'C', 'D'];
+      function seg(d, a, b) { var s = 0, n = 0; for (var i = Math.floor(a * SRG); i < Math.floor(b * SRG); i++) { s += d[i] * d[i]; n++; } return 10 * Math.log10(s / n + 1e-30); }
+      function render(tn, mute) {
+        var o = new OfflineAudioContext(1, Math.ceil(SRG * (chords.length * 6 * q + 1)), SRG), g = new G.Guitar(o, o.destination);
+        g.sympathy = true;
+        if (mute) g._string = function () {};          // the struck strings silent: the hum alone
+        var notes = {};
+        chords.forEach(function (c) { K.voicing(c, tn).forEach(function (m) { if (m != null) notes[m] = 1; }); });
+        g.prepare(Object.keys(notes).map(Number));
+        var open = K.tunings[tn].strings, t = 0.05, wrong = [];
+        chords.forEach(function (c) {
+          var v = K.voicing(c, tn);
+          g.strum(v, t, 'D', 1, 4, open); g.strum(v, t + 2 * q, 'U', 0.5, 4, open);
+          for (var s = 0; s < 6; s++) if (g.sym[s] && v[s] !== open[s]) wrong.push(c + ' string ' + (s + 1));
+          g.strum(v, t + 3 * q, 'D', 0.8, 4, open); g.strum(v, t + 5 * q, 'U', 0.5, 4, open);
+          t += 6 * q;
+        });
+        return o.startRendering().then(function (b) { return { d: b.getChannelData(0), end: t, wrong: wrong }; });
+      }
+      return Promise.all([render('standard'), render('standard', true), render('dadgad'), render('dadgad', true)]).then(function (r) {
+        var std = seg(r[1].d, 0.05, r[1].end) - seg(r[0].d, 0.05, r[0].end);
+        var dad = seg(r[3].d, 0.05, r[3].end) - seg(r[2].d, 0.05, r[2].end);
+        var wrong = r[0].wrong.concat(r[2].wrong);
+        expect(wrong.length === 0, 'a fretted or muted string rang in sympathy: ' + wrong.join(', '));
+        expect(dad > -16 && std > -20, 'the hum is too faint to hear: ' + round(-dad) + ' dB under the playing in DADGAD, ' + round(-std) + ' in standard');
+        expect(dad < -5, 'the hum is ' + round(-dad) + ' dB under the playing in DADGAD: it would swamp the chords');
+        expect(dad - std > 2, 'DADGAD hums only ' + round(dad - std) + ' dB more than standard tuning');
+      });
+    });
+
+  check('Guitar demo', 'The sympathy switch works, and is remembered',
+    'On to begin with. Off must stop the hum, and the choice come back the same next visit.',
+    function () {
+      var KEY = 'kesh.demo.sympathy', saved = localStorage.getItem(KEY);
+      localStorage.removeItem(KEY);
+      var frame = document.createElement('iframe');
+      frame.src = '../guitar/';
+      frame.style.cssText = 'position:absolute;left:-10000px;top:0;border:0;width:375px;height:812px';
+      document.body.appendChild(frame);
+      return new Promise(function (resolve, reject) {
+        var t = setTimeout(function () { reject(new Error('the demo page did not load')); }, 10000);
+        frame.onload = function () { clearTimeout(t); setTimeout(resolve, 200); };
+      }).then(function () {
+        var win = frame.contentWindow, doc = frame.contentDocument, D = win.KESH_DEMO;
+        var startOn = D.sympathy();
+        doc.getElementById('play').click();
+        var guitarOn = D.audio().guitar.sympathy;
+        doc.querySelector('#sympathy [data-sympathy="off"]').click();
+        var guitarOff = D.audio().guitar.sympathy;
+        doc.getElementById('play').click();
+        var stored = win.localStorage.getItem(KEY);
+        expect(startOn && guitarOn === true, 'a first visit does not start with the strings ringing in sympathy');
+        expect(guitarOff === false, 'switching it off did not reach the guitar');
+        expect(stored === 'off', 'the choice was saved as ' + stored);
+      }).finally(function () {
+        frame.remove();
+        if (saved == null) localStorage.removeItem(KEY); else localStorage.setItem(KEY, saved);
+      });
+    });
+
   check('Guitar demo', 'The page plays no bass runs, for now',
     'Taken off at the user’s request in guitar demo 1.6.0 (the engine and its checks are kept for later). This makes sure they don’t come back by accident.',
     function () {

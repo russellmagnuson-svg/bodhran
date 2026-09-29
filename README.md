@@ -96,7 +96,8 @@ against the real code:
   D A D G A D with the top D open in every shape; the tuning switch changes the
   shapes and is remembered; the bodhrán is not buried under the guitar; it
   wakes a silent Safari tab the way the app does; hidden, it plans ahead and
-  Stop drops the lot; the page plays no bass runs, for now; the parked bass-run
+  Stop drops the lot; open strings ring in sympathy, DADGAD more, and the
+  switch works and is remembered; the page plays no bass runs, for now; the parked bass-run
   engine still walks up into the next chord, settles like a guitar string, and
   starts from a thumb pluck; it shows its own version and the notes cover it
 - **Release notes** (under The app) — `CHANGELOG.md` and `release-notes/` both
@@ -361,7 +362,10 @@ Chords: A part G | D | C | D | G | D | C | D G, B part G | C D | G | D |
 G | C G | Em D | G, in two tunings, switchable on the page: DADGAD (the
 default: Gadd9 520000, Cadd9 x32030, D5 000200, Em7 222020, the top D open in
 every shape and the G in three) and standard (G, Cadd9 and Em7 hold D and G on
-the top two strings; D takes F sharp). Bass runs were tried (1.4.0-1.5.0) and
+the top two strings; D takes F sharp). Open strings ring in sympathy
+(switchable): each open string in a shape hums along, fed by how many of the
+other sounding notes it is in tune with (`GTR.coupling`), so DADGAD, with more
+open D, A and G strings, rings more than standard. Bass runs were tried (1.4.0-1.5.0) and
 taken off the page in 1.6.0; their data (`KESH.runs`, `KESH.runFrom`) and the
 thumb-plucked string (`pluckThumb`, `Guitar.pick`) are kept, with their checks,
 for later. The checks cover the tune's bars, the shapes,
