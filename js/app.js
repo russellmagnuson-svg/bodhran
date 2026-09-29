@@ -8,7 +8,7 @@
    * Bump it with every change that gets pushed: the last number for a fix,
    * the middle one for a new feature. It is also the quickest way to tell
    * whether a phone is running the latest deploy or an older copy. */
-  var VERSION = '1.6.4';
+  var VERSION = '1.6.5';
   TRAD.VERSION = VERSION;
 
   TRAD.validatePatterns();
@@ -62,6 +62,7 @@
     ctx = new AC({ latencyHint: 'interactive' });
 
     var out = TRAD.makeOutput(ctx);   // ends in the limiter that stops clipping
+    TRAD.soundCheck(ctx, out.last, $('sound-check'), sounding);
 
     bodhran = new TRAD.Bodhran(ctx, out);
     drone = new TRAD.Drone(ctx, out);

@@ -268,6 +268,7 @@
     limiter.release.value = 0.1;
     out.connect(limiter);
     limiter.connect(ctx.destination);
+    out.last = limiter;     // what the speaker gets, for TRAD.soundCheck
     return out;
   };
 

@@ -4,6 +4,16 @@ What changed in each version of Bodhrán, newest first. The version shows next
 to the title in the app; bump it at the top of `js/app.js` with every change
 that gets pushed (the last number for a fix, the middle one for a feature).
 
+## 1.6.5 — 2026-09-29
+
+- A **Sound check** line under Play, while it plays, says whether the app
+  itself is making sound and how loud ("the page is making sound (−18 dB)"),
+  or that it is making none, or that its sound has broken, or that the audio
+  has stopped running. If it says it is making sound and you hear nothing,
+  the sound is being lost in Safari, not in the app. Twice a Safari tab went
+  silent while the Mac was playing its stream, and until now that couldn't be
+  told apart.
+
 ## 1.6.4 — 2026-09-29
 
 - In Safari on a Mac, the wake-up that each Play sends is now a second of
@@ -133,6 +143,10 @@ that gets pushed (the last number for a fix, the middle one for a feature).
 ## Guitar demo
 
 The page at `/guitar/` has its own version number, shown next to its title.
+
+### Guitar demo 1.9.3 — 2026-09-29
+
+- The same **Sound check** line as the app (1.6.5), under Play.
 
 ### Guitar demo 1.9.2 — 2026-09-29
 

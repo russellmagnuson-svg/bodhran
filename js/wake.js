@@ -80,6 +80,47 @@
     } catch (e) { /* only ever a nudge */ }
   };
 
+  /* A line on the page, while it plays, saying whether the page itself is
+   * making sound, measured where it leaves for the speaker (`last`, the
+   * limiter at the end of TRAD.makeOutput).
+   *
+   * Twice a Safari tab went silent while the Mac's own audio service was
+   * playing its stream, and it could not be told from outside whether the
+   * page was sending silence (a fault here) or Safari was losing sound the
+   * page had made. This tells them apart, from the page, with no tools:
+   * "making sound" while nothing is heard is Safari losing it. */
+  TRAD.soundCheck = function (ctx, last, el, playing) {
+    var an = ctx.createAnalyser();
+    an.fftSize = 2048;
+    last.connect(an);
+    var buf = new Float32Array(an.fftSize), quiet = 0, heard = -Infinity;
+    var clock = ctx.currentTime, at = Date.now();
+    function show(text) { if (el.textContent !== text) el.textContent = text; }
+    return setInterval(function () {
+      var now = Date.now(), moved = (ctx.currentTime - clock) / Math.max(0.001, (now - at) / 1000);
+      clock = ctx.currentTime; at = now;
+      if (!playing()) { show(''); quiet = 0; heard = -Infinity; return; }
+      an.getFloatTimeDomainData(buf);
+      var peak = 0, broken = false;
+      for (var i = 0; i < buf.length; i++) {
+        var x = buf[i];
+        if (x !== x || x === Infinity || x === -Infinity) broken = true;
+        else if (Math.abs(x) > peak) peak = Math.abs(x);
+      }
+      var db = peak > 0 ? 20 * Math.log10(peak) : -Infinity;
+      quiet = db < -80 ? quiet + 1 : 0;
+      if (db >= -80) heard = Math.max(db, heard - 3);   // the loudest lately, easing down
+      var msg;
+      if (ctx.state !== 'running') msg = 'the audio is ' + ctx.state + ', not running';
+      else if (moved < 0.5) msg = 'the audio clock has stopped';
+      else if (broken) msg = 'the page’s sound has broken (NaN)';
+      else if (quiet >= 3) msg = 'the page is making no sound';
+      else if (heard > -Infinity) msg = 'the page is making sound (' + Math.round(heard) + ' dB)';
+      else return;
+      show('Sound check: ' + msg);
+    }, 500);
+  };
+
   /* Call when the page goes quiet (Stop, or the drone turned off). Once the
    * last notes have rung out, and if nothing has started again (`busy`),
    * the audio is suspended: the page lets go of the speaker until the next

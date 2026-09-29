@@ -13,7 +13,7 @@
    * with every change to the demo that gets pushed: the last number for a
    * fix, the middle one for something new. Add it to CHANGELOG.md and the
    * release notes in the same change (a check makes sure). */
-  var VERSION = '1.9.2';
+  var VERSION = '1.9.3';
 
   var $ = function (id) { return document.getElementById(id); };
   var K = window.KESH, G = window.GTR, T = window.TRAD;
@@ -105,6 +105,7 @@
     ctx = new AC({ latencyHint: 'interactive' });
     T.startSound(ctx);
     var out = T.makeOutput(ctx);          // the app's limiter: nothing clips
+    T.soundCheck(ctx, out.last, $('sound-check'), function () { return playing; });
 
     run = ctx.createGain();               // Stop fades this; Play brings it back
     run.connect(out);

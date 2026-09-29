@@ -1158,6 +1158,27 @@
       expect(20 * Math.log10(peak / 32768) < -80, 'it peaks at ' + round(20 * Math.log10(peak / 32768)) + ' dB: loud enough to hear');
     });
 
+  check('The app', 'While it plays, it says whether it is making sound',
+    'Twice a Safari tab went silent while the Mac played its stream, and nothing could tell whether the page sent silence or Safari lost the sound. The line under Play measures what leaves the page for the speaker.',
+    function () {
+      function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+      return withApp(function (win, doc) {
+        var el = doc.getElementById('sound-check'), play = doc.getElementById('play'), n = {};
+        n.before = el.textContent;
+        play.click();
+        return wait(3500).then(function () {
+          n.playing = el.textContent;
+          play.click();
+          return wait(1500);
+        }).then(function () {
+          n.stopped = el.textContent;
+          expect(n.before === '', 'it shows "' + n.before + '" before anything plays');
+          expect(/making sound \(-?\d+ dB\)/.test(n.playing), 'while playing it says "' + n.playing + '"');
+          expect(n.stopped === '', 'stopped, it still says "' + n.stopped + '"');
+        });
+      });
+    });
+
   check('The app', 'Mac Safari also gets a nudge of silence, and nothing else does',
     'In a stuck Safari tab, sound played the way a video plays still came through. Chrome and the iPhone never needed it.',
     function () {
@@ -1775,6 +1796,38 @@
           expect(chrome.plays === 0, 'Chrome was nudged too');
         });
       });
+    });
+
+  check('Guitar demo', 'While it plays, it says whether it is making sound, or not',
+    'The same line as the app, and it must also say so when the page goes quiet inside: that is the case it is there to catch.',
+    function () {
+      function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+      var frame = document.createElement('iframe');
+      frame.src = '../guitar/';
+      frame.style.cssText = 'position:absolute;left:-10000px;top:0;border:0;width:375px;height:812px';
+      document.body.appendChild(frame);
+      return new Promise(function (resolve, reject) {
+        var t = setTimeout(function () { reject(new Error('the demo page did not load')); }, 10000);
+        frame.onload = function () { clearTimeout(t); setTimeout(resolve, 200); };
+      }).then(function () {
+        var doc = frame.contentDocument, D = frame.contentWindow.KESH_DEMO, el = doc.getElementById('sound-check');
+        var play = doc.getElementById('play'), n = {};
+        play.click();
+        return wait(3500).then(function () {
+          n.playing = el.textContent;
+          D.audio().run.disconnect();                  // the page's sound cut off inside it
+          return wait(4000);
+        }).then(function () {
+          n.cut = el.textContent;
+          play.click();
+          return wait(1500);
+        }).then(function () {
+          n.stopped = el.textContent;
+          expect(/making sound \(-?\d+ dB\)/.test(n.playing), 'while playing it says "' + n.playing + '"');
+          expect(/making no sound/.test(n.cut), 'with its sound cut off inside the page, it says "' + n.cut + '"');
+          expect(n.stopped === '', 'stopped, it still says "' + n.stopped + '"');
+        });
+      }).finally(function () { frame.remove(); });
     });
 
   check('Guitar demo', 'Stopped, it lets go of the speaker',

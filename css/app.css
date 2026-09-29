@@ -252,6 +252,9 @@ input[type=range]::-moz-range-thumb {
 .chip[aria-checked="true"] .meter { opacity: 0.7; }
 
 .blurb { margin: 12px 0 0; color: var(--muted); font-size: 13px; }
+/* One line under the transport while playing: is the page making sound? */
+.sound-check { margin: -6px 4px 10px; min-height: 1.3em; color: var(--muted); font-size: 12.5px; }
+.sound-check:empty { min-height: 0; margin: 0; }
 
 /* ---------- bar grid ---------- */
 .grid {

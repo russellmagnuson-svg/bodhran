@@ -76,7 +76,8 @@ against the real code:
   modes grey out the right controls; Finish ends the tune and puts Play back;
   length and times through are on show, counted, and kept per tune;
   the silent-switch setting is for phones only; every Play asks the sound to
-  start; stopped and quiet, it lets go of the speaker; Mac Safari gets a nudge
+  start; while playing it says whether it is making sound; stopped and
+  quiet, it lets go of the speaker; Mac Safari gets a nudge
   of silence, and nothing else does; the nudge is a second long and far below
   hearing; every drone root plays the
   note it names; a tempo outside the range says so;
@@ -98,7 +99,8 @@ against the real code:
   D A D G A D with the low D and top D open in every shape, and the low D
   drones under every chord (standard has none); the tuning switch changes the
   shapes and is remembered; the bodhrán is not buried under the guitar; it
-  wakes a silent Safari tab the way the app does; stopped, it lets go of the
+  wakes a silent Safari tab the way the app does; it says whether it is making
+  sound, or not; stopped, it lets go of the
   speaker; hidden, it plans ahead and
   Stop drops the lot; open strings ring in sympathy, DADGAD more, and the
   switch works and is remembered; a fretted string the next chord leaves out
@@ -337,7 +339,10 @@ npx wrangler pages deploy . --project-name=bodhran
   the sound page's plain one-second file (B) woke it. If it happens again,
   open `/tests/sound.html` in the stuck tab and press A; if A is silent,
   press F (the nudge alone), then A again. That shows whether the nudge
-  wakes it.
+  wakes it. First, though, read the **Sound check** line under Play
+  (`TRAD.soundCheck`, an analyser on the limiter at the end of
+  `TRAD.makeOutput`): "making sound" while nothing is heard means Safari is
+  losing it; "no sound" or "broken" means the fault is in the page.
 - **Letting go of the speaker.** Stopped (and, in the app, with the drone
   off), each page suspends its audio a few seconds after the last note
   (`TRAD.restAudio` in `js/wake.js`), and the next Play resumes it. Left
