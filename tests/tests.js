@@ -1212,6 +1212,31 @@
       });
     });
 
+  check('The app', 'The count-in starts at two bars, goes to four, and is counted',
+    'One bar was too short to start the drum and then get an instrument and pick ready. Counting the bars on screen says when the drum comes in.',
+    function () {
+      return withApp(function (win, doc) {
+        var sel = doc.getElementById('countin');
+        var opts = Array.prototype.map.call(sel.options, function (o) { return o.value; });
+        expect(sel.value === '2', 'a first visit counts in ' + sel.value + ' bar(s), not 2');
+        expect(opts.indexOf('4') !== -1, 'there is no 4-bar count-in: ' + opts.join(', '));
+        doc.getElementById('play').click();
+        var seen = [], until = Date.now() + 15000;
+        return new Promise(function (resolve) {
+          (function poll() {
+            var t = doc.getElementById('bar-count').textContent;
+            if (seen[seen.length - 1] !== t) seen.push(t);
+            if (/^bar /.test(t) || Date.now() > until) resolve(); else setTimeout(poll, 50);
+          })();
+        }).then(function () {
+          var i1 = seen.indexOf('count-in 1 of 2'), i2 = seen.indexOf('count-in 2 of 2');
+          var first = seen.filter(function (t) { return /^bar /.test(t); })[0] || '';
+          expect(i1 !== -1 && i2 > i1, 'the counter did not count the two bars in: ' + seen.join(' → '));
+          expect(/^bar 1 of /.test(first) && seen.indexOf(first) > i2, 'the tune did not start at bar 1 after them: ' + seen.join(' → '));
+        });
+      });
+    });
+
   check('The app', 'Every drone root plays the note it names, B included',
     'B minor is one of the commonest keys in the music and was missing. And a label that says D must play a D.',
     function () {

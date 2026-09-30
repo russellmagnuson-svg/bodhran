@@ -4,6 +4,15 @@ What changed in each version of Bodhrán, newest first. The version shows next
 to the title in the app; bump it at the top of `js/app.js` with every change
 that gets pushed (the last number for a fix, the middle one for a feature).
 
+## 1.7.0 — 2026-09-30 — A longer count-in
+
+- The count-in now starts at **2 bars** (it was 1), time to start the drum and
+  then pick up an instrument and a pick. A new **4 bars** choice gives more;
+  none and 1 bar are still there, under **Count-in** in the Feel panel.
+- The bar counter counts the lead-in: "count-in 1 of 2", "count-in 2 of 2",
+  then "bar 1 of 32", so you can see when the drum is about to come in.
+- If you had chosen a count-in yourself before, the app keeps your choice.
+
 ## 1.6.6 — 2026-09-29 — Safari's other way to the speaker
 
 - In Safari on a Mac, the app's sound now reaches the speaker through an

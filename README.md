@@ -57,7 +57,7 @@ against the real code:
   and triplets land exactly; tempo changes wait for the
   next bar, and so do tune changes and the swing that goes with them; phrases count from the first bar the drum
   plays, not the count-in; a frozen page never stacks strokes; Pulse is dead straight; Simple
-  never wanders; the count-in is one bar
+  never wanders; a one-bar count-in is one bar of clicks
 - **Sound** — dum, tak and ghost are the same skin; stroke levels; the back
   hand raises the pitch and shortens the ring; no clipping
   at maximum volume and room; taks audible at the fastest tempos; nothing
@@ -76,7 +76,8 @@ against the real code:
   modes grey out the right controls; Finish ends the tune and puts Play back;
   length and times through are on show, counted, and kept per tune;
   the silent-switch setting is for phones only; every Play asks the sound to
-  start; while playing it says whether it is making sound; stopped and
+  start; the count-in starts at two bars, goes to four, and is counted on
+  screen; while playing it says whether it is making sound; stopped and
   quiet, it lets go of the speaker; in Mac Safari the sound goes out through
   an audio element, and nowhere else; the fallback nudge is a second long and
   far below hearing; every drone root plays the

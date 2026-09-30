@@ -8,7 +8,7 @@
    * Bump it with every change that gets pushed: the last number for a fix,
    * the middle one for a new feature. It is also the quickest way to tell
    * whether a phone is running the latest deploy or an older copy. */
-  var VERSION = '1.6.6';
+  var VERSION = '1.7.0';
   TRAD.VERSION = VERSION;
 
   TRAD.validatePatterns();
@@ -280,7 +280,10 @@
     // Where you are in the tune, which is what the length and times count:
     // the bar being heard, not the one the transport has got to.
     var n = transport.tuneBars, b = lastBar.bar, times = transport.timesThrough;
-    var text = lastBar.countIn || b < 0 || !(n > 0) ? 'count-in'
+    // Count-in bars are numbered below zero: -2, -1 for two of them.
+    var lead = transport.countInBars;
+    var text = lastBar.countIn || b < 0 ? 'count-in' + (b < 0 && lead > 1 ? ' ' + (lead + b + 1) + ' of ' + lead : '')
+      : !(n > 0) ? 'count-in'
       : 'bar ' + (b % n + 1) + ' of ' + n + ' \u00b7 time ' + (Math.floor(b / n) + 1) +
         (times > 0 ? ' of ' + times : '');
     if (lastBar.ending) text = 'last stroke';
