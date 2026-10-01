@@ -109,6 +109,14 @@ against the real code:
   runs, for now; the parked bass-run
   engine still walks up into the next chord, settles like a guitar string, and
   starts from a thumb pluck; it shows its own version and the notes cover it
+- **Session Players** — The Kesh read from the Session matches the demo note
+  for note; repeats, endings and pickups come out as played; keys and
+  accidentals; triplets, halves, dotted pairs and ties keep the bar; six real
+  tunes lay out in whole bars; chosen chords come from the key, start and end
+  at home, and have shapes; every shape plays its chord; the page builds a
+  tune and plays it; a changed chord holds through repeats and through save and
+  open; finding a tune asks the Session and offers only jigs and reels; it
+  shows its own version and the notes cover it
 - **Release notes** (under The app) — `CHANGELOG.md` and `release-notes/` both
   have an entry for the current version, so bumping the version means adding
   the notes in the same change
@@ -404,6 +412,39 @@ thumb-plucked string (`pluckThumb`, `Guitar.pick`) are kept, with their checks,
 for later. The checks cover the tune's bars, the shapes,
 the guitar's tuning and the page itself.
 
+
+## Session Players
+
+`/players/` is another page apart from the app: name a tune and it is found
+on thesession.org (its API answers any site, so the page asks it directly;
+there is no server of ours), fetched, and played with the guitar demo's
+guitar, flute and bodhrán. Jigs and reels for now. Not linked from the app.
+
+- `players/abc.js` — reads the Session's ABC (the body only: the meter comes
+  from the tune type, the key from the setting, L:1/8): repeats, first and
+  second endings, a :| with no |: (repeats from the last repeat's end),
+  pickups, triplets, halves, dotted pairs, ties, rests, grace notes (left
+  out), chord symbols. Lays the tune out once through against the meter:
+  each played bar belongs to a "slot", the written bar its downbeat falls
+  in, so a repeat is the same slot and shares its chords.
+- `players/harmony.js` — the chords: the setting's own symbols if it has any
+  (2 of 75 popular settings did), else chosen per half bar from the chords
+  usual for the key and mode (I V IV vi ii; mixolydian I bVII IV v; dorian i
+  bVII IV bIII v; minor i bVII bIII iv v bVI), notes on the beat weighted
+  more, the ninth counted half in, then a best path (Viterbi) that dislikes
+  changing chord, above all mid-bar, starts on the home chord and ends the
+  tune on it.
+- `players/shapes.js` — shapes in both tunings: a hand-chosen table (the
+  demo's DADGAD drone shapes among them) and a search for anything else
+  (root in the bass, chord tones only, a four-fret stretch).
+- `players/players.js` — search, settings, the chart and the chord chooser,
+  saving and opening files (JSON, `format: "session-players"`), and the demo's
+  clock, flute, guitar and drum. Its own version is at the top, apart from
+  the app's and the demo's: bump it with every pushed change and add it to the
+  "Session Players" sections of `CHANGELOG.md` and the release notes (a check
+  makes sure).
+- `tests/fixtures/thesession-*.json` — six popular tunes as the Session gives
+  them, so the checks need no network.
 ## Roadmap
 
 **Chords.** The drone (root + fifth) is in place as the groundwork. Real chordal
@@ -443,4 +484,5 @@ patterns sound the way you want.
 | `tests/`          | the checks page: open it and press Run |
 | `CHANGELOG.md`    | what changed in each version |
 | `guitar/`         | a separate demonstration: The Kesh with a guitar backing, at `/guitar/` |
+| `players/`        | Session Players: find a tune on thesession.org and play along, at `/players/` |
 | `release-notes/`  | the same, as a page to share: `/release-notes/` on the site |

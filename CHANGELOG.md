@@ -334,6 +334,29 @@ The page at `/guitar/` has its own version number, shown next to its title.
 
 - The first version: The Kesh with a guitar backing (released with app 1.6.0).
 
+## Session Players
+
+The page at `/players/` has its own version number, shown next to its title.
+
+### Session Players 1.0.0 — 2026-09-30 — The first version
+
+- Name a tune and it is found on thesession.org, fetched, and given a backing:
+  the guitar (standard or DADGAD), the bodhrán, and the melody on the flute.
+  Untick the flute to play the tune yourself. Jigs and reels for now; other
+  types are listed but can't be picked yet.
+- Choose any of the tune's settings. Repeats, first and second endings,
+  pickups, triplets, rolls and dotted notes are all read as written.
+- Chords come from the setting if it has them (few do), otherwise they're
+  chosen from the melody, bar by bar, from the chords usual in the tune's key
+  and mode. Tap any bar to change its chord, for the whole bar or each half;
+  the change holds every time that bar comes round, and is marked with a dot.
+- **Save to a file** keeps the tune, the setting and your chords; **Open a
+  saved tune** brings it all back with nothing fetched. The last tune is also
+  kept on the page between visits.
+- A two-bar count-in by default (one, two or four), tempo, times through,
+  strum, tuning, sympathetic ringing, a level for each sound, and the sound
+  check, all as in the guitar demo.
+
 Behind the scenes, the automated checks at `/tests/` grew from 36 at 1.1.0 to
 71 at 1.6.0, and each new one was shown to catch the fault it guards against.
 Earlier history is in the git log.

@@ -2215,6 +2215,259 @@
     });
 
   /* ================================================================
+   * Session Players
+   * ================================================================ */
+  var PL = window.PLAYERS;
+  var FIX = '../tests/fixtures/thesession-';
+  function json(url) { return text(url).then(function (t) { return JSON.parse(t); }); }
+  function layOf(j, i) { return PL.layout(j.settings[i || 0].abc, { key: j.settings[i || 0].key, meter: j.type === 'jig' ? '6/8' : '4/4' }); }
+  /* The Session Players page in a frame, its saved state put back after. */
+  function withPlayers(fn) {
+    var keys = ['players.current', 'players.tuning', 'players.sympathy', 'players.volume'], saved = {};
+    keys.forEach(function (k) { saved[k] = localStorage.getItem(k); localStorage.removeItem(k); });
+    var frame = document.createElement('iframe');
+    frame.src = '../players/';
+    frame.style.cssText = 'position:absolute;left:-10000px;top:0;border:0;width:420px;height:900px';
+    document.body.appendChild(frame);
+    return new Promise(function (resolve, reject) {
+      var t = setTimeout(function () { reject(new Error('the Session Players page did not load')); }, 10000);
+      frame.onload = function () { clearTimeout(t); setTimeout(resolve, 200); };
+    }).then(function () {
+      return fn(frame.contentWindow, frame.contentDocument);
+    }).finally(function () {
+      try { var p = frame.contentDocument.getElementById('play'); if (p.classList.contains('playing')) p.click(); } catch (e) {}
+      frame.remove();
+      keys.forEach(function (k) { if (saved[k] == null) localStorage.removeItem(k); else localStorage.setItem(k, saved[k]); });
+    });
+  }
+  function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+
+  check('Session Players', 'It reads The Kesh from the Session note for note',
+    'The Session’s setting 1 of The Kesh, read by Session Players, must be the melody the guitar demo plays: every note, every length, AABB, 32 bars.',
+    function () {
+      return json(FIX + 'the-kesh.json').then(function (j) {
+        var lay = layOf(j, 0), mine = [], demo = [];
+        lay.timeline.forEach(function (tb) { tb.notes.forEach(function (n) { mine.push(n.midi + ':' + n.dur / PL.TPQ); }); });
+        window.KESH.form().forEach(function (bar) { bar.notes.forEach(function (n) { demo.push(n.midi + ':' + n.len); }); });
+        expect(lay.timeline.length === 32, lay.timeline.length + ' bars once through, not 32');
+        expect(lay.slots.length === 16 && Math.max.apply(null, lay.slots.map(function (s) { return s.part; })) === 1,
+               lay.slots.length + ' different bars in ' + (Math.max.apply(null, lay.slots.map(function (s) { return s.part; })) + 1) + ' parts, not 16 in 2');
+        var at = -1;
+        for (var i = 0; i < Math.max(mine.length, demo.length); i++) if (mine[i] !== demo[i]) { at = i; break; }
+        expect(at === -1, 'note ' + (at + 1) + ' differs: ' + mine[at] + ' read, the demo plays ' + demo[at]);
+      });
+    });
+
+  check('Session Players', 'Repeats, endings and pickups come out as played',
+    'First and second endings take turns; a :| with no |: repeats its own part (the Swallowtail’s B part); a pickup comes before the first downbeat, and every bar after it starts on the beat.',
+    function () {
+      return Promise.all([json(FIX + 'out-on-the-ocean.json'), json(FIX + 'the-swallowtail.json'), json(FIX + 'cooleys.json')]).then(function (r) {
+        var ocean = layOf(r[0]), swallow = layOf(r[1]), cooley = layOf(r[2], 0);
+        var o = ocean.timeline;
+        expect(o.length === 32, 'Out on the Ocean is ' + o.length + ' bars once through, not 32');
+        var w8 = ocean.bars[o[7].written], w16 = ocean.bars[o[15].written];
+        expect(w8.ending === 1 && w16.ending === 2, 'Out on the Ocean’s endings: bar 8 is ending ' + w8.ending + ', bar 16 ending ' + w16.ending);
+        var s = swallow.timeline;
+        expect(s.length === 32, 'the Swallowtail is ' + s.length + ' bars once through, not 32');
+        expect(s[16].slot === s[24].slot && s[16].slot !== s[0].slot, 'the Swallowtail’s B part does not repeat itself');
+        expect(cooley.pickup.length === 1 && cooley.pickup[0].tick === -2 * PL.TPQ, 'Cooley’s pickup is ' + JSON.stringify(cooley.pickup));
+        var off = cooley.timeline.filter(function (tb) { return !/@0$/.test(tb.slot); }).length;
+        expect(off === 0 && cooley.timeline.length === 32, 'after Cooley’s pickup ' + off + ' bars are off the beat (' + cooley.timeline.length + ' bars)');
+      });
+    });
+
+  check('Session Players', 'Keys and accidentals come out right',
+    'The Session names keys like “Edorian”: E dorian has F and C sharp, G minor B and E flat, D mixolydian only F sharp. An accidental lasts to the end of its bar.',
+    function () {
+      function sig(k) { var s = PL.parseKey(k).sig; return Object.keys(s).sort().map(function (l) { return l + (s[l] > 0 ? '#' : 'b'); }).join(' '); }
+      expect(sig('Edorian') === 'C# F#', 'E dorian has ' + sig('Edorian'));
+      expect(sig('Gminor') === 'Bb Eb', 'G minor has ' + sig('Gminor'));
+      expect(sig('Dmixolydian') === 'F#', 'D mixolydian has ' + sig('Dmixolydian'));
+      expect(sig('Ador') === 'F#' && sig('Bm') === 'C# F#', 'A dorian has ' + sig('Ador') + ', B minor ' + sig('Bm'));
+      var b = PL.readBars('F c =F F|F', { key: 'Edorian', meter: '4/4' });
+      var m = b[0].notes.map(function (n) { return n.midi; }).concat(b[1].notes.map(function (n) { return n.midi; }));
+      expect(m.join() === '66,73,65,65,66', 'in E dorian "F c =F F|F" plays ' + m.join() + ', not 66,73,65,65,66');
+    });
+
+  check('Session Players', 'Triplets, halved notes, dotted pairs and ties keep the bar',
+    'A triplet is three in the time of two, A/ is half a quaver, A>B is dotted, and a tie makes one longer note. Get one wrong and the backing slips against the tune.',
+    function () {
+      var b = PL.readBars('(3ABc d2 e>f g/a/b|A4- A4', { key: 'D', meter: '4/4' }), q = PL.TPQ;
+      var lens = b[0].notes.map(function (n) { return n.dur / q; });
+      expect(b[0].len === 8 * q, 'the bar is ' + b[0].len / q + ' quavers, not 8');
+      expect(lens.join() === [2 / 3, 2 / 3, 2 / 3, 2, 1.5, 0.5, 0.5, 0.5, 1].join(), 'the notes are ' + lens.map(function (x) { return x.toFixed(2); }).join(' '));
+      expect(b[1].notes.length === 1 && b[1].notes[0].dur === 8 * q, 'A4- A4 is ' + b[1].notes.length + ' notes, not one of 8 quavers');
+    });
+
+  check('Session Players', 'Real settings lay out in whole bars',
+    'Six popular tunes as the Session gives them: each comes out a sensible length, every bar starting on the beat, and repeats never run away.',
+    function () {
+      var names = ['the-kesh', 'cooleys', 'the-swallowtail', 'out-on-the-ocean', 'the-silver-spear', 'banish-misfortune'];
+      return Promise.all(names.map(function (n) { return json(FIX + n + '.json'); })).then(function (tunes) {
+        var bad = [];
+        tunes.forEach(function (j) {
+          j.settings.forEach(function (st, i) {
+            var lay = layOf(j, i), n = lay.timeline.length;
+            var off = lay.timeline.filter(function (tb) { return !/@0$/.test(tb.slot); }).length;
+            if (n < 16 || n > 64) bad.push(j.name + ' ' + (i + 1) + ': ' + n + ' bars');
+            if (off) bad.push(j.name + ' ' + (i + 1) + ': ' + off + ' bars off the beat');
+          });
+        });
+        expect(bad.length === 0, bad.join('\n'));
+      });
+    });
+
+  check('Session Players', 'Chords come from the key, start and end at home, and all have shapes',
+    'The chords chosen from the melody must be ones a backer uses in that key and mode, open on the home chord, end the tune on it, and have a shape in both tunings.',
+    function () {
+      var names = ['the-kesh', 'cooleys', 'the-swallowtail', 'out-on-the-ocean', 'the-silver-spear', 'banish-misfortune'];
+      return Promise.all(names.map(function (n) { return json(FIX + n + '.json'); })).then(function (tunes) {
+        var bad = [];
+        tunes.forEach(function (j) {
+          var lay = layOf(j, 0), ch = PL.chords(lay), cands = PL.candidates(lay.key).map(function (c) { return c.name; });
+          var home = cands[0];
+          lay.slots.forEach(function (sl, i) {
+            ch[sl.id].forEach(function (c) {
+              if (cands.indexOf(c) === -1) bad.push(j.name + ': ' + c + ' is not a chord of ' + lay.key.name);
+              ['standard', 'dadgad'].forEach(function (tn) { if (!PL.shape(tn, c)) bad.push(j.name + ': no ' + tn + ' shape for ' + c); });
+            });
+          });
+          var end = ch[lay.slots[lay.slots.length - 1].id];
+          if (end[end.length - 1] !== home) bad.push(j.name + ' ends on ' + end.join(' ') + ', not ' + home);
+          if (ch[lay.slots[0].id][0] !== home) bad.push(j.name + ' starts on ' + ch[lay.slots[0].id][0] + ', not ' + home);
+        });
+        expect(bad.length === 0, bad.join('\n'));
+      });
+    });
+
+  check('Session Players', 'Every shape plays its chord',
+    'Hand-chosen shapes may add a ninth or a seventh, leave out the fifth, and in DADGAD sit on the open D, but the root and third must sound and nothing outside the chord. Any other chord gets a shape found by search.',
+    function () {
+      var bad = [];
+      Object.keys(PL.HAND).forEach(function (tn) {
+        Object.keys(PL.HAND[tn]).forEach(function (name) {
+          var ch = PL.chord(name), tones = PL.tones(ch), notes = PL.voicing(tn, name).filter(function (m) { return m != null; });
+          var pcs = notes.map(function (m) { return m % 12; }), label = PL.HAND[tn][name].name;
+          var slash = /\/([A-G])/.exec(label), bassOk = pcs[0] === ch.root || (slash && PL.chord(slash[1]).root === pcs[0]);
+          var allowed = tones.concat([(ch.root + 2) % 12, (ch.root + 10) % 12], slash ? [PL.chord(slash[1]).root] : []);
+          if (!bassOk) bad.push(tn + ' ' + label + ': the bass is not the root');
+          // Root and third must sound (a power chord: root and fifth); a shape may leave out the fifth.
+          var need = /5$/.test(label) ? [ch.root, (ch.root + 7) % 12] : tones.slice(0, 2);
+          need.forEach(function (t) { if (pcs.indexOf(t) === -1) bad.push(tn + ' ' + label + ': a chord note is missing'); });
+          pcs.forEach(function (pc) { if (allowed.indexOf(pc) === -1) bad.push(tn + ' ' + label + ': plays a note outside the chord'); });
+        });
+        ['C', 'C#', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'Ab', 'A', 'Bb', 'B'].forEach(function (r) {
+          [r, r + 'm'].forEach(function (name) {
+            var sh = PL.findShape(tn, name), ch = PL.chord(name);
+            if (!sh) { bad.push(tn + ': no shape found for ' + name); return; }
+            var notes = PL.TUNINGS[tn].strings.map(function (o, s) { return sh.frets[s] < 0 ? null : o + sh.frets[s]; }).filter(function (m) { return m != null; });
+            if (notes[0] % 12 !== ch.root) bad.push(tn + ' found ' + name + ': the bass is not the root');
+            PL.tones(ch).forEach(function (t) { if (!notes.some(function (m) { return m % 12 === t; })) bad.push(tn + ' found ' + name + ': a chord note is missing'); });
+          });
+        });
+      });
+      expect(bad.length === 0, bad.join('\n'));
+    });
+
+  check('Session Players', 'The page builds a tune and plays it',
+    'From the Session’s JSON to a chart of the tune’s bars, a shape for each chord, and sound, with a count-in first.',
+    function () {
+      return json(FIX + 'the-kesh.json').then(function (j) {
+        return withPlayers(function (win, doc) {
+          var PP = win.PLAYERS_PAGE;
+          PP.loadTune(j, 0);
+          var bars = doc.querySelectorAll('#chart .bar').length, shapes = doc.querySelectorAll('#shapes svg').length;
+          var facts = doc.getElementById('tune-facts').textContent, play = doc.getElementById('play');
+          play.click();
+          return wait(1500).then(function () {
+            var where = doc.getElementById('where').textContent, check = doc.getElementById('sound-check').textContent;
+            expect(bars === 16 && shapes >= 3, bars + ' bars in the chart and ' + shapes + ' shapes');
+            expect(/The Kesh · Jig · 6\/8 · G major · setting 1/.test(facts), 'the page says "' + facts + '"');
+            expect(/^count-in [12] of 2/.test(where), 'it started with "' + where + '", not the two-bar count-in');
+            expect(/making sound/.test(check), 'the sound check says "' + check + '"');
+          });
+        });
+      });
+    });
+
+  check('Session Players', 'A chord you change holds through every repeat, and through save and open',
+    'Tap a bar, pick a chord: it is played every time that bar comes round, marked as yours, and a saved file brings it back exactly, with nothing fetched.',
+    function () {
+      return Promise.all([json(FIX + 'the-kesh.json'), json(FIX + 'cooleys.json')]).then(function (r) {
+        return withPlayers(function (win, doc) {
+          var PP = win.PLAYERS_PAGE;
+          PP.loadTune(r[0], 0);
+          var bar3 = doc.querySelectorAll('#chart .bar')[2], slot = bar3.dataset.slot;
+          bar3.click();
+          var dlg = doc.getElementById('chooser'), opened = dlg.open;
+          var am = Array.prototype.filter.call(doc.querySelectorAll('#choose-a button'), function (b) { return /^Am/.test(b.textContent); })[0];
+          am.click();
+          var b2 = Array.prototype.filter.call(doc.querySelectorAll('#choose-b button'), function (b) { return /^D/.test(b.textContent); })[0];
+          b2.click();
+          dlg.close();
+          var plays = PP.form().filter(function (tb) { return tb.slot === slot; }).length;
+          var now = PP.tune().chords[slot].join(' '), marked = bar3.classList.contains('mine');
+          var file = PP.saveText();
+          PP.loadTune(r[1], 0);                                // something else in between
+          var opened2 = PP.openText(file);
+          var back = PP.tune().chords[slot].join(' '), stillMine = !!PP.tune().mine[slot];
+          var cell = doc.querySelector('#chart .bar[data-slot="' + slot + '"]');
+          expect(opened, 'tapping a bar did not open the chord chooser');
+          expect(now === 'Am D' && marked, 'bar 3 is "' + now + '" ' + (marked ? '' : 'and not marked as yours'));
+          expect(plays === 2, 'bar 3 comes round ' + plays + ' times once through, not 2');
+          expect(opened2 && back === 'Am D' && stillMine, 'after saving and opening, bar 3 is "' + back + '"' + (stillMine ? '' : ', no longer yours'));
+          expect(cell && /Am·D/.test(cell.textContent) && cell.classList.contains('mine'), 'the chart shows "' + (cell && cell.textContent) + '"');
+          expect(/The Kesh/.test(doc.getElementById('tune-facts').textContent), 'the opened file is not The Kesh');
+        });
+      });
+    });
+
+  check('Session Players', 'Finding a tune asks the Session, and offers only what it can play',
+    'The search goes to thesession.org’s own API, from the page. Jigs and reels can be picked; other types are listed but not yet playable.',
+    function () {
+      return json(FIX + 'the-kesh.json').then(function (kesh) {
+        return withPlayers(function (win, doc) {
+          var asked = [];
+          win.fetch = function (url) {
+            asked.push(String(url));
+            var body = /search/.test(url)
+              ? { tunes: [{ id: 55, name: 'The Kesh', type: 'jig' }, { id: 1, name: 'Some Hornpipe', type: 'hornpipe' }] }
+              : kesh;
+            return Promise.resolve({ ok: true, json: function () { return Promise.resolve(body); } });
+          };
+          doc.getElementById('q').value = 'kesh';
+          doc.getElementById('find-go').click();
+          return wait(100).then(function () {
+            var btns = doc.querySelectorAll('#results button');
+            var horn = btns[1] && btns[1].disabled;
+            btns[0].click();
+            return wait(100).then(function () {
+              expect(/^https:\/\/thesession\.org\/tunes\/search\?q=kesh&format=json/.test(asked[0] || ''), 'it asked ' + asked[0]);
+              expect(btns.length === 2 && horn && !btns[0].disabled, 'the results were not two, with only the jig playable');
+              expect(/^https:\/\/thesession\.org\/tunes\/55\?format=json/.test(asked[1] || ''), 'picking it fetched ' + asked[1]);
+              expect(win.PLAYERS_PAGE.tune() && win.PLAYERS_PAGE.tune().meta.name === 'The Kesh', 'picking it did not load The Kesh');
+            });
+          });
+        });
+      });
+    });
+
+  check('Session Players', 'It shows its own version, and the notes cover it',
+    'Session Players has its own version number. Bump it? Add it to CHANGELOG.md and the release notes in the same change.',
+    function () {
+      return withPlayers(function (win, doc) {
+        var v = win.PLAYERS_PAGE && win.PLAYERS_PAGE.VERSION;
+        expect(!!v, 'Session Players has no version');
+        expect(doc.getElementById('players-version').textContent === 'v' + v, 'the title shows "' + doc.getElementById('players-version').textContent + '"');
+        expect(doc.getElementById('foot-version').textContent.indexOf(v) !== -1, 'the foot of the page does not show ' + v);
+        return Promise.all([text('../CHANGELOG.md'), text('../release-notes/')]).then(function (r) {
+          expect(r[0].indexOf('### Session Players ' + v + ' ') !== -1, 'CHANGELOG.md has no entry for Session Players ' + v);
+          expect(r[1].indexOf('<span class="ver">Session Players ' + v + '</span>') !== -1, 'the release notes have no entry for Session Players ' + v);
+        });
+      });
+    });
+
+  /* ================================================================
    * Runner
    * ================================================================ */
 

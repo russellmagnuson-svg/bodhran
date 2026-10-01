@@ -1,0 +1,18 @@
+{
+ "id": 106,
+ "name": "The Swallowtail",
+ "type": "jig",
+ "url": "https://thesession.org/tunes/106",
+ "settings": [
+  {
+   "id": 106,
+   "url": "https://thesession.org/tunes/106#setting106",
+   "key": "Adorian",
+   "abc": "|:cBA eAA|cBA edc|BGG dGG|gfe dcB|! cBA eAA|cBA e2f|gfe dcB|cBA A2d:|! efg a2b|a2b age|efg a2b|age g2d|! efg a2b|a2b age|gfe dcB|cBA A2d:|",
+   "date": "2001-05-25 04:15:17",
+   "member": {
+    "name": "Jeremy"
+   }
+  }
+ ]
+}

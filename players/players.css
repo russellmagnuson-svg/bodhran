@@ -1,0 +1,67 @@
+/* players.css — Session Players' own pieces, on top of the app's styles and
+   the guitar demo's (chart, diagrams, mixer), so all three look like one family. */
+
+.action {
+  background: var(--amber); color: #1a1208;
+  border: 1px solid var(--amber); border-radius: 8px;
+  padding: 8px 16px; font: inherit; font-size: 14px; font-weight: 600;
+  cursor: pointer;
+}
+.action:disabled { opacity: 0.45; cursor: default; }
+.action.ghost { background: var(--panel-2); color: var(--text); border-color: var(--line); font-weight: 500; }
+.action.ghost:hover:not(:disabled) { border-color: var(--amber-dim); }
+
+/* ---------- find ---------- */
+.find { display: flex; gap: 8px; }
+.find input {
+  flex: 1 1 auto; min-width: 0;
+  background: var(--panel-2); border: 1px solid var(--line); color: var(--text);
+  border-radius: 8px; padding: 8px 10px; font: inherit; font-size: 16px;   /* 16px: no zoom on iPhone */
+}
+.find input:focus { outline: none; border-color: var(--amber-dim); }
+.results { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.results button {
+  width: 100%; text-align: left;
+  background: var(--panel-2); border: 1px solid var(--line); color: var(--text);
+  border-radius: 8px; padding: 8px 10px; font: inherit; font-size: 14px; cursor: pointer;
+}
+.results button:hover:not(:disabled) { border-color: var(--amber-dim); }
+.results button:disabled { color: var(--muted); cursor: default; }
+.results small { color: var(--muted); margin-left: 6px; }
+.results button[aria-pressed="true"] { border-color: var(--amber); }
+.setting-row { margin-top: 12px; }
+.setting-row select { max-width: 100%; }
+.setting-link { font-size: 13px; color: var(--amber); }
+.warn { color: var(--amber); }
+.file-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+
+/* ---------- chart: each bar is a button ---------- */
+button.bar {
+  font: inherit; text-align: left; color: inherit; cursor: pointer; position: relative;
+}
+button.bar:hover { border-color: var(--amber-dim); }
+button.bar .ch, button.bar .abc { display: block; }
+.bar .end-mark { font-size: 10.5px; color: var(--amber); margin-right: 3px; font-weight: 700; }
+.bar.mine::after {
+  content: ''; position: absolute; top: 6px; right: 6px;
+  width: 6px; height: 6px; border-radius: 50%; background: var(--amber);
+}
+
+/* ---------- the chooser ---------- */
+.chooser {
+  background: var(--panel); color: var(--text);
+  border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 18px; width: min(420px, calc(100vw - 32px));
+}
+.chooser::backdrop { background: rgba(0, 0, 0, 0.55); }
+.chooser h3 { margin: 0 0 4px; font-size: 17px; }
+.chooser-abc { margin: 0 0 6px; font: 12px/1.4 ui-monospace, Menlo, Consolas, monospace; color: var(--muted); }
+.chord-buttons { display: flex; flex-wrap: wrap; gap: 6px; }
+.chord-buttons button {
+  min-width: 3.2em; padding: 8px 10px;
+  background: var(--panel-2); border: 1px solid var(--line); color: var(--text);
+  border-radius: 8px; font: inherit; font-size: 15px; font-weight: 600; cursor: pointer;
+}
+.chord-buttons button[aria-pressed="true"] { background: var(--amber); border-color: var(--amber); color: #1a1208; }
+.chord-buttons button small { display: block; font-size: 10px; font-weight: 400; opacity: 0.75; }
+.chooser-foot { display: flex; justify-content: space-between; gap: 8px; margin-top: 18px; flex-wrap: wrap; }

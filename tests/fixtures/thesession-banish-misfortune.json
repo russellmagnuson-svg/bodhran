@@ -1,0 +1,18 @@
+{
+ "id": 9,
+ "name": "Banish Misfortune",
+ "type": "jig",
+ "url": "https://thesession.org/tunes/9",
+ "settings": [
+  {
+   "id": 9,
+   "url": "https://thesession.org/tunes/9#setting9",
+   "key": "Dmixolydian",
+   "abc": "|:fed cAG|A2d cAG|F2D DED|FEF GFG|! AGA cAG|AGA cde|fed cAG|Ad^c d3:|! |:f2d d^cd|f2g agf|e2c cBc|e2f gfe|! f2g agf|e2f gfe|fed cAG|Ad^c d3:|! |:f2g e2f|d2e c2d|ABA GAG|F2F GED|! c3 cAG|AGA cde|fed cAG|Ad^c d3:|",
+   "date": "2001-05-18 03:50:35",
+   "member": {
+    "name": "Jeremy"
+   }
+  }
+ ]
+}

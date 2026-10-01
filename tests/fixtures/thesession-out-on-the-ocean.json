@@ -1,0 +1,18 @@
+{
+ "id": 108,
+ "name": "Out On The Ocean",
+ "type": "jig",
+ "url": "https://thesession.org/tunes/108",
+ "settings": [
+  {
+   "id": 108,
+   "url": "https://thesession.org/tunes/108#setting108",
+   "key": "Gmajor",
+   "abc": "|:D2B BAG|BdB A2B|GED G2A|B2B AGE|! D2B BAG|BdB A2B|GED G2A|1 BGE G2E:|2 BGE GBd||! |:e2e edB|ege edB|d2B def|gfe dBA|! G2A B2d|ege dBA|GED G2A|1 BGE GBd:|2 BGE G3||",
+   "date": "2001-05-25 04:17:34",
+   "member": {
+    "name": "Jeremy"
+   }
+  }
+ ]
+}

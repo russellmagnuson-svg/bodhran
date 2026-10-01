@@ -21,6 +21,9 @@
 /guitar/*
   Cache-Control: public, max-age=0, must-revalidate
 
+/players/*
+  Cache-Control: public, max-age=0, must-revalidate
+
 /release-notes/*
   Cache-Control: public, max-age=0, must-revalidate
 

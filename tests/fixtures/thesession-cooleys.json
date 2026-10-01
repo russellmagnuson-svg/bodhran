@@ -1,0 +1,28 @@
+{
+ "id": 1,
+ "name": "Cooley's",
+ "type": "reel",
+ "url": "https://thesession.org/tunes/1",
+ "settings": [
+  {
+   "id": 1,
+   "url": "https://thesession.org/tunes/1#setting1",
+   "key": "Edorian",
+   "abc": "|:D2|EBBA B2 EB|B2 AB dBAG|FDAD BDAD|FDAD dAFD|! EBBA B2 EB|B2 AB defg|afec dBAF|DEFD E2:|! |:gf|eB B2 efge|eB B2 gedB|A2 FA DAFA|A2 FA defg|! eB B2 eBgB|eB B2 defg|afec dBAF|DEFD E2:|",
+   "date": "2001-05-14 18:45:18",
+   "member": {
+    "name": "Jeremy"
+   }
+  },
+  {
+   "id": 12342,
+   "url": "https://thesession.org/tunes/1#setting12342",
+   "key": "Eminor",
+   "abc": "|:F|CGGC G2 CG|G2 FG BGFE|(3DCB, FB, GB,FB,|DB,DF BFDB,|! CGGC G2 CG|G2 FG Bcde|fdcd BGFB|B,CDF C3:|! |:d|cG ~G2 cede|cG ~G2 ecBG|(3FGF DF B,FDF|GFDF Bcde|! cG ~G2 cede|cG ~G2 Bcde|fdcd BGFB|B,CDF C3:|",
+   "date": "2002-06-11 15:43:50",
+   "member": {
+    "name": "donnchad"
+   }
+  }
+ ]
+}

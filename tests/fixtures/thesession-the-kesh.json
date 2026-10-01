@@ -1,0 +1,38 @@
+{
+ "id": 55,
+ "name": "The Kesh",
+ "type": "jig",
+ "url": "https://thesession.org/tunes/55",
+ "settings": [
+  {
+   "id": 55,
+   "url": "https://thesession.org/tunes/55#setting55",
+   "key": "Gmajor",
+   "abc": "|:G3 GAB|A3 ABd|edd gdd|edB dBA|! GAG GAB|ABA ABd|edd gdd|BAF G3:|! |:B2B d2d|ege dBA|B2B dBG|ABA AGA|! BAB d^cd|ege dBd|gfg aga|bgg g3:|",
+   "date": "2001-05-25 02:54:11",
+   "member": {
+    "name": "Jeremy"
+   }
+  },
+  {
+   "id": 12492,
+   "url": "https://thesession.org/tunes/55#setting12492",
+   "key": "Dmajor",
+   "abc": "|:{g}A{d}A{e}A {g}ABc|{g}B{d}B{e}B {g}Bce|{g}fe{A}e ae{A}e|{g}fec {g}ec{d}B|! {g}A{d}A{e}A {g}ABc|{g}B{d}B{e}B {g}Bce|{g}fe{A}e aec|{g}B{d}A{e}A [1 {GAG}A3:|2 {GAG}A2 B||! |:{g}c{d}c{e}c {g}ece|{g}faf {g}ec{d}A|{g}c{d}c{e}c {g}ec{d}A|{g}B{d}B{e}B {g}B{d}A{e}B|! {g}c{d}c{e}c {g}ece|{g}faf {g}ec{d}A|{g}ce{A}e {g}ece|{g}fa{g}a [1 A2 B:|2 A3|",
+   "date": "2006-05-03 15:42:27",
+   "member": {
+    "name": "patrickmclaurin"
+   }
+  },
+  {
+   "id": 12493,
+   "url": "https://thesession.org/tunes/55#setting12493",
+   "key": "Gmajor",
+   "abc": "|:D|G2 G GAB|A2 A AB/c/d|edd gdd|edB dBA|! GAG G2 B|AA/A/A ABd|edd gdB|AGF G2:|! |:d|B2 B dB/c/d|e/f/ge dBA|~B3 BA^G|~A3 FGA|! B^AB d^cd|ege dBd|g2 g a^ga|bgf g2:|",
+   "date": "2007-06-10 11:33:06",
+   "member": {
+    "name": "ceolachan"
+   }
+  }
+ ]
+}
