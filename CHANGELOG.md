@@ -4,6 +4,11 @@ What changed in each version of Bodhrán, newest first. The version shows next
 to the title in the app; bump it at the top of `js/app.js` with every change
 that gets pushed (the last number for a fix, the middle one for a feature).
 
+## 1.8.1 — 2026-10-01
+
+- Session Players is now called Session Buddies, at `/buddies/`. The foot of
+  the page links there.
+
 ## 1.8.0 — 2026-10-01 — Green and gold
 
 - A new colour scheme, Irish without overdoing it: the amber and goatskin
@@ -365,9 +370,21 @@ The page at `/guitar/` has its own version number, shown next to its title.
 
 - The first version: The Kesh with a guitar backing (released with app 1.6.0).
 
-## Session Players
+## Session Buddies
 
-The page at `/players/` has its own version number, shown next to its title.
+The page at `/buddies/` has its own version number, shown next to its title.
+It was called Session Players, at `/players/`, until 1.8.0; the entries
+before that keep the old name.
+
+### Session Buddies 1.8.0 — 2026-10-01
+
+- Session Players is now **Session Buddies**, at `/buddies/` (the page's
+  files, `buddies.js` and `buddies.css`, renamed with it). The old address
+  says so, links to the new one and goes on there by itself after three
+  seconds, so bookmarks still work. Your last tune, volumes, tuning and other
+  settings carry over, and files saved before the rename open as before.
+- The description at the top now mentions the concertina: the flute plays
+  the melody, and the concertina can join it or play it alone.
 
 ### Session Players 1.7.4 — 2026-10-01
 

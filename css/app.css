@@ -257,7 +257,7 @@ input[type=range]::-moz-range-thumb {
 
 .blurb { margin: 12px 0 0; color: var(--muted); font-size: 13px; }
 /* One line under the transport while playing: is the page making sound? */
-/* The foot of the app and of Session Players: switch between the two. */
+/* The foot of the app and of Session Buddies: switch between the two. */
 .foot .apps { margin: 0 0 8px; font-size: 14px; }
 .foot .apps a { color: var(--accent); }
 .foot .apps b { color: var(--text); font-weight: 600; background: none; border: 0; padding: 0; }   /* not a key */

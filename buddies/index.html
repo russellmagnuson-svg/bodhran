@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f1411">
+<meta name="description" content="Find a tune on thesession.org and play along with a guitar and bodhrán backing built for it, the melody on flute and concertina.">
+<title>Session Buddies</title>
+<link rel="icon" href="../icons/icon-192.png" sizes="192x192" type="image/png">
+<link rel="apple-touch-icon" href="../icons/apple-touch-icon.png">
+<link rel="stylesheet" href="../css/app.css">
+<link rel="stylesheet" href="../guitar/guitar.css">
+<link rel="stylesheet" href="buddies.css">
+</head>
+<body>
+
+<main class="app">
+
+  <header class="head">
+    <div class="brand">
+      <p class="eyebrow">Play along</p>
+      <h1>Session Buddies <span id="buddies-version" class="version"></span></h1>
+      <p id="tune-facts" class="tune-facts">Find a tune to begin</p>
+      <p class="sub">Name a tune and it is fetched from thesession.org and given a guitar
+      and bodhrán backing. The flute plays the melody, and the concertina can join it
+      or play it alone. Turn both off to play the tune yourself. Save it to keep your
+      chord changes.</p>
+    </div>
+  </header>
+
+  <!-- Find a tune -->
+  <section class="panel">
+    <h2>Find a tune <span class="tag muted">jigs and reels, for now</span></h2>
+    <form id="find" class="find" autocomplete="off">
+      <input id="q" type="search" placeholder="Tune name, e.g. The Kesh" aria-label="Tune name" enterkeyhint="search">
+      <button id="find-go" class="action" type="submit">Find</button>
+    </form>
+    <p id="find-status" class="blurb" role="status"></p>
+    <!-- The matches fold away once one is picked, so the tune is not pushed
+         far down the page; the summary line opens them again. -->
+    <details id="matches" class="matches" hidden>
+      <summary id="matches-sum"></summary>
+      <ul id="results" class="results"></ul>
+    </details>
+    <!-- The tune on the page, and which setting of it. -->
+    <div id="chosen" class="chosen" hidden>
+      <div id="chosen-name" class="chosen-name"></div>
+      <div id="chosen-facts" class="chosen-facts"></div>
+      <div class="row setting-row">
+        <label class="inline">Setting
+          <select id="setting"></select>
+        </label>
+        <a id="setting-link" class="setting-link" target="_blank" rel="noopener">on thesession.org</a>
+      </div>
+      <p id="setting-warn" class="blurb warn" hidden></p>
+    </div>
+    <div class="file-row">
+      <button id="save" class="action ghost" type="button" disabled>Save to a file</button>
+      <button id="open" class="action ghost" type="button">Open a saved tune</button>
+      <input id="file" type="file" accept=".json,application/json" hidden>
+    </div>
+    <p id="file-status" class="blurb" role="status"></p>
+  </section>
+
+  <!-- Transport -->
+  <section class="panel transport">
+    <div class="play-col">
+      <button id="play" class="play" type="button" aria-label="Start or stop" aria-pressed="false" disabled>
+        <span class="play-icon" aria-hidden="true"></span>
+        <span class="play-label">Play</span>
+      </button>
+    </div>
+    <div class="tempo">
+      <div class="tempo-readout">
+        <input id="bpm-num" type="number" min="60" max="130" step="1" value="100"
+               aria-label="Tempo in beats per minute">
+        <div class="tempo-unit">
+          <span>bpm</span>
+          <small id="bpm-unit">per dotted crotchet</small>
+        </div>
+      </div>
+      <input id="bpm" type="range" min="60" max="130" step="1" value="100" aria-label="Tempo slider">
+      <div class="row tight">
+        <label class="inline">Play it
+          <select id="times">
+            <option value="1">once through</option>
+            <option value="2" selected>2 times</option>
+            <option value="3">3 times</option>
+            <option value="0">until I stop</option>
+          </select>
+        </label>
+        <label class="inline">Count-in
+          <select id="countin">
+            <option value="1">1 bar</option>
+            <option value="2" selected>2 bars</option>
+            <option value="4">4 bars</option>
+          </select>
+        </label>
+      </div>
+    </div>
+  </section>
+  <p id="sound-check" class="sound-check"></p>
+
+  <!-- What you hear -->
+  <section class="panel">
+    <h2>What you hear</h2>
+    <div class="mixer">
+      <div class="voice">
+        <label class="toggle"><input id="on-guitar" type="checkbox" checked> Guitar</label>
+        <input id="vol-guitar" type="range" min="0" max="2" step="0.05" value="1" aria-label="Guitar volume">
+        <output id="vol-guitar-out" for="vol-guitar">100%</output>
+      </div>
+      <div class="voice">
+        <label class="toggle"><input id="on-tune" type="checkbox" checked> Flute <small>(the tune)</small></label>
+        <input id="vol-tune" type="range" min="0" max="2" step="0.05" value="1" aria-label="Flute volume">
+        <output id="vol-tune-out" for="vol-tune">100%</output>
+      </div>
+      <div class="voice">
+        <label class="toggle"><input id="on-concertina" type="checkbox"> Concertina <small>(the tune)</small></label>
+        <input id="vol-concertina" type="range" min="0" max="2" step="0.05" value="1" aria-label="Concertina volume">
+        <output id="vol-concertina-out" for="vol-concertina">100%</output>
+      </div>
+      <div class="voice">
+        <label class="toggle"><input id="on-drum" type="checkbox" checked> Bodhrán</label>
+        <input id="vol-drum" type="range" min="0" max="2" step="0.05" value="1" aria-label="Bodhrán volume">
+        <output id="vol-drum-out" for="vol-drum">100%</output>
+      </div>
+    </div>
+    <p class="blurb">The flute and the concertina both play the tune: tick either, or both
+    together as at a session. Untick both to play the tune yourself over the backing.</p>
+    <h3 class="sub-h">Strum</h3>
+    <div id="strums" class="modes" role="radiogroup" aria-label="Strum">
+      <button class="mode" type="button" role="radio" data-strum="lilt" aria-checked="true">Lilt</button>
+      <button class="mode" type="button" role="radio" data-strum="drive" aria-checked="false">Driving</button>
+    </div>
+    <p id="strum-desc" class="blurb"></p>
+    <h3 class="sub-h">Tuning</h3>
+    <div id="tunings" class="modes" role="radiogroup" aria-label="Guitar tuning">
+      <button class="mode" type="button" role="radio" data-tuning="standard" aria-checked="false">Standard</button>
+      <button class="mode" type="button" role="radio" data-tuning="dadgad" aria-checked="true">DADGAD</button>
+    </div>
+    <h3 class="sub-h">Open strings ring in sympathy</h3>
+    <div id="sympathy" class="modes" role="radiogroup" aria-label="Sympathetic ringing">
+      <button class="mode" type="button" role="radio" data-sympathy="off" aria-checked="false">Off</button>
+      <button class="mode" type="button" role="radio" data-sympathy="on" aria-checked="true">On</button>
+    </div>
+  </section>
+
+  <!-- Now -->
+  <section class="panel">
+    <h2>Now <span id="where" class="tag">—</span></h2>
+    <div class="now">
+      <div class="now-shape">
+        <div id="now-diagram" class="diagram big"></div>
+      </div>
+      <div class="now-text">
+        <div class="now-label">Chord</div>
+        <div id="now-chord" class="now-chord">—</div>
+        <div class="now-label">Next</div>
+        <div id="next-chord" class="next-chord">—</div>
+        <div id="strum-dots" class="strum-dots" aria-hidden="true"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- The chart -->
+  <section class="panel">
+    <h2>Chords <span id="chord-source" class="tag muted">—</span></h2>
+    <div id="chart" class="chart"></div>
+    <p class="blurb">Tap a bar to change its chord; the change holds every time that bar
+    comes round. Bars you have changed are marked with a dot. The small print is the
+    melody in ABC notation.</p>
+    <button id="reset-chords" class="action ghost" type="button" hidden>Back to the chosen chords</button>
+  </section>
+
+  <!-- Shapes -->
+  <section class="panel">
+    <h2>The shapes <span id="shapes-tuning" class="tag muted">DADGAD</span></h2>
+    <div id="shapes" class="shapes"></div>
+    <p class="blurb">Highlighted strings ring open.</p>
+  </section>
+
+  <footer class="foot">
+    <p id="credit">Tunes come from <a href="https://thesession.org/">thesession.org</a>.</p>
+    <p id="concertina-credit">The concertina is a real one: notes recorded by Alwayswonder,
+    <a href="https://commons.wikimedia.org/wiki/File:Demonstration_of_the_note_range_of_an_Anglo_Concertina.webm" target="_blank" rel="noopener">Wikimedia Commons</a>,
+    <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener">CC BY-SA 4.0</a>.
+    The guitar, flute and bodhrán are synthesised as they play.</p>
+    <nav class="apps" aria-label="Switch app"><a href="../">Bodhrán</a> · <b aria-current="page">Session Buddies</b></nav>
+    <p><span id="foot-version"></span> <a href="../release-notes/#buddies">What’s new</a> · <b>Space</b> play/stop</p>
+  </footer>
+
+</main>
+
+<!-- Changing a bar's chord -->
+<dialog id="chooser" class="chooser">
+  <form method="dialog">
+    <h3 id="chooser-title">Bar</h3>
+    <p id="chooser-abc" class="chooser-abc"></p>
+    <div class="sub-h">Whole bar, or first half</div>
+    <div id="choose-a" class="chord-buttons"></div>
+    <div class="sub-h">Second half</div>
+    <div id="choose-b" class="chord-buttons"></div>
+    <div class="chooser-foot">
+      <button id="choose-auto" class="action ghost" type="button">Use the chosen chord</button>
+      <button class="action" value="done">Done</button>
+    </div>
+  </form>
+</dialog>
+
+<script src="../js/patterns.js"></script>
+<script src="../js/bodhran.js"></script>
+<script src="../js/wake.js"></script>
+<script src="../guitar/guitar.js"></script>
+<script src="abc.js"></script>
+<script src="harmony.js"></script>
+<script src="shapes.js"></script>
+<script src="flute.js"></script>
+<script src="concertina.js"></script>
+<script src="buddies.js"></script>
+</body>
+</html>

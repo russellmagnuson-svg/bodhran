@@ -346,4 +346,4 @@
              pickup: pickup, timeline: timeline, slots: slots, symbols: symbols,
              warnings: bars.warnings };
   };
-})(window.PLAYERS = window.PLAYERS || {});
+})(window.BUDDIES = window.BUDDIES || {});

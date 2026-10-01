@@ -110,7 +110,7 @@ against the real code:
   runs, for now; the parked bass-run
   engine still walks up into the next chord, settles like a guitar string, and
   starts from a thumb pluck; it shows its own version and the notes cover it
-- **Session Players** — The Kesh read from the Session matches the demo note
+- **Session Buddies** — The Kesh read from the Session matches the demo note
   for note; repeats, endings and pickups come out as played; keys and
   accidentals; triplets, halves, dotted pairs and ties keep the bar; six real
   tunes lay out in whole bars; chosen chords come from the key, start and end
@@ -125,7 +125,7 @@ against the real code:
   the concertina sounds like a reed, plays in tune and sits with the
   flute, and ticking it plays the tune on it; the chosen tune and setting are
   shown where you found it; the app and
-  Session Players link to each other at the foot; chords follow the shape of a part; the matches fold away once one is picked; reopening keeps your chords and
+  Session Buddies link to each other at the foot; chords follow the shape of a part; the matches fold away once one is picked; reopening keeps your chords and
   chooses the rest afresh; finding a tune asks the Session and offers only
   jigs and reels; it
   shows its own version and the notes cover it
@@ -428,22 +428,26 @@ for later. The checks cover the tune's bars, the shapes,
 the guitar's tuning and the page itself.
 
 
-## Session Players
+## Session Buddies
 
-`/players/` is another page apart from the app: name a tune and it is found
+Called Session Players, at `/players/`, until 1.8.0. `players/index.html` now
+only says so and forwards to `/buddies/`, for old bookmarks. Saved settings
+keep their `players.` names in local storage, so they carry over.
+
+`/buddies/` is another page apart from the app: name a tune and it is found
 on thesession.org (its API answers any site, so the page asks it directly;
 there is no server of ours), fetched, and played with the guitar demo's
 guitar, flute and bodhrán. Jigs and reels for now. The foot of the app and of
-Session Players switches between the two.
+Session Buddies switches between the two.
 
-- `players/abc.js` — reads the Session's ABC (the body only: the meter comes
+- `buddies/abc.js` — reads the Session's ABC (the body only: the meter comes
   from the tune type, the key from the setting, L:1/8): repeats, first and
   second endings, a :| with no |: (repeats from the last repeat's end),
   pickups, triplets, halves, dotted pairs, ties, rests, grace notes (left
   out), chord symbols. Lays the tune out once through against the meter:
   each played bar belongs to a "slot", the written bar its downbeat falls
   in, so a repeat is the same slot and shares its chords.
-- `players/harmony.js` — the chords: the setting's own symbols if it has any
+- `buddies/harmony.js` — the chords: the setting's own symbols if it has any
   (2 of 75 popular settings did), else chosen per half bar from the chords
   usual for the key and mode (I V IV vi ii; mixolydian I bVII IV v; dorian i
   bVII IV bIII v; minor i bVII bIII iv v bVI), notes on the beat weighted
@@ -452,10 +456,10 @@ Session Players switches between the two.
   tune on it. Since 1.1.0 it knows a part's shape: bar 4 of each eight leans
   to the cadence chord (V in major; bVII in dorian, mixolydian and minor),
   and bar 8 opens on it and goes home, a mid-bar change there costing little.
-- `players/shapes.js` — shapes in both tunings: a hand-chosen table (the
+- `buddies/shapes.js` — shapes in both tunings: a hand-chosen table (the
   demo's DADGAD drone shapes among them) and a search for anything else
   (root in the bass, chord tones only, a four-fret stretch).
-- `players/concertina/` — the concertina's recorded notes (`c-<MIDI>.m4a`,
+- `buddies/concertina/` — the concertina's recorded notes (`c-<MIDI>.m4a`,
   G3 to B6, 596 KB), cut from Alwayswonder's Anglo concertina recording on
   Wikimedia Commons, CC BY-SA 4.0 (see its README); `samples.json` holds
   each note's measured tuning. `Concertina` plays them: retuned, started as
@@ -465,11 +469,11 @@ Session Players switches between the two.
   long notes; recordings that waver in pitch on their own (`wobble` in
   samples.json over 1.5 cents: F♯4, A♯3, A♯4, G♯5) are played from the
   steadier neighbour a semitone away; `ConcertinaSynth`, the synthesised one, plays until they load.
-- `players/flute.js`, `players/concertina.js` — the two melody instruments,
+- `buddies/flute.js`, `buddies/concertina.js` — the two melody instruments,
   each `new X(ctx, dest)` with `.note(t, dur, midi, vel)` and `.cancelFrom(t)`.
   The flute is the demo's, with a lighter vibrato (`VIBRATO`: ±4 cents on
   notes of 0.6 s or more, from 0.25 s in; note()'s fifth argument scales it,
-  and players.js passes 0 when the concertina plays too, as against its steady
+  and buddies.js passes 0 when the concertina plays too, as against its steady
   reed the vibrato beat); the concertina a free reed (a narrow-pulse
   spectrum, odd harmonics a shade stronger, one dry reed a few cents off at
   random, overtones building over 35 ms and brighter pushed harder, a scoop
@@ -478,12 +482,12 @@ Session Players switches between the two.
   a lift at 1.7 kHz, lowpass 6.5 kHz). Its notes carry over: held 30 ms
   past the next one's start, dying away with a 50 ms time constant; a
   repeated note is let go 60 ms early so it is struck again
-  (`concertinaLength` in players.js). It sits about 1 dB under the flute.
-- `players/players.js` — search, settings, the chart and the chord chooser,
-  saving and opening files (JSON, `format: "session-players"`), and the demo's
+  (`concertinaLength` in buddies.js). It sits about 1 dB under the flute.
+- `buddies/buddies.js` — search, settings, the chart and the chord chooser,
+  saving and opening files (JSON, `format: "session-buddies"`; files saved as `"session-players"` before the rename open too), and the demo's
   clock, flute, guitar and drum. Its own version is at the top, apart from
   the app's and the demo's: bump it with every pushed change and add it to the
-  "Session Players" sections of `CHANGELOG.md` and the release notes (a check
+  "Session Buddies" sections of `CHANGELOG.md` and the release notes (a check
   makes sure).
 - `tests/fixtures/thesession-*.json` — six popular tunes as the Session gives
   them, so the checks need no network.
@@ -526,5 +530,6 @@ patterns sound the way you want.
 | `tests/`          | the checks page: open it and press Run |
 | `CHANGELOG.md`    | what changed in each version |
 | `guitar/`         | a separate demonstration: The Kesh with a guitar backing, at `/guitar/` |
-| `players/`        | Session Players: find a tune on thesession.org and play along, at `/players/` |
+| `buddies/`        | Session Buddies: find a tune on thesession.org and play along, at `/buddies/` |
+| `players/`        | Its old address: says it has moved and forwards to `/buddies/` |
 | `release-notes/`  | the same, as a page to share: `/release-notes/` on the site |

@@ -291,4 +291,4 @@
   };
 
   P.Concertina = Concertina;
-})(window.PLAYERS = window.PLAYERS || {});
+})(window.BUDDIES = window.BUDDIES || {});

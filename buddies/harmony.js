@@ -173,4 +173,4 @@
     });
     return out;
   }
-})(window.PLAYERS = window.PLAYERS || {});
+})(window.BUDDIES = window.BUDDIES || {});

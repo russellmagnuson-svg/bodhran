@@ -2211,22 +2211,22 @@
       }).finally(function () { frame.remove(); });
     });
 
-  check('Session Players', 'The concertina plays recordings of a real one, credited',
+  check('Session Buddies', 'The concertina plays recordings of a real one, credited',
     'Synthesised, it sounded “too much like a keyboard”. Its notes now come from a real Anglo concertina, recorded by Alwayswonder (Wikimedia Commons, CC BY-SA 4.0): every note a tune is likely to need, G3 to D6, within a semitone of a steady recorded one, the licence noted with the samples and the recording credited on the page, and once they have loaded the synthesised one plays no notes.',
     function () {
-      return Promise.all([json('../players/concertina/samples.json'), text('../players/concertina/README.md'), text('../players/'), json(FIX + 'the-kesh.json')]).then(function (r) {
+      return Promise.all([json('../buddies/concertina/samples.json'), text('../buddies/concertina/README.md'), text('../buddies/'), json(FIX + 'the-kesh.json')]).then(function (r) {
         var have = PL.Concertina.steady(r[0].notes).map(function (n) { return n.midi; }), gaps = [];   // those it plays
         for (var m = 55; m <= 86; m++) if (!have.some(function (h) { return Math.abs(h - m) <= 1; })) gaps.push(m);
         expect(have.length >= 30 && gaps.length === 0, have.length + ' recorded notes; nothing within a semitone of ' + gaps.join(', '));
         expect(/CC BY-SA 4\.0/.test(r[1]) && /Alwayswonder/.test(r[1]) && /CC BY-SA 4\.0/.test(r[0].licence || ''), 'the samples do not carry their licence and credit');
         var credit = (/<p id="concertina-credit">[\s\S]*?<\/p>/.exec(r[2]) || [''])[0];
         expect(/Alwayswonder/.test(credit) && /CC BY-SA 4\.0/.test(credit), 'the page does not credit the recording');
-        return withPlayers(function (win, doc) {
-          var synth = 0, S = win.PLAYERS.ConcertinaSynth.prototype, orig = S.note;
+        return withBuddies(function (win, doc) {
+          var synth = 0, S = win.BUDDIES.ConcertinaSynth.prototype, orig = S.note;
           S.note = function () { synth++; return orig.apply(this, arguments); };
-          win.PLAYERS_PAGE.loadTune(r[3], 0);
+          win.BUDDIES_PAGE.loadTune(r[3], 0);
           doc.getElementById('on-concertina').click();           // ticking it starts the recordings loading
-          var inst = win.PLAYERS_PAGE.audio().concertina;
+          var inst = win.BUDDIES_PAGE.audio().concertina;
           return inst.ready.then(function (loaded) {
             doc.getElementById('play').click();
             return wait(3000).then(function () {
@@ -2287,22 +2287,22 @@
     });
 
   /* ================================================================
-   * Session Players
+   * Session Buddies
    * ================================================================ */
-  var PL = window.PLAYERS;
+  var PL = window.BUDDIES;
   var FIX = '../tests/fixtures/thesession-';
   function json(url) { return text(url).then(function (t) { return JSON.parse(t); }); }
   function layOf(j, i) { return PL.layout(j.settings[i || 0].abc, { key: j.settings[i || 0].key, meter: j.type === 'jig' ? '6/8' : '4/4' }); }
-  /* The Session Players page in a frame, its saved state put back after. */
-  function withPlayers(fn) {
+  /* The Session Buddies page in a frame, its saved state put back after. */
+  function withBuddies(fn) {
     var keys = ['players.current', 'players.tuning', 'players.sympathy', 'players.volume'], saved = {};
     keys.forEach(function (k) { saved[k] = localStorage.getItem(k); localStorage.removeItem(k); });
     var frame = document.createElement('iframe');
-    frame.src = '../players/';
+    frame.src = '../buddies/';
     frame.style.cssText = 'position:absolute;left:-10000px;top:0;border:0;width:420px;height:900px';
     document.body.appendChild(frame);
     return new Promise(function (resolve, reject) {
-      var t = setTimeout(function () { reject(new Error('the Session Players page did not load')); }, 10000);
+      var t = setTimeout(function () { reject(new Error('the Session Buddies page did not load')); }, 10000);
       frame.onload = function () { clearTimeout(t); setTimeout(resolve, 200); };
     }).then(function () {
       return fn(frame.contentWindow, frame.contentDocument);
@@ -2314,8 +2314,8 @@
   }
   function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
 
-  check('Session Players', 'It reads The Kesh from the Session note for note',
-    'The Session’s setting 1 of The Kesh, read by Session Players, must be the melody the guitar demo plays: every note, every length, AABB, 32 bars.',
+  check('Session Buddies', 'It reads The Kesh from the Session note for note',
+    'The Session’s setting 1 of The Kesh, read by Session Buddies, must be the melody the guitar demo plays: every note, every length, AABB, 32 bars.',
     function () {
       return json(FIX + 'the-kesh.json').then(function (j) {
         var lay = layOf(j, 0), mine = [], demo = [];
@@ -2330,7 +2330,7 @@
       });
     });
 
-  check('Session Players', 'Repeats, endings and pickups come out as played',
+  check('Session Buddies', 'Repeats, endings and pickups come out as played',
     'First and second endings take turns; a :| with no |: repeats its own part (the Swallowtail’s B part); a pickup comes before the first downbeat, and every bar after it starts on the beat.',
     function () {
       return Promise.all([json(FIX + 'out-on-the-ocean.json'), json(FIX + 'the-swallowtail.json'), json(FIX + 'cooleys.json')]).then(function (r) {
@@ -2348,7 +2348,7 @@
       });
     });
 
-  check('Session Players', 'Keys and accidentals come out right',
+  check('Session Buddies', 'Keys and accidentals come out right',
     'The Session names keys like “Edorian”: E dorian has F and C sharp, G minor B and E flat, D mixolydian only F sharp. An accidental lasts to the end of its bar.',
     function () {
       function sig(k) { var s = PL.parseKey(k).sig; return Object.keys(s).sort().map(function (l) { return l + (s[l] > 0 ? '#' : 'b'); }).join(' '); }
@@ -2361,7 +2361,7 @@
       expect(m.join() === '66,73,65,65,66', 'in E dorian "F c =F F|F" plays ' + m.join() + ', not 66,73,65,65,66');
     });
 
-  check('Session Players', 'Triplets, halved notes, dotted pairs and ties keep the bar',
+  check('Session Buddies', 'Triplets, halved notes, dotted pairs and ties keep the bar',
     'A triplet is three in the time of two, A/ is half a quaver, A>B is dotted, and a tie makes one longer note. Get one wrong and the backing slips against the tune.',
     function () {
       var b = PL.readBars('(3ABc d2 e>f g/a/b|A4- A4', { key: 'D', meter: '4/4' }), q = PL.TPQ;
@@ -2371,7 +2371,7 @@
       expect(b[1].notes.length === 1 && b[1].notes[0].dur === 8 * q, 'A4- A4 is ' + b[1].notes.length + ' notes, not one of 8 quavers');
     });
 
-  check('Session Players', 'Real settings lay out in whole bars',
+  check('Session Buddies', 'Real settings lay out in whole bars',
     'Six popular tunes as the Session gives them: each comes out a sensible length, every bar starting on the beat, and repeats never run away.',
     function () {
       var names = ['the-kesh', 'cooleys', 'the-swallowtail', 'out-on-the-ocean', 'the-silver-spear', 'banish-misfortune'];
@@ -2389,7 +2389,7 @@
       });
     });
 
-  check('Session Players', 'Chords come from the key, start and end at home, and all have shapes',
+  check('Session Buddies', 'Chords come from the key, start and end at home, and all have shapes',
     'The chords chosen from the melody must be ones a backer uses in that key and mode, open on the home chord, end the tune on it, and have a shape in both tunings.',
     function () {
       var names = ['the-kesh', 'cooleys', 'the-swallowtail', 'out-on-the-ocean', 'the-silver-spear', 'banish-misfortune'];
@@ -2412,7 +2412,7 @@
       });
     });
 
-  check('Session Players', 'Chords follow the shape of a part',
+  check('Session Buddies', 'Chords follow the shape of a part',
     'A part is two four-bar phrases: the fourth bar rests on the cadence chord, the dominant in a major key. Hearing only notes, the page put Em and Am under the Kesh’s bar 4s, where a backer plays D.',
     function () {
       return Promise.all([json(FIX + 'the-kesh.json'), json(FIX + 'the-silver-spear.json')]).then(function (r) {
@@ -2427,12 +2427,12 @@
       });
     });
 
-  check('Session Players', 'Reopening the page keeps your chords and chooses the rest afresh',
+  check('Session Buddies', 'Reopening the page keeps your chords and chooses the rest afresh',
     'The last tune comes back with the chords you changed, and the others chosen again, so a better way of choosing reaches it. A saved file comes back exactly as saved.',
     function () {
       return json(FIX + 'the-kesh.json').then(function (j) {
-        return withPlayers(function (win, doc) {
-          var PP = win.PLAYERS_PAGE;
+        return withBuddies(function (win, doc) {
+          var PP = win.BUDDIES_PAGE;
           PP.loadTune(j, 0);
           var slots = PP.tune().lay.slots, one = slots[0].id, three = slots[2].id;
           PP.setChord(three, ['Am']);
@@ -2450,7 +2450,7 @@
       });
     });
 
-  check('Session Players', 'Every shape plays its chord',
+  check('Session Buddies', 'Every shape plays its chord',
     'Hand-chosen shapes may add a ninth or a seventh, leave out the fifth, and in DADGAD sit on the open D, but the root and third must sound and nothing outside the chord. Any other chord gets a shape found by search.',
     function () {
       var bad = [];
@@ -2500,17 +2500,17 @@
     }).then(function (b) { return { data: b.getChannelData(0), notes: notes }; });
   }
 
-  check('Session Players', 'The tune lilts: leaning on the beat, the first of a jig’s three held long',
+  check('Session Buddies', 'The tune lilts: leaning on the beat, the first of a jig’s three held long',
     'Played dead even the melody ticked rather than danced. The first quaver of each group of three is held long (12% on the flute alone, more on the concertina, whose bellows give it more bounce; together they take the concertina’s lilt and play as one), the beats landing on time, beat notes leant on (the concertina harder), and no two notes weighted quite alike. The flute is labelled like the concertina.',
     function () {
       return json(FIX + 'the-kesh.json').then(function (j) {
-        return withPlayers(function (win, doc) {
+        return withBuddies(function (win, doc) {
           var calls = { flute: [], concertina: [] };
           [['Flute', 'flute'], ['Concertina', 'concertina']].forEach(function (x) {
-            var P0 = win.PLAYERS[x[0]].prototype, orig = P0.note;
+            var P0 = win.BUDDIES[x[0]].prototype, orig = P0.note;
             P0.note = function (t, d, m, v) { calls[x[1]].push({ t: t, v: v }); return orig.apply(this, arguments); };
           });
-          win.PLAYERS_PAGE.loadTune(j, 0);
+          win.BUDDIES_PAGE.loadTune(j, 0);
           var label = doc.getElementById('on-tune').parentNode.textContent.replace(/\s+/g, ' ').trim(), play = doc.getElementById('play');
           var q = 60 / 100 / 3;
           function measure(list) {
@@ -2532,7 +2532,7 @@
             var alone = measure(calls.flute);
             calls.flute = []; calls.concertina = [];
             doc.getElementById('on-concertina').click();       // and now both together
-            return win.PLAYERS_PAGE.audio().concertina.ready.then(function () {
+            return win.BUDDIES_PAGE.audio().concertina.ready.then(function () {
               play.click();
               return wait(3500);
             }).then(function () {
@@ -2553,7 +2553,7 @@
       });
     });
 
-  check('Session Players', 'Flute and concertina are heard on time, together, on every note',
+  check('Session Buddies', 'Flute and concertina are heard on time, together, on every note',
     'The flute swells in over 30 ms, so it was heard 27 ms after every note’s time while the recorded concertina was heard on it: a flam on every note, which made the two together sound jittery, and put the flute behind the backing. Each is now heard (within 6 dB of its full level) within a few milliseconds of the time, D4 to D6, and of the other.',
     function () {
       var SRG = 48000;
@@ -2581,7 +2581,7 @@
       return chain.then(function () { expect(bad.length === 0, bad.join('\n')); });
     });
 
-  check('Session Players', 'The flute’s vibrato is light, late, and left out with the concertina',
+  check('Session Buddies', 'The flute’s vibrato is light, late, and left out with the concertina',
     'Every flute note over 0.4 s wavered ±9 cents, in full within a third of a second. Against the recorded concertina, which holds its pitch to a cent or two, that beat and sounded warbly; and an Irish flute player uses little vibrato. A held note is now steady at first, with a light vibrato coming in late; playing with the concertina, none at all.',
     function () {
       var SRG = 48000;
@@ -2612,17 +2612,17 @@
         expect(none < 1, 'asked for no vibrato it still wavers ±' + round(none) + ' cents');
         return json(FIX + 'the-kesh.json');
       }).then(function (j) {
-        return withPlayers(function (win, doc) {
-          var vibs = { alone: [], both: [] }, mode = 'alone', P0 = win.PLAYERS.Flute.prototype, orig = P0.note;
+        return withBuddies(function (win, doc) {
+          var vibs = { alone: [], both: [] }, mode = 'alone', P0 = win.BUDDIES.Flute.prototype, orig = P0.note;
           P0.note = function (t, d, m, v, vib) { vibs[mode].push(vib == null ? 1 : vib); return orig.apply(this, arguments); };
-          win.PLAYERS_PAGE.loadTune(j, 0);
+          win.BUDDIES_PAGE.loadTune(j, 0);
           var play = doc.getElementById('play');
           play.click();
           return wait(2500).then(function () {
             play.click();
             mode = 'both';
             doc.getElementById('on-concertina').click();
-            return win.PLAYERS_PAGE.audio().concertina.ready;
+            return win.BUDDIES_PAGE.audio().concertina.ready;
           }).then(function () {
             play.click();
             return wait(2500);
@@ -2636,19 +2636,19 @@
       });
     });
 
-  check('Session Players', 'Together, the flute and concertina start each note as one and don’t clash at the changes',
+  check('Session Buddies', 'Together, the flute and concertina start each note as one and don’t clash at the changes',
     'In The Sunny Banks the concertina’s old note sat against the flute’s new one for about 130 ms at most changes, seconds and thirds apart, and their notes between the beats started up to 12 ms apart (each with its own lilt). Playing together they now take one lilt, and the concertina’s note stops as quickly as a real reed does.',
     function () {
       return json(FIX + 'cooleys.json').then(function (j) {
-        return withPlayers(function (win, doc) {
+        return withBuddies(function (win, doc) {
           var calls = { flute: [], concertina: [] };
           [['Flute', 'flute'], ['Concertina', 'concertina']].forEach(function (x) {
-            var P0 = win.PLAYERS[x[0]].prototype, orig = P0.note;
+            var P0 = win.BUDDIES[x[0]].prototype, orig = P0.note;
             P0.note = function (t, d, m) { calls[x[1]].push({ t: t, d: d, m: m }); return orig.apply(this, arguments); };
           });
-          win.PLAYERS_PAGE.loadTune(j, 0);
+          win.BUDDIES_PAGE.loadTune(j, 0);
           doc.getElementById('on-concertina').click();
-          var inst = win.PLAYERS_PAGE.audio().concertina;
+          var inst = win.BUDDIES_PAGE.audio().concertina;
           return inst.ready.then(function () {
             doc.getElementById('play').click();
             return wait(3500);
@@ -2671,11 +2671,11 @@
       });
     });
 
-  check('Session Players', 'The concertina’s notes carry over, and a repeated note is struck again',
+  check('Session Buddies', 'The concertina’s notes carry over, and a repeated note is struck again',
     'On the instrument the bellows keep the air up, so one note runs into the next; 1.5.0 fell silent, 85 dB down, between every two. A repeated note (the Ds of “edd”) is still played twice. And a held note lives, wandering a little in level, without warbling.',
     function () {
       return Promise.all([json(FIX + 'the-kesh.json')]).then(function (r) {
-        return withPlayers(function (win) { return win.PLAYERS_PAGE; }).then(function (PP) {
+        return withBuddies(function (win) { return win.BUDDIES_PAGE; }).then(function (PP) {
           var SRG = 48000;
           return playKeshA(layOf(r[0]), PL.Concertina, PP.MIX.concertina, PP.concertinaLength, SRG).then(function (out) {
             var d = out.data, notes = out.notes;
@@ -2703,7 +2703,7 @@
       });
     });
 
-  check('Session Players', 'The concertina holds a long note steady, without a waver each time round its loop',
+  check('Session Buddies', 'The concertina holds a long note steady, without a waver each time round its loop',
     'Long notes are looped through their steady part, and until 1.7.4 the loop’s join and its start in a dip just after the attack made them waver with every pass, twice a second (F#4 by 18 cents); and the F#4 recording wobbles ±11 cents on its own. Held for 3 s, each note from D4 to A5 now wavers under 1.5 cents, and with each pass of the loop under 2 cents and 1.3 dB.',
     function () {
       var SR = 48000, secs = 3, bad = [], chain = Promise.resolve();
@@ -2747,11 +2747,11 @@
       return chain.then(function () { expect(bad.length === 0, bad.join('\n')); });
     });
 
-  check('Session Players', 'The concertina sounds like a reed, plays in tune, and sits with the flute',
+  check('Session Buddies', 'The concertina sounds like a reed, plays in tune, and sits with the flute',
     'A free reed is rich in overtones where the flute is nearly pure; each recorded note retuned to within a few cents of true (the instrument sits up to 28 cents sharp); and at their starting levels, each playing the Kesh’s A part as the page plays it, the concertina sits just under the flute, not swamping it or lost.',
     function () {
       return Promise.all([json(FIX + 'the-kesh.json')]).then(function (r) {
-        return withPlayers(function (win) { return win.PLAYERS_PAGE; }).then(function (PP) {
+        return withBuddies(function (win) { return win.BUDDIES_PAGE; }).then(function (PP) {
           var MIX = PP.MIX, SRG = 48000, lay = layOf(r[0]), q = 60 / 100 / 3;
           function render(Instrument, level, length) { return playKeshA(lay, Instrument, level, length, SRG); }
           function g(d, f, a, b) {
@@ -2782,12 +2782,12 @@
       });
     });
 
-  check('Session Players', 'Ticking the concertina plays the tune on it',
+  check('Session Buddies', 'Ticking the concertina plays the tune on it',
     'The concertina is a fourth voice in the mixer, off to begin with. Ticked, the tune is played on it; with the flute unticked, on it alone.',
     function () {
       return json(FIX + 'the-kesh.json').then(function (j) {
-        return withPlayers(function (win, doc) {
-          var PP = win.PLAYERS_PAGE, n = { c: 0, f: 0 }, PLw = win.PLAYERS;
+        return withBuddies(function (win, doc) {
+          var PP = win.BUDDIES_PAGE, n = { c: 0, f: 0 }, PLw = win.BUDDIES;
           var cn = PLw.Concertina.prototype.note, fn = PLw.Flute.prototype.note;
           PLw.Concertina.prototype.note = function () { n.c++; return cn.apply(this, arguments); };
           PLw.Flute.prototype.note = function () { n.f++; return fn.apply(this, arguments); };
@@ -2805,12 +2805,12 @@
       });
     });
 
-  check('Session Players', 'The page builds a tune and plays it',
+  check('Session Buddies', 'The page builds a tune and plays it',
     'From the Session’s JSON to a chart of the tune’s bars, a shape for each chord, and sound, with a count-in first.',
     function () {
       return json(FIX + 'the-kesh.json').then(function (j) {
-        return withPlayers(function (win, doc) {
-          var PP = win.PLAYERS_PAGE;
+        return withBuddies(function (win, doc) {
+          var PP = win.BUDDIES_PAGE;
           PP.loadTune(j, 0);
           var bars = doc.querySelectorAll('#chart .bar').length, shapes = doc.querySelectorAll('#shapes svg').length;
           var facts = doc.getElementById('tune-facts').textContent, play = doc.getElementById('play');
@@ -2826,12 +2826,12 @@
       });
     });
 
-  check('Session Players', 'A chord you change holds through every repeat, and through save and open',
+  check('Session Buddies', 'A chord you change holds through every repeat, and through save and open',
     'Tap a bar, pick a chord: it is played every time that bar comes round, marked as yours, and a saved file brings it back exactly, with nothing fetched.',
     function () {
       return Promise.all([json(FIX + 'the-kesh.json'), json(FIX + 'cooleys.json')]).then(function (r) {
-        return withPlayers(function (win, doc) {
-          var PP = win.PLAYERS_PAGE;
+        return withBuddies(function (win, doc) {
+          var PP = win.BUDDIES_PAGE;
           PP.loadTune(r[0], 0);
           var bar3 = doc.querySelectorAll('#chart .bar')[2], slot = bar3.dataset.slot;
           bar3.click();
@@ -2858,11 +2858,11 @@
       });
     });
 
-  check('Session Players', 'Finding a tune asks the Session, offers only what it can play, and folds away',
+  check('Session Buddies', 'Finding a tune asks the Session, offers only what it can play, and folds away',
     'The search goes to thesession.org’s own API, from the page. Jigs and reels can be picked; other types are listed but not yet playable. Once one is picked the list folds under one line, so it no longer pushes the tune far down the page.',
     function () {
       return json(FIX + 'the-kesh.json').then(function (kesh) {
-        return withPlayers(function (win, doc) {
+        return withBuddies(function (win, doc) {
           var asked = [];
           win.fetch = function (url) {
             asked.push(String(url));
@@ -2885,19 +2885,19 @@
               expect(/^https:\/\/thesession\.org\/tunes\/search\?q=kesh&format=json/.test(asked[0] || ''), 'it asked ' + asked[0]);
               expect(btns.length === 2 && horn && !btns[0].disabled, 'the results were not two, with only the jig playable');
               expect(/^https:\/\/thesession\.org\/tunes\/55\?format=json/.test(asked[1] || ''), 'picking it fetched ' + asked[1]);
-              expect(win.PLAYERS_PAGE.tune() && win.PLAYERS_PAGE.tune().meta.name === 'The Kesh', 'picking it did not load The Kesh');
+              expect(win.BUDDIES_PAGE.tune() && win.BUDDIES_PAGE.tune().meta.name === 'The Kesh', 'picking it did not load The Kesh');
             });
           });
         });
       });
     });
 
-  check('Session Players', 'The chosen tune and setting are shown where you found it',
+  check('Session Buddies', 'The chosen tune and setting are shown where you found it',
     'Once picked, the tune’s name fills the search box and stands out under it, with which setting of how many is playing, so it is clear what is on the page.',
     function () {
       return json(FIX + 'the-kesh.json').then(function (j) {
-        return withPlayers(function (win, doc) {
-          var PP = win.PLAYERS_PAGE, $ = function (id) { return doc.getElementById(id); };
+        return withBuddies(function (win, doc) {
+          var PP = win.BUDDIES_PAGE, $ = function (id) { return doc.getElementById(id); };
           PP.loadTune(j, 0);
           var box = $('q').value, name = $('chosen-name').textContent, facts1 = $('chosen-facts').textContent, shown = !$('chosen').hidden;
           $('setting').value = '1'; $('setting').dispatchEvent(new win.Event('change'));
@@ -2916,31 +2916,46 @@
       });
     });
 
-  check('Session Players', 'The app and Session Players link to each other at the foot',
+  check('Session Buddies', 'The app and Session Buddies link to each other at the foot',
     'One tap at the bottom of either page switches to the other, the page you are on shown but not linked. The Kesh demo is no longer linked from there.',
     function () {
-      return Promise.all([text('../index.html'), text('../players/')]).then(function (r) {
+      return Promise.all([text('../index.html'), text('../buddies/')]).then(function (r) {
         function foot(html) { var m = /<footer[\s\S]*?<\/footer>/.exec(html); return m ? m[0] : ''; }
         var app = foot(r[0]), pl = foot(r[1]);
-        expect(/<a href="players\/">Session Players<\/a>/.test(app) && /aria-current="page">Bodhrán</.test(app),
-               'the app’s foot does not offer Session Players beside itself');
-        expect(/<a href="\.\.\/">Bodhrán<\/a>/.test(pl) && /aria-current="page">Session Players</.test(pl),
-               'Session Players’ foot does not offer the app beside itself');
-        expect(pl.indexOf('guitar/') === -1, 'Session Players’ foot still links to the Kesh demo');
+        expect(/<a href="buddies\/">Session Buddies<\/a>/.test(app) && /aria-current="page">Bodhrán</.test(app),
+               'the app’s foot does not offer Session Buddies beside itself');
+        expect(/<a href="\.\.\/">Bodhrán<\/a>/.test(pl) && /aria-current="page">Session Buddies</.test(pl),
+               'Session Buddies’ foot does not offer the app beside itself');
+        expect(pl.indexOf('guitar/') === -1, 'Session Buddies’ foot still links to the Kesh demo');
       });
     });
 
-  check('Session Players', 'It shows its own version, and the notes cover it',
-    'Session Players has its own version number. Bump it? Add it to CHANGELOG.md and the release notes in the same change.',
+  check('Session Buddies', 'It is called Session Buddies, says what plays, and the old address leads to it',
+    'Session Players was renamed Session Buddies and moved from /players/ to /buddies/. The old address stays for bookmarks: it says so, links to the new one and goes on there by itself. The description at the top names the concertina as well as the flute, which it once left out.',
     function () {
-      return withPlayers(function (win, doc) {
-        var v = win.PLAYERS_PAGE && win.PLAYERS_PAGE.VERSION;
-        expect(!!v, 'Session Players has no version');
-        expect(doc.getElementById('players-version').textContent === 'v' + v, 'the title shows "' + doc.getElementById('players-version').textContent + '"');
+      return Promise.all([text('../buddies/'), text('../players/')]).then(function (r) {
+        var page = r[0], old = r[1];
+        var sub = ((/<p class="sub">([\s\S]*?)<\/p>/.exec(page) || [])[1] || '').replace(/\s+/g, ' ');
+        expect(/<title>Session Buddies<\/title>/.test(page) && /<h1>Session Buddies /.test(page), 'the page is not called Session Buddies');
+        expect(page.indexOf('Session Players') === -1, 'the page still says Session Players');
+        expect(/concertina/i.test(sub) && /flute/i.test(sub) && /guitar/i.test(sub) && /bodhrán/i.test(sub), 'the description leaves out an instrument: "' + sub + '"');
+        expect(/<a [^>]*href="\.\.\/buddies\/"/.test(old), 'the old address does not link to the new one');
+        expect(/http-equiv="refresh" content="\d+; url=\.\.\/buddies\/"/.test(old), 'the old address does not go on to the new one');
+        expect(old.indexOf('<script') === -1, 'the old address still runs a page of its own');
+      });
+    });
+
+  check('Session Buddies', 'It shows its own version, and the notes cover it',
+    'Session Buddies has its own version number. Bump it? Add it to CHANGELOG.md and the release notes in the same change.',
+    function () {
+      return withBuddies(function (win, doc) {
+        var v = win.BUDDIES_PAGE && win.BUDDIES_PAGE.VERSION;
+        expect(!!v, 'Session Buddies has no version');
+        expect(doc.getElementById('buddies-version').textContent === 'v' + v, 'the title shows "' + doc.getElementById('buddies-version').textContent + '"');
         expect(doc.getElementById('foot-version').textContent.indexOf(v) !== -1, 'the foot of the page does not show ' + v);
         return Promise.all([text('../CHANGELOG.md'), text('../release-notes/')]).then(function (r) {
-          expect(r[0].indexOf('### Session Players ' + v + ' ') !== -1, 'CHANGELOG.md has no entry for Session Players ' + v);
-          expect(r[1].indexOf('<span class="ver">Session Players ' + v + '</span>') !== -1, 'the release notes have no entry for Session Players ' + v);
+          expect(r[0].indexOf('### Session Buddies ' + v + ' ') !== -1, 'CHANGELOG.md has no entry for Session Buddies ' + v);
+          expect(r[1].indexOf('<span class="ver">Session Buddies ' + v + '</span>') !== -1, 'the release notes have no entry for Session Buddies ' + v);
         });
       });
     });

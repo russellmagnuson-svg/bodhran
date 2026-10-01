@@ -135,4 +135,4 @@
     if (!sh) return [null, null, null, null, null, null];
     return sh.frets.map(function (f, s) { return f < 0 ? null : t.strings[s] + f; });
   };
-})(window.PLAYERS = window.PLAYERS || {});
+})(window.BUDDIES = window.BUDDIES || {});

@@ -85,4 +85,4 @@
   };
 
   P.Flute = Flute;
-})(window.PLAYERS = window.PLAYERS || {});
+})(window.BUDDIES = window.BUDDIES || {});

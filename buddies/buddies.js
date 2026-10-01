@@ -1,4 +1,4 @@
-/* players.js — Session Players: find a tune on thesession.org, give it a
+/* buddies.js — Session Buddies (called Session Players until 1.8.0): find a tune on thesession.org, give it a
  * guitar, bodhrán and flute backing, and play along.
  *
  * The Session lets a page read its tunes straight from the browser (its API
@@ -11,16 +11,18 @@
 (function () {
   'use strict';
 
-  /* Session Players' own version, apart from the app's and the demo's: shown
+  /* Session Buddies' own version, apart from the app's and the demo's: shown
    * next to the title and at the foot. Bump it with every change pushed (the
    * last number for a fix, the middle for something new) and add it to the
-   * "Session Players" sections of CHANGELOG.md and the release notes. */
-  var VERSION = '1.7.4';
+   * "Session Buddies" sections of CHANGELOG.md and the release notes. */
+  var VERSION = '1.8.0';
 
   var $ = function (id) { return document.getElementById(id); };
-  var P = window.PLAYERS, G = window.GTR, T = window.TRAD, TPQ = P.TPQ;
+  var P = window.BUDDIES, G = window.GTR, T = window.TRAD, TPQ = P.TPQ;
   var API = 'https://thesession.org';
-  var FILE_FORMAT = 'session-players';
+  var FILE_FORMAT = 'session-buddies';
+  // Files saved before the rename say 'session-players'; they open just the same.
+  var FORMATS = [FILE_FORMAT, 'session-players'];
 
   /* ---------- tune types ----------
    * per: quavers to the beat the tempo counts. The strums are the demo's for
@@ -68,6 +70,8 @@
    * the synthesised one's 0.16, hence 0.6.) */
   var MIX = { guitar: 0.7, tune: 0.18, concertina: 0.6, drum: 0.7 };
   var DRUM = { lift: { f: 2500, q: 0.7, gain: 9 } };
+  // Saved settings keep their 'players.' names from before the rename, so
+  // the last tune, volumes and tuning carry over to the new address.
   function stored(key, fallback) {
     try { var v = localStorage.getItem(key); return v == null ? fallback : v; } catch (e) { return fallback; }
   }
@@ -242,8 +246,8 @@
     var quiet = restoring;
     var d;
     try { d = JSON.parse(text); } catch (e) { d = null; }
-    if (!d || d.format !== FILE_FORMAT || !d.tune || !d.setting || !d.setting.abc || !TYPES[d.tune.type]) {
-      if (!quiet) $('file-status').textContent = 'That file isn’t a tune saved from Session Players.';
+    if (!d || FORMATS.indexOf(d.format) === -1 || !d.tune || !d.setting || !d.setting.abc || !TYPES[d.tune.type]) {
+      if (!quiet) $('file-status').textContent = 'That file isn’t a tune saved from Session Buddies.';
       return false;
     }
     var s = d.setting, chords = d.chords || {}, mine = d.mine || [];
@@ -269,7 +273,7 @@
     var number = settingNumber();
     $('tune-facts').textContent = tune.meta.name + ' · ' + ty.name + ' · ' + ty.meter + ' · ' + lay.key.name +
       ' · setting ' + number + (s.member ? ' by ' + s.member : '');
-    document.title = tune.meta.name + ' — Session Players';
+    document.title = tune.meta.name + ' — Session Buddies';
     // settings
     var sel = $('setting');
     sel.innerHTML = '';
@@ -824,8 +828,8 @@
   }
 
   function init() {
-    $('players-version').textContent = 'v' + VERSION;
-    $('foot-version').textContent = 'Session Players version ' + VERSION + '.';
+    $('buddies-version').textContent = 'v' + VERSION;
+    $('foot-version').textContent = 'Session Buddies version ' + VERSION + '.';
     $('find').addEventListener('submit', function (e) { e.preventDefault(); find($('q').value); });
     // The box shows the tune on the page; a click selects it, so typing starts a new search.
     $('q').addEventListener('focus', function () { var q = this; setTimeout(function () { q.select(); }, 0); });
@@ -909,7 +913,7 @@
   }
 
   // For the checks page.
-  window.PLAYERS_PAGE = {
+  window.BUDDIES_PAGE = {
     VERSION: VERSION, TYPES: TYPES, MIX: MIX, fluteLength: fluteLength, concertinaLength: concertinaLength,
     tune: function () { return tune; },
     form: function () { return FORM; },
