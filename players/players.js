@@ -15,7 +15,7 @@
    * next to the title and at the foot. Bump it with every change pushed (the
    * last number for a fix, the middle for something new) and add it to the
    * "Session Players" sections of CHANGELOG.md and the release notes. */
-  var VERSION = '1.3.0';
+  var VERSION = '1.3.1';
 
   var $ = function (id) { return document.getElementById(id); };
   var P = window.PLAYERS, G = window.GTR, T = window.TRAD, TPQ = P.TPQ;
@@ -86,6 +86,9 @@
 
   function type() { return TYPES[tune.meta.type]; }
   function setting() { return tune.settings[tune.index]; }
+  // Which setting this is on the Session. A tune opened from a file holds
+  // only its one setting, so the number comes from the file.
+  function settingNumber() { return tune.settings.length > 1 ? tune.index + 1 : (tune.savedNumber || tune.index + 1); }
 
   /* Build a tune: from the Session's JSON (meta, all settings) or a saved
    * file (meta, the one setting, its chords). */
@@ -207,7 +210,7 @@
     var mine = Object.keys(tune.mine);
     return {
       format: FILE_FORMAT, version: 1, app: VERSION, saved: new Date().toISOString(),
-      tune: tune.meta, setting: setting(), settingNumber: tune.index + 1,
+      tune: tune.meta, setting: setting(), settingNumber: settingNumber(),
       chords: tune.chords, mine: mine,
       options: { bpm: +$('bpm').value, times: +$('times').value, countin: +$('countin').value,
                  tuning: tuning, strum: strum }
@@ -215,7 +218,7 @@
   }
   function saveText() { return JSON.stringify(fileData(), null, 1); }
   function fileName() {
-    return (tune.meta.name + ' - setting ' + (tune.index + 1)).replace(/[\\/:*?"<>|]+/g, '') + '.json';
+    return (tune.meta.name + ' - setting ' + settingNumber()).replace(/[\\/:*?"<>|]+/g, '') + '.json';
   }
   function save() {
     if (!tune) return;
@@ -246,6 +249,7 @@
     }
     build(d.tune, [s], 0, { chords: chords, mine: mine, options: d.options || {} });
     tune.savedNumber = d.settingNumber;
+    tune.fromFile = !restoring;           // brought back by the page itself is not "from a file"
     showTune(d.options || {});
     if (!quiet) { $('file-status').textContent = 'Opened “' + d.tune.name + '”, with its chords as saved.'; foldMatches(false); }
     return true;
@@ -258,7 +262,7 @@
   function showTune(options) {
     var ty = type(), s = setting(), lay = tune.lay;
     options = options || {};
-    var number = tune.settings.length > 1 ? tune.index + 1 : (tune.savedNumber || 1);
+    var number = settingNumber();
     $('tune-facts').textContent = tune.meta.name + ' · ' + ty.name + ' · ' + ty.meter + ' · ' + lay.key.name +
       ' · setting ' + number + (s.member ? ' by ' + s.member : '');
     document.title = tune.meta.name + ' — Session Players';
@@ -279,7 +283,7 @@
     $('chosen').hidden = false;
     $('chosen-name').textContent = tune.meta.name;
     $('chosen-facts').textContent = ty.name + ' · ' + ty.meter + ' · ' + lay.key.name + ' · Setting ' + number +
-      (tune.settings.length > 1 ? ' of ' + tune.settings.length : tune.savedNumber ? ', from a saved file' : '') +
+      (tune.settings.length > 1 ? ' of ' + tune.settings.length : tune.fromFile ? ', from a saved file' : '') +
       (s.member ? ' by ' + s.member : '');
     $('q').value = tune.meta.name;
     var link = $('setting-link');

@@ -2506,11 +2506,14 @@
           var facts2 = $('chosen-facts').textContent;
           PP.openText(PP.saveText());
           var facts3 = $('chosen-facts').textContent;
+          PP.openText(PP.saveText(), true);              // the page bringing back its last tune
+          var facts4 = $('chosen-facts').textContent;
           expect(box === 'The Kesh', 'the search box says "' + box + '"');
           expect(shown && name === 'The Kesh', 'the chosen tune is not shown under the search: "' + name + '"');
           expect(/^Jig · 6\/8 · G major · Setting 1 of 3 by /.test(facts1), 'it says "' + facts1 + '"');
           expect(/Setting 2 of 3/.test(facts2), 'after choosing setting 2 it says "' + facts2 + '"');
           expect(/Setting 2, from a saved file/.test(facts3), 'opened from a file it says "' + facts3 + '"');
+          expect(/Setting 2/.test(facts4) && !/saved file/.test(facts4), 'brought back on reopening it says "' + facts4 + '"');
         });
       });
     });

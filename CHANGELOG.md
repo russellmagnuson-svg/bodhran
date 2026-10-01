@@ -343,6 +343,13 @@ The page at `/guitar/` has its own version number, shown next to its title.
 
 The page at `/players/` has its own version number, shown next to its title.
 
+### Session Players 1.3.1 — 2026-10-01
+
+- A tune the page brings back by itself on reopening no longer says it came
+  "from a saved file"; only a file you open does.
+- Fixed: saving again a tune opened from a file recorded it as setting 1,
+  whatever its setting; the number shown and the file's name were wrong too.
+
 ### Session Players 1.3.0 — 2026-10-01
 
 - The tune you pick is shown clearly where you found it: its name fills the
