@@ -15,7 +15,7 @@
    * next to the title and at the foot. Bump it with every change pushed (the
    * last number for a fix, the middle for something new) and add it to the
    * "Session Players" sections of CHANGELOG.md and the release notes. */
-  var VERSION = '1.4.0';
+  var VERSION = '1.5.0';
 
   var $ = function (id) { return document.getElementById(id); };
   var P = window.PLAYERS, G = window.GTR, T = window.TRAD, TPQ = P.TPQ;
@@ -61,14 +61,16 @@
     }
   };
 
-  /* ---------- how loud each sound is: the demo's measured balance ---------- */
-  var MIX = { guitar: 0.7, tune: 0.18, drum: 0.7 };
+  /* ---------- how loud each sound is: the demo's measured balance ----------
+   * The concertina measured 2.5 dB under the flute at the flute's level, but
+   * a bright reed carries more than its level says, so it sits just under. */
+  var MIX = { guitar: 0.7, tune: 0.18, concertina: 0.22, drum: 0.7 };
   var DRUM = { lift: { f: 2500, q: 0.7, gain: 9 } };
   function stored(key, fallback) {
     try { var v = localStorage.getItem(key); return v == null ? fallback : v; } catch (e) { return fallback; }
   }
   function store(key, value) { try { localStorage.setItem(key, value); } catch (e) {} }
-  var vol = { guitar: 1, tune: 1, drum: 1 };
+  var vol = { guitar: 1, tune: 1, concertina: 1, drum: 1 };
   try {
     var savedVol = JSON.parse(stored('players.volume', '{}'));
     Object.keys(vol).forEach(function (k) {
@@ -419,7 +421,8 @@
   }
 
   /* ---------- audio, built on the first press of Play ---------- */
-  var ctx = null, run = null, guitar = null, drum = null, clicker = null, fluteBus = null, noise = null;
+  var ctx = null, run = null, guitar = null, drum = null, clicker = null, fluteBus = null;
+  var concBus = null, concertina = null, flutePlayer = null;   // the instruments: flute.js, concertina.js
 
   function roomImpulse(seconds, decay) {
     var len = Math.floor(ctx.sampleRate * seconds), buf = ctx.createBuffer(2, len, ctx.sampleRate);
@@ -433,6 +436,7 @@
     if (!ctx) return;
     guitar.setLevel(MIX.guitar * vol.guitar);
     fluteBus.gain.setTargetAtTime(MIX.tune * vol.tune, ctx.currentTime, 0.03);
+    concBus.gain.setTargetAtTime(MIX.concertina * vol.concertina, ctx.currentTime, 0.03);
     drum.setLevel(MIX.drum * vol.drum);
   }
 
@@ -462,57 +466,13 @@
     clicker = new T.Bodhran(ctx, run);
     clicker.setLevel(0.42); clicker.setRoom(0.1);
     fluteBus = ctx.createGain(); fluteBus.gain.value = MIX.tune * vol.tune;
-    var soft = ctx.createBiquadFilter(); soft.type = 'lowpass'; soft.frequency.value = 5200;
-    fluteBus.connect(soft); soft.connect(run);
-    noise = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate);
-    var nd = noise.getChannelData(0);
-    for (var i = 0; i < nd.length; i++) nd[i] = Math.random() * 2 - 1;
+    fluteBus.connect(run);
+    flutePlayer = new P.Flute(ctx, fluteBus);
+    concBus = ctx.createGain(); concBus.gain.value = MIX.concertina * vol.concertina;
+    concBus.connect(run);
+    concertina = new P.Concertina(ctx, concBus);
     applyLevels();
     requestAnimationFrame(frame);
-  }
-
-  /* ---------- the flute: the demo's ---------- */
-  var queuedFlute = [];
-  function cancelFlute(t) {
-    queuedFlute = queuedFlute.filter(function (n) {
-      if (n.t < t) return false;
-      n.nodes.forEach(function (x) { x.disconnect(); });
-      return false;
-    });
-  }
-  function flute(t, dur, midi, vel) {
-    var f = G.hz(midi), end = t + dur;
-    queuedFlute = queuedFlute.filter(function (n) { return n.t > ctx.currentTime - 1; });
-    var amp = ctx.createGain();
-    amp.gain.setValueAtTime(0.0001, t);
-    amp.gain.exponentialRampToValueAtTime(vel, t + 0.03);
-    amp.gain.setValueAtTime(vel, Math.max(t + 0.031, end - 0.05));
-    amp.gain.exponentialRampToValueAtTime(0.0001, end);
-    amp.connect(fluteBus);
-    queuedFlute.push({ t: t, nodes: [amp] });
-    [[1, 1], [2, 0.16], [3, 0.05]].forEach(function (h) {
-      var o = ctx.createOscillator(), g = ctx.createGain();
-      o.frequency.value = f * h[0]; g.gain.value = h[1];
-      if (dur > 0.4) {
-        var lfo = ctx.createOscillator(), depth = ctx.createGain();
-        lfo.frequency.value = 5.2;
-        depth.gain.setValueAtTime(0, t);
-        depth.gain.linearRampToValueAtTime(9, t + 0.35);
-        lfo.connect(depth); depth.connect(o.detune);
-        lfo.start(t); lfo.stop(end + 0.02);
-      }
-      o.connect(g); g.connect(amp);
-      o.start(t); o.stop(end + 0.02);
-    });
-    var b = ctx.createBufferSource(), bp = ctx.createBiquadFilter(), bg = ctx.createGain();
-    b.buffer = noise; bp.type = 'bandpass'; bp.frequency.value = f * 4; bp.Q.value = 1.2;
-    bg.gain.setValueAtTime(0.0001, t);
-    bg.gain.exponentialRampToValueAtTime(vel * 0.1, t + 0.012);
-    bg.gain.exponentialRampToValueAtTime(vel * 0.018, t + 0.08);
-    bg.gain.exponentialRampToValueAtTime(0.0001, end);
-    b.connect(bp); bp.connect(bg); bg.connect(fluteBus);
-    queuedFlute[queuedFlute.length - 1].nodes.push(bg);
-    b.start(t, Math.random() * 0.5, dur + 0.05);
   }
 
   /* ---------- the clock: the demo's ---------- */
@@ -525,12 +485,26 @@
   function times() { return +$('times').value; }
   function isLast(n) { return times() > 0 && n === times() * FORM.length - 1; }
 
+  /* The tune, on whichever of the flute and the concertina are ticked: one
+   * note, its written length in quavers. A flute holds its notes nearly
+   * full; a concertina's short notes bounce, the bellows and the buttons
+   * between them. */
+  function melody(at, lenQ, midi, vel, finalNote) {
+    var q = quaver(), len = lenQ * q;
+    if ($('on-tune').checked) {
+      var fd = finalNote ? len + type().slots * q : len * (Math.abs(lenQ - 1) < 0.01 ? 0.82 : lenQ < 1 ? 0.9 : 0.94);
+      pending.push({ t: at, fn: function (t) { flutePlayer.note(t, fd, midi, vel); } });
+    }
+    if ($('on-concertina').checked) {
+      var cd = finalNote ? len + type().slots * q : len * (Math.abs(lenQ - 1) < 0.01 ? 0.72 : lenQ < 1 ? 0.85 : 0.9);
+      pending.push({ t: at, fn: function (t) { concertina.note(t, cd, midi, vel); } });
+    }
+  }
+
   /* The tune's pickup notes, coming in over the end of the bar before. */
   function pickupInto(tNext, q) {
     tune.lay.pickup.forEach(function (p) {
-      (function (at, d, m) {
-        pending.push({ t: at, fn: function (t) { flute(t, d, m, 0.75); } });
-      })(tNext + p.tick / TPQ * q, p.dur / TPQ * q * 0.9, p.midi);
+      melody(tNext + p.tick / TPQ * q, p.dur / TPQ, p.midi, 0.75, false);
     });
   }
 
@@ -541,7 +515,7 @@
         (function (at, v) { pending.push({ t: at, fn: function (t) { clicker.hit('click', t, v); } }); })(t0 + c[0] * q, c[1]);
       });
       shown.push({ t: t0, n: n });
-      if (n === -1 && $('on-tune').checked) pickupInto(t0 + L * q, q);
+      if (n === -1) pickupInto(t0 + L * q, q);
       return L * q;
     }
     var k = n % FORM.length, tb = FORM[k], last = isLast(n), chords = tune.chords[tb.slot];
@@ -551,20 +525,13 @@
     // in over its end, so the tune's own notes stop where the pickup starts.
     var again = k === FORM.length - 1 && !last && tune.lay.pickup.length;
     var cutAt = again ? L * TPQ + tune.lay.pickup[0].tick : Infinity;
-    if ($('on-tune').checked) {
-      tb.notes.forEach(function (note, i) {
-        if (note.tick >= cutAt) return;
-        var lenQ = Math.min(note.dur, cutAt - note.tick) / TPQ, len = lenQ * q;
-        var finalNote = last && i === tb.notes.length - 1;
-        // Quavers a touch detached, so repeated notes speak.
-        var dur = finalNote ? len + L * q : len * (Math.abs(lenQ - 1) < 0.01 ? 0.82 : lenQ < 1 ? 0.9 : 0.94);
-        var vel = note.tick % (ty.per * TPQ) === 0 ? 0.9 : 0.7;
-        (function (at, d, m, v) {
-          pending.push({ t: at, fn: function (t) { flute(t, d, m, v); } });
-        })(t0 + note.tick / TPQ * q, dur, note.midi, vel);
-      });
-      if (again) pickupInto(t0 + L * q, q);
-    }
+    tb.notes.forEach(function (note, i) {
+      if (note.tick >= cutAt) return;
+      var lenQ = Math.min(note.dur, cutAt - note.tick) / TPQ;
+      var vel = note.tick % (ty.per * TPQ) === 0 ? 0.9 : 0.7;
+      melody(t0 + note.tick / TPQ * q, lenQ, note.midi, vel, last && i === tb.notes.length - 1);
+    });
+    if (again) pickupInto(t0 + L * q, q);
 
     var slots = last ? ty.final.map(function (s, i) { return { s: s, d: 'D', v: i ? 1 : 0.85 }; })
                      : ty.strums[strum].slots;
@@ -638,7 +605,7 @@
     if (ctx) {
       var now = ctx.currentTime;
       if (!ended) run.gain.setTargetAtTime(0, now, 0.04);
-      guitar.cancelFrom(now); cancelFlute(now);
+      guitar.cancelFrom(now); flutePlayer.cancelFrom(now); concertina.cancelFrom(now);
       drum.cancelFrom(now); clicker.cancelFrom(now);
       guitar.silence(now + (ended ? 0 : 0.05));
       T.restAudio(ctx, function () { return playing; });
@@ -816,7 +783,7 @@
     $('bpm-num').addEventListener('change', function () { setBpm(this.value); remember(); });
     $('bpm').addEventListener('change', remember);
     ['times', 'countin'].forEach(function (id) { $(id).addEventListener('change', remember); });
-    ['guitar', 'tune', 'drum'].forEach(function (k) {
+    ['guitar', 'tune', 'concertina', 'drum'].forEach(function (k) {
       var el = $('vol-' + k), box = $('on-' + k);
       function show() {
         $('vol-' + k + '-out').textContent = Math.round(vol[k] * 100) + '%';
@@ -874,7 +841,7 @@
     form: function () { return FORM; },
     loadTune: loadTune, openText: openText, saveText: saveText, setChord: setChord,
     playing: function () { return playing; },
-    audio: function () { return { ctx: ctx, run: run, guitar: guitar, flute: fluteBus, drum: drum }; }
+    audio: function () { return { ctx: ctx, run: run, guitar: guitar, flute: fluteBus, concertina: concertina, concBus: concBus, drum: drum }; }
   };
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);

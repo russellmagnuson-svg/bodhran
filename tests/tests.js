@@ -2426,6 +2426,70 @@
       expect(bad.length === 0, bad.join('\n'));
     });
 
+  check('Session Players', 'The concertina sounds like a reed, plays in tune, and sits with the flute',
+    'A free reed is rich in overtones where the flute is nearly pure; each note within a few cents of true; and at their starting levels the concertina playing the Kesh’s A part sits just under the flute, not swamping it or lost.',
+    function () {
+      return Promise.all([json(FIX + 'the-kesh.json')]).then(function (r) {
+        return withPlayers(function (win) { return win.PLAYERS_PAGE.MIX; }).then(function (MIX) {
+          var SRG = 48000, lay = layOf(r[0]), q = 60 / 100 / 3, bars = lay.timeline.slice(0, 8);
+          function render(Instrument, level) {
+            var o = new OfflineAudioContext(1, Math.ceil(SRG * (8 * 6 * q + 1)), SRG), bus = o.createGain();
+            bus.gain.value = level; bus.connect(o.destination);
+            var inst = new Instrument(o, bus), t0 = 0.05;
+            bars.forEach(function (tb) {
+              tb.notes.forEach(function (n) { inst.note(t0 + n.tick / PL.TPQ * q, n.dur / PL.TPQ * q * 0.85, n.midi, n.tick % 72 === 0 ? 0.9 : 0.7); });
+              t0 += 6 * q;
+            });
+            return o.startRendering().then(function (b) { return b.getChannelData(0); });
+          }
+          function g(d, f, a, b) {
+            var s = Math.floor(a * SRG), e = Math.floor(b * SRG), k = 2 * Math.cos(2 * Math.PI * f / SRG), q1 = 0, q2 = 0;
+            for (var i = s; i < e; i++) { var q0 = k * q1 - q2 + d[i]; q2 = q1; q1 = q0; }
+            return Math.sqrt(Math.max(0, q1 * q1 + q2 * q2 - k * q1 * q2));
+          }
+          function db(d) { var s = 0; for (var i = 0; i < d.length; i++) s += d[i] * d[i]; return 10 * Math.log10(s / d.length); }
+          return Promise.all([render(PL.Concertina, MIX.concertina), render(PL.Flute, MIX.tune)]).then(function (out) {
+            var c = out[0], f = out[1], f0 = 440 * Math.pow(2, (bars[0].notes[0].midi - 69) / 12);
+            // The note's actual pitch first: each reed is a few cents off on
+            // purpose, and at the fifth harmonic that is enough to measure
+            // beside the overtone instead of on it.
+            var best = 0, bf = 0;
+            for (var x = f0 * 0.98; x <= f0 * 1.02; x += f0 / 4000) { var v = g(c, x, 0.15, 0.45); if (v > best) { best = v; bf = x; } }
+            function over(d, p, k) { return 20 * Math.log10(g(d, p * k, 0.15, 0.45) / g(d, p, 0.15, 0.45)); }
+            var reed = [2, 3, 4, 5].map(function (k) { return over(c, bf, k); }), pure = [4, 5].map(function (k) { return over(f, f0, k); });
+            var cents = 1200 * Math.log2(bf / f0), gap = db(c) - db(f);
+            expect(reed.every(function (v) { return v > -16; }), 'the concertina’s 2nd to 5th overtones are ' + reed.map(round).join(', ') + ' dB: too pure for a reed');
+            expect(pure.every(function (v) { return v < -40; }), 'the flute’s 4th and 5th overtones are ' + pure.map(round).join(', ') + ' dB: no longer the pure flute');
+            expect(Math.abs(cents) < 5, 'the concertina’s first note is ' + round(cents) + ' cents out');
+            expect(gap > -3 && gap < 1, 'the concertina is ' + round(gap) + ' dB against the flute, not just under it');
+          });
+        });
+      });
+    });
+
+  check('Session Players', 'Ticking the concertina plays the tune on it',
+    'The concertina is a fourth voice in the mixer, off to begin with. Ticked, the tune is played on it; with the flute unticked, on it alone.',
+    function () {
+      return json(FIX + 'the-kesh.json').then(function (j) {
+        return withPlayers(function (win, doc) {
+          var PP = win.PLAYERS_PAGE, n = { c: 0, f: 0 }, PLw = win.PLAYERS;
+          var cn = PLw.Concertina.prototype.note, fn = PLw.Flute.prototype.note;
+          PLw.Concertina.prototype.note = function () { n.c++; return cn.apply(this, arguments); };
+          PLw.Flute.prototype.note = function () { n.f++; return fn.apply(this, arguments); };
+          PP.loadTune(j, 0);
+          var startsOff = !doc.getElementById('on-concertina').checked;
+          doc.getElementById('on-concertina').click();       // tick the concertina
+          doc.getElementById('on-tune').click();             // untick the flute
+          doc.getElementById('play').click();
+          return wait(3500).then(function () {
+            expect(startsOff, 'the concertina is ticked on a first visit');
+            expect(n.c > 4, 'the concertina played ' + n.c + ' notes');
+            expect(n.f === 0, 'the flute played ' + n.f + ' notes though unticked');
+          });
+        });
+      });
+    });
+
   check('Session Players', 'The page builds a tune and plays it',
     'From the Session’s JSON to a chart of the tune’s bars, a shape for each chord, and sound, with a count-in first.',
     function () {

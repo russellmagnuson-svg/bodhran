@@ -115,7 +115,9 @@ against the real code:
   tunes lay out in whole bars; chosen chords come from the key, start and end
   at home, and have shapes; every shape plays its chord; the page builds a
   tune and plays it; a changed chord holds through repeats and through save and
-  open; the chosen tune and setting are shown where you found it; the app and
+  open; the concertina sounds like a reed, plays in tune and sits with the
+  flute, and ticking it plays the tune on it; the chosen tune and setting are
+  shown where you found it; the app and
   Session Players link to each other at the foot; chords follow the shape of a part; the matches fold away once one is picked; reopening keeps your chords and
   chooses the rest afresh; finding a tune asks the Session and offers only
   jigs and reels; it
@@ -443,6 +445,12 @@ Session Players switches between the two.
 - `players/shapes.js` — shapes in both tunings: a hand-chosen table (the
   demo's DADGAD drone shapes among them) and a search for anything else
   (root in the bass, chord tones only, a four-fret stretch).
+- `players/flute.js`, `players/concertina.js` — the two melody instruments,
+  each `new X(ctx, dest)` with `.note(t, dur, midi, vel)` and `.cancelFrom(t)`.
+  The flute is the demo's; the concertina a free reed (a narrow-pulse
+  spectrum, odd harmonics a shade stronger, one dry reed a few cents off at
+  random, overtones building over 30 ms, a breath of air, a box: highpass
+  180 Hz, a lift at 1.7 kHz, lowpass 6.5 kHz), sitting just under the flute.
 - `players/players.js` — search, settings, the chart and the chord chooser,
   saving and opening files (JSON, `format: "session-players"`), and the demo's
   clock, flute, guitar and drum. Its own version is at the top, apart from

@@ -358,6 +358,18 @@ The page at `/guitar/` has its own version number, shown next to its title.
 
 The page at `/players/` has its own version number, shown next to its title.
 
+### Session Players 1.5.0 — 2026-10-01 — A concertina
+
+- A concertina for the tune: a fourth line in the mixer, with its own tick
+  and level, off to begin with. Tick it with the flute for the two in
+  unison, as at a session, or untick the flute to hear it alone; untick
+  both to play the tune yourself.
+- It is a free reed, synthesised: a rich, reedy tone (its overtones up to
+  the fifth within about 10 dB of the note, where the flute's are 58 dB down), one
+  reed to a note tuned dry, a few cents off true at random as a real reed
+  is, quick but not clicky, with a breath of air as each note opens, and the
+  short notes bouncing. It sits just under the flute.
+
 ### Session Players 1.4.0 — 2026-10-01
 
 - The green-and-gold colours of the app (1.8.0).
