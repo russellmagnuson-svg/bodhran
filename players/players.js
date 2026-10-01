@@ -15,7 +15,7 @@
    * next to the title and at the foot. Bump it with every change pushed (the
    * last number for a fix, the middle for something new) and add it to the
    * "Session Players" sections of CHANGELOG.md and the release notes. */
-  var VERSION = '1.7.0';
+  var VERSION = '1.7.1';
 
   var $ = function (id) { return document.getElementById(id); };
   var P = window.PLAYERS, G = window.GTR, T = window.TRAD, TPQ = P.TPQ;
@@ -494,13 +494,21 @@
   // How long each holds a note of len seconds (lenQ quavers), before the next.
   // (A quaver, lilted, is 0.92 to 1.16 of one.)
   function fluteLength(len, lenQ) { return len * (Math.abs(lenQ - 1) < 0.15 ? 0.82 : lenQ < 1 ? 0.9 : 0.94); }
-  function concertinaLength(len, lenQ, nextSame) { return nextSame ? Math.max(len * 0.5, len - 0.06) : len + 0.03; }
+  // Since 1.7.1 the concertina's note ends as the next begins, and
+  // its recorded reed stops quickly when let go (concertina.js): with 30 ms
+  // and a slow fade, carried over for the synthesised one, its old note sat
+  // against the flute's new one for about 130 ms at most changes in The
+  // Sunny Banks, seconds and thirds apart: a clash.
+  function concertinaLength(len, lenQ, nextSame) { return nextSame ? Math.max(len * 0.5, len - 0.06) : len; }
   /* One note of the tune, `tick` into the bar starting at tBar, `dur` ticks
    * long, weight w: placed by each instrument's own lilt. */
   function melody(tBar, tick, dur, midi, w, finalNote, nextSame) {
     var q = quaver(), ring = type().slots * q;
+    // Playing together they play as one: the flute takes the concertina's
+    // lilt, or their notes between the beats would start up to 12 ms apart.
+    var both = $('on-tune').checked && $('on-concertina').checked, fw = both ? 'concertina' : 'flute';
     if ($('on-tune').checked) {
-      var fa = warp(tick, 'flute'), fq = warp(tick + dur, 'flute') - fa, fl = fq * q;
+      var fa = warp(tick, fw), fq = warp(tick + dur, fw) - fa, fl = fq * q;
       var fd = finalNote ? fl + ring : fluteLength(fl, fq);
       pending.push({ t: tBar + fa * q, fn: function (t) { flutePlayer.note(t, fd, midi, w); } });
     }

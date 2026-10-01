@@ -369,6 +369,20 @@ The page at `/guitar/` has its own version number, shown next to its title.
 
 The page at `/players/` has its own version number, shown next to its title.
 
+### Session Players 1.7.1 — 2026-10-01
+
+- No more momentary clash between the flute and the concertina. Their notes
+  carried over differently: the concertina's old note, held a touch past the
+  next and dying slowly (tuned for the synthesised one), sat against the
+  flute's new note for about 130 ms at most changes in The Sunny Banks,
+  often a second or a third apart; and with their different lilts, their
+  notes between the beats started up to 12 ms apart. Now the concertina's
+  note ends as the next begins and its reed stops as quickly as a real one
+  (20 dB down in 35 ms), and playing together the flute takes the
+  concertina's lilt, so they start every note as one. On its own the
+  concertina still flows (a dip of under 5 dB between notes), and its
+  repeated notes are crisper.
+
 ### Session Players 1.7.0 — 2026-10-01 — A real concertina, a smoother guitar
 
 Feedback from a mandolin teacher: the guitar "sounds like someone hitting a

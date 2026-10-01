@@ -2501,7 +2501,7 @@
   }
 
   check('Session Players', 'The tune lilts: leaning on the beat, the first of a jig’s three held long',
-    'Played dead even the melody ticked rather than danced. The first quaver of each group of three is held long (12% on the flute, more on the concertina, whose bellows give it more bounce), the beats still landing on time and together, beat notes are leant on (the concertina harder), and no two notes are weighted quite alike. The flute is labelled like the concertina.',
+    'Played dead even the melody ticked rather than danced. The first quaver of each group of three is held long (12% on the flute alone, more on the concertina, whose bellows give it more bounce; together they take the concertina’s lilt and play as one), the beats landing on time, beat notes leant on (the concertina harder), and no two notes weighted quite alike. The flute is labelled like the concertina.',
     function () {
       return json(FIX + 'the-kesh.json').then(function (j) {
         return withPlayers(function (win, doc) {
@@ -2511,36 +2511,78 @@
             P0.note = function (t, d, m, v) { calls[x[1]].push({ t: t, v: v }); return orig.apply(this, arguments); };
           });
           win.PLAYERS_PAGE.loadTune(j, 0);
-          var label = doc.getElementById('on-tune').parentNode.textContent.replace(/\s+/g, ' ').trim();
-          doc.getElementById('on-concertina').click();
-          doc.getElementById('play').click();
+          var label = doc.getElementById('on-tune').parentNode.textContent.replace(/\s+/g, ' ').trim(), play = doc.getElementById('play');
+          var q = 60 / 100 / 3;
+          function measure(list) {
+            var c = list.slice().sort(function (a, b) { return a.t - b.t; }), t0 = c[0] && c[0].t;
+            var pos = c.map(function (x) { return (x.t - t0) / q; }), on = [], off = [], distinct = {};
+            c.forEach(function (x, i) {
+              var m = pos[i] % 3;
+              (Math.abs(m) < 0.01 || Math.abs(m - 3) < 0.01 ? on : off).push(x.v);
+              distinct[x.v.toFixed(3)] = 1;
+            });
+            function avg(a) { return a.reduce(function (x, y) { return x + y; }, 0) / a.length; }
+            // Bar 1 is "G3 GAB", bar 2 "A3 ABd": G, then G A B, then the next bar's A.
+            return { n: c.length, pos: pos, lilt: (pos[2] - pos[1]) / ((pos[3] - pos[2] + pos[4] - pos[3]) / 2),
+                     lean: avg(on) / avg(off), distinct: Object.keys(distinct).length };
+          }
+          play.click();                                        // the flute alone
           return wait(3500).then(function () {
-            var q = 60 / 100 / 3, r = {};
-            ['flute', 'concertina'].forEach(function (k) {
-              var c = calls[k].sort(function (a, b) { return a.t - b.t; }), t0 = c[0] && c[0].t;
-              var pos = c.map(function (x) { return (x.t - t0) / q; });
-              // Bar 1 is "G3 GAB", bar 2 "A3 ABd": G, then G A B, then the next bar's A.
-              var on = [], off = [], distinct = {};
-              c.forEach(function (x, i) {
-                var m = pos[i] % 3;
-                (Math.abs(m) < 0.01 || Math.abs(m - 3) < 0.01 ? on : off).push(x.v);
-                distinct[x.v.toFixed(3)] = 1;
+            play.click();
+            var alone = measure(calls.flute);
+            calls.flute = []; calls.concertina = [];
+            doc.getElementById('on-concertina').click();       // and now both together
+            return win.PLAYERS_PAGE.audio().concertina.ready.then(function () {
+              play.click();
+              return wait(3500);
+            }).then(function () {
+              var f = measure(calls.flute), c = measure(calls.concertina);
+              expect(label === 'Flute (the tune)', 'the flute is labelled "' + label + '"');
+              expect(alone.n >= 9 && c.n >= 9, 'only ' + alone.n + ' flute and ' + c.n + ' concertina notes were played');
+              expect(alone.lilt > 1.15 && c.lilt > alone.lilt + 0.04, 'the first of "GAB" against the other two: flute alone ' + round(alone.lilt) + ', concertina ' + round(c.lilt) + ' (want over 1.15, the concertina more)');
+              expect(Math.abs(f.lilt - c.lilt) < 0.005, 'together the flute lilts ' + round(f.lilt) + ', the concertina ' + round(c.lilt) + ': not as one');
+              [alone, c].forEach(function (x, i) {
+                expect(Math.abs(x.pos[1] - 3) < 0.001 && Math.abs(x.pos[4] - 6) < 0.001,
+                       (i ? 'the concertina’s' : 'the flute’s') + ' beats land ' + round(x.pos[1]) + ' and ' + round(x.pos[4]) + ' quavers in, not on time at 3 and 6');
               });
-              function avg(a) { return a.reduce(function (x, y) { return x + y; }, 0) / a.length; }
-              r[k] = { n: c.length, pos: pos, lilt: (pos[2] - pos[1]) / ((pos[3] - pos[2] + pos[4] - pos[3]) / 2),
-                       lean: avg(on) / avg(off), distinct: Object.keys(distinct).length };
+              expect(alone.lean > 1.2 && c.lean > alone.lean, 'beat notes against the notes between: flute ' + round(alone.lean) + ', concertina ' + round(c.lean) + ' (want over 1.2, the concertina more)');
+              expect(c.distinct > c.n / 2, 'only ' + c.distinct + ' different weights in ' + c.n + ' notes: mechanical');
             });
-            var f = r.flute, c = r.concertina;
-            expect(label === 'Flute (the tune)', 'the flute is labelled "' + label + '"');
-            expect(f.n >= 9 && c.n >= 9, 'only ' + f.n + ' flute and ' + c.n + ' concertina notes were played');
-            expect(f.lilt > 1.15 && c.lilt > f.lilt + 0.04, 'the first of "GAB" against the other two: flute ' + round(f.lilt) + ', concertina ' + round(c.lilt) + ' (want over 1.15, the concertina more)');
-            // The lilt bends time inside a beat, never across it: beat 2 of bar 1 and bar 2's downbeat land on time.
-            [f, c].forEach(function (x, i) {
-              expect(Math.abs(x.pos[1] - 3) < 0.001 && Math.abs(x.pos[4] - 6) < 0.001,
-                     (i ? 'the concertina’s' : 'the flute’s') + ' beats land ' + round(x.pos[1]) + ' and ' + round(x.pos[4]) + ' quavers in, not on time at 3 and 6');
+          });
+        });
+      });
+    });
+
+  check('Session Players', 'Together, the flute and concertina start each note as one and don’t clash at the changes',
+    'In The Sunny Banks the concertina’s old note sat against the flute’s new one for about 130 ms at most changes, seconds and thirds apart, and their notes between the beats started up to 12 ms apart (each with its own lilt). Playing together they now take one lilt, and the concertina’s note stops as quickly as a real reed does.',
+    function () {
+      return json(FIX + 'cooleys.json').then(function (j) {
+        return withPlayers(function (win, doc) {
+          var calls = { flute: [], concertina: [] };
+          [['Flute', 'flute'], ['Concertina', 'concertina']].forEach(function (x) {
+            var P0 = win.PLAYERS[x[0]].prototype, orig = P0.note;
+            P0.note = function (t, d, m) { calls[x[1]].push({ t: t, d: d, m: m }); return orig.apply(this, arguments); };
+          });
+          win.PLAYERS_PAGE.loadTune(j, 0);
+          doc.getElementById('on-concertina').click();
+          var inst = win.PLAYERS_PAGE.audio().concertina;
+          return inst.ready.then(function () {
+            doc.getElementById('play').click();
+            return wait(3500);
+          }).then(function () {
+            var F = calls.flute.sort(function (a, b) { return a.t - b.t; }), C = calls.concertina.sort(function (a, b) { return a.t - b.t; });
+            var tail = 2.3 * inst.REL, worst = 0, apart = 0;
+            C.forEach(function (c) {
+              F.forEach(function (f) {
+                if (f.m === c.m) return;
+                var a = Math.max(c.t, f.t), b = Math.min(c.t + c.d + tail, f.t + f.d);
+                worst = Math.max(worst, b - a);
+              });
             });
-            expect(f.lean > 1.2 && c.lean > f.lean, 'beat notes against the notes between: flute ' + round(f.lean) + ', concertina ' + round(c.lean) + ' (want over 1.2, the concertina more)');
-            expect(c.distinct > c.n / 2, 'only ' + c.distinct + ' different weights in ' + c.n + ' notes: mechanical');
+            C.forEach(function (c, i) { if (F[i] && F[i].m === c.m) apart = Math.max(apart, Math.abs(c.t - F[i].t)); });
+            expect(C.length > 8 && F.length === C.length, C.length + ' concertina and ' + F.length + ' flute notes');
+            expect(apart < 0.001, 'the same note starts up to ' + Math.round(apart * 1000) + ' ms apart on the two');
+            expect(worst < 0.05, 'the concertina’s old note sounds against the flute’s new one for ' + Math.round(worst * 1000) + ' ms');
           });
         });
       });

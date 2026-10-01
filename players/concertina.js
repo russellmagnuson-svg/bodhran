@@ -220,6 +220,12 @@
     return { midi: n.midi, cents: n.cents, buf: buf, start: start / sr, lead: (speak - start) / sr, ls: a / sr, le: e / sr };
   }
 
+  /* A real reed stops quickly when its button is let go: its release, a
+   * time constant in seconds (20 dB down in 2.3 of them, 35 ms). 1.7.0's
+   * 45 ms, with 30 ms of carry-over, left its old note sounding against the
+   * flute's new one for about 130 ms at a change. */
+  Concertina.prototype.REL = 0.015;
+
   Concertina.prototype.pick = function (midi) {
     var s = this.samples, best = s[0];
     for (var i = 1; i < s.length; i++) if (Math.abs(s[i].midi - midi) < Math.abs(best.midi - midi)) best = s[i];
@@ -229,7 +235,7 @@
   /* One note: t start, dur seconds held, midi, vel 0-1 (as the synthesised one). */
   Concertina.prototype.note = function (t, dur, midi, vel) {
     if (!this.samples) return this.synth.note(t, dur, midi, vel);
-    var ctx = this.ctx, s = this.pick(midi), end = t + dur, REL = 0.045;
+    var ctx = this.ctx, s = this.pick(midi), end = t + dur, REL = this.REL;
     var rate = Math.pow(2, (midi - s.midi - s.cents / 100) / 12);
     var src = ctx.createBufferSource(), tone = ctx.createBiquadFilter(), amp = ctx.createGain();
     src.buffer = s.buf; src.loop = true; src.loopStart = s.ls; src.loopEnd = s.le;
