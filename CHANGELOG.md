@@ -358,6 +358,17 @@ The page at `/guitar/` has its own version number, shown next to its title.
 
 The page at `/players/` has its own version number, shown next to its title.
 
+### Session Players 1.6.1 — 2026-10-01
+
+- More lilt, and most on the concertina, whose bellows give it more bounce:
+  a jig's first quaver of three is now held 12% long on the flute and 16%
+  on the concertina (8% on both before), and a reel's pairs go 55:45 and
+  57:43 (53:47 before). The concertina also leans harder on the beat (0.92
+  on the beat against 0.60 between, where the flute has 0.89 against 0.66).
+  Each follows its own lilt: playing together their beats meet, and the
+  notes between sit a few thousandths of a second apart, as two players'
+  would.
+
 ### Session Players 1.6.0 — 2026-10-01 — The tune lilts
 
 - The melody, on the flute and the concertina alike, is now phrased the way

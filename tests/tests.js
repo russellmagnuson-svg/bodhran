@@ -2445,33 +2445,46 @@
   }
 
   check('Session Players', 'The tune lilts: leaning on the beat, the first of a jig’s three held long',
-    'Played dead even the melody ticked rather than danced. Now the first quaver of each group of three is held 8% long, the beat still landing on time, beat notes are leant on, and no two notes are weighted quite alike. The flute is labelled like the concertina.',
+    'Played dead even the melody ticked rather than danced. The first quaver of each group of three is held long (12% on the flute, more on the concertina, whose bellows give it more bounce), the beats still landing on time and together, beat notes are leant on (the concertina harder), and no two notes are weighted quite alike. The flute is labelled like the concertina.',
     function () {
       return json(FIX + 'the-kesh.json').then(function (j) {
         return withPlayers(function (win, doc) {
-          var calls = [], C = win.PLAYERS.Concertina.prototype, orig = C.note;
-          C.note = function (t, d, m, v) { calls.push({ t: t, v: v }); return orig.apply(this, arguments); };
+          var calls = { flute: [], concertina: [] };
+          [['Flute', 'flute'], ['Concertina', 'concertina']].forEach(function (x) {
+            var P0 = win.PLAYERS[x[0]].prototype, orig = P0.note;
+            P0.note = function (t, d, m, v) { calls[x[1]].push({ t: t, v: v }); return orig.apply(this, arguments); };
+          });
           win.PLAYERS_PAGE.loadTune(j, 0);
           var label = doc.getElementById('on-tune').parentNode.textContent.replace(/\s+/g, ' ').trim();
           doc.getElementById('on-concertina').click();
           doc.getElementById('play').click();
           return wait(3500).then(function () {
-            calls.sort(function (a, b) { return a.t - b.t; });
-            var q = 60 / 100 / 3, t0 = calls[0] && calls[0].t, pos = calls.map(function (c) { return (c.t - t0) / q; });
-            // Bar 1 is "G3 GAB", bar 2 "A3 ABd": G, then G A B, then the next bar's A.
-            var g1 = pos[2] - pos[1], g2 = pos[3] - pos[2], g3 = pos[4] - pos[3];
-            var on = [], off = [];
-            calls.forEach(function (c, i) { (Math.abs(pos[i] % 3) < 0.01 || Math.abs(pos[i] % 3 - 3) < 0.01 ? on : off).push(c.v); });
-            function avg(a) { return a.reduce(function (x, y) { return x + y; }, 0) / a.length; }
-            var distinct = {}; calls.forEach(function (c) { distinct[c.v.toFixed(3)] = 1; });
+            var q = 60 / 100 / 3, r = {};
+            ['flute', 'concertina'].forEach(function (k) {
+              var c = calls[k].sort(function (a, b) { return a.t - b.t; }), t0 = c[0] && c[0].t;
+              var pos = c.map(function (x) { return (x.t - t0) / q; });
+              // Bar 1 is "G3 GAB", bar 2 "A3 ABd": G, then G A B, then the next bar's A.
+              var on = [], off = [], distinct = {};
+              c.forEach(function (x, i) {
+                var m = pos[i] % 3;
+                (Math.abs(m) < 0.01 || Math.abs(m - 3) < 0.01 ? on : off).push(x.v);
+                distinct[x.v.toFixed(3)] = 1;
+              });
+              function avg(a) { return a.reduce(function (x, y) { return x + y; }, 0) / a.length; }
+              r[k] = { n: c.length, pos: pos, lilt: (pos[2] - pos[1]) / ((pos[3] - pos[2] + pos[4] - pos[3]) / 2),
+                       lean: avg(on) / avg(off), distinct: Object.keys(distinct).length };
+            });
+            var f = r.flute, c = r.concertina;
             expect(label === 'Flute (the tune)', 'the flute is labelled "' + label + '"');
-            expect(calls.length >= 9, 'only ' + calls.length + ' notes were played');
-            expect(g1 / ((g2 + g3) / 2) > 1.05, 'the quavers of "GAB" are spaced ' + [g1, g2, g3].map(function (x) { return x.toFixed(2); }).join(', ') + ': even, no lilt');
+            expect(f.n >= 9 && c.n >= 9, 'only ' + f.n + ' flute and ' + c.n + ' concertina notes were played');
+            expect(f.lilt > 1.15 && c.lilt > f.lilt + 0.04, 'the first of "GAB" against the other two: flute ' + round(f.lilt) + ', concertina ' + round(c.lilt) + ' (want over 1.15, the concertina more)');
             // The lilt bends time inside a beat, never across it: beat 2 of bar 1 and bar 2's downbeat land on time.
-            expect(Math.abs(pos[1] - 3) < 0.001 && Math.abs(pos[4] - 6) < 0.001,
-                   'the beats land ' + round(pos[1]) + ' and ' + round(pos[4]) + ' quavers in, not on time at 3 and 6');
-            expect(avg(on) > avg(off) * 1.2, 'beat notes are weighted ' + round(avg(on)) + ' against ' + round(avg(off)) + ' between: not leant on');
-            expect(Object.keys(distinct).length > calls.length / 2, 'only ' + Object.keys(distinct).length + ' different weights in ' + calls.length + ' notes: mechanical');
+            [f, c].forEach(function (x, i) {
+              expect(Math.abs(x.pos[1] - 3) < 0.001 && Math.abs(x.pos[4] - 6) < 0.001,
+                     (i ? 'the concertina’s' : 'the flute’s') + ' beats land ' + round(x.pos[1]) + ' and ' + round(x.pos[4]) + ' quavers in, not on time at 3 and 6');
+            });
+            expect(f.lean > 1.2 && c.lean > f.lean, 'beat notes against the notes between: flute ' + round(f.lean) + ', concertina ' + round(c.lean) + ' (want over 1.2, the concertina more)');
+            expect(c.distinct > c.n / 2, 'only ' + c.distinct + ' different weights in ' + c.n + ' notes: mechanical');
           });
         });
       });

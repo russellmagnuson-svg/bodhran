@@ -15,7 +15,7 @@
    * next to the title and at the foot. Bump it with every change pushed (the
    * last number for a fix, the middle for something new) and add it to the
    * "Session Players" sections of CHANGELOG.md and the release notes. */
-  var VERSION = '1.6.0';
+  var VERSION = '1.6.1';
 
   var $ = function (id) { return document.getElementById(id); };
   var P = window.PLAYERS, G = window.GTR, T = window.TRAD, TPQ = P.TPQ;
@@ -493,18 +493,23 @@
    * start, the bellows keeping the air up, and re-strikes a repeated note
    * with a little gap ("edd": two Ds, not one long one). */
   // How long each holds a note of len seconds (lenQ quavers), before the next.
-  // (A quaver, lilted, is 0.96 to 1.08 of one.)
+  // (A quaver, lilted, is 0.92 to 1.16 of one.)
   function fluteLength(len, lenQ) { return len * (Math.abs(lenQ - 1) < 0.15 ? 0.82 : lenQ < 1 ? 0.9 : 0.94); }
   function concertinaLength(len, lenQ, nextSame) { return nextSame ? Math.max(len * 0.5, len - 0.06) : len + 0.03; }
-  function melody(at, lenQ, midi, vel, finalNote, nextSame) {
-    var q = quaver(), len = lenQ * q, ring = len + type().slots * q;
+  /* One note of the tune, `tick` into the bar starting at tBar, `dur` ticks
+   * long, weight w: placed by each instrument's own lilt. */
+  function melody(tBar, tick, dur, midi, w, finalNote, nextSame) {
+    var q = quaver(), ring = type().slots * q;
     if ($('on-tune').checked) {
-      var fd = finalNote ? ring : fluteLength(len, lenQ);
-      pending.push({ t: at, fn: function (t) { flutePlayer.note(t, fd, midi, vel); } });
+      var fa = warp(tick, 'flute'), fq = warp(tick + dur, 'flute') - fa, fl = fq * q;
+      var fd = finalNote ? fl + ring : fluteLength(fl, fq);
+      pending.push({ t: tBar + fa * q, fn: function (t) { flutePlayer.note(t, fd, midi, w); } });
     }
     if ($('on-concertina').checked) {
-      var cd = finalNote ? ring : concertinaLength(len, lenQ, nextSame);
-      pending.push({ t: at, fn: function (t) { concertina.note(t, cd, midi, vel); } });
+      var ca = warp(tick, 'concertina'), cq = warp(tick + dur, 'concertina') - ca, cl = cq * q;
+      var cd = finalNote ? cl + ring : concertinaLength(cl, cq, nextSame);
+      var cw = Math.max(0.3, Math.min(1, 0.8 + (w - 0.8) * 1.4));   // the bellows lean harder
+      pending.push({ t: tBar + ca * q, fn: function (t) { concertina.note(t, cd, midi, cw); } });
     }
   }
 
@@ -513,14 +518,21 @@
    * drum stay steady under it, as backing does). A player leans on the
    * beat and lilts within it.
    *
-   * Timing: each beat is gently stretched and squeezed. In a jig the first
-   * quaver of a group of three is held 8% long, the other two sharing the
-   * difference; in a reel each pair of quavers goes long-short, 53:47. The
-   * beat itself still lands on time, and triplets and halved notes bend
-   * with it (a piecewise-straight warp of the beat). */
-  var LILT = { jig: [[0, 0], [1, 1.08], [2, 2.04], [3, 3]], reel: [[0, 0], [1, 1.06], [2, 2]] };
-  function warp(tick) {                       // ticks into the bar -> quavers, lilted
-    var ty = type(), per = ty.per, pts = LILT[tune.meta.type] || [[0, 0], [per, per]];
+   * Timing: each beat is stretched and squeezed. In a jig the first quaver
+   * of a group of three is held long, the other two sharing the difference:
+   * 12% on the flute, 16% on the concertina, whose bellows give it more
+   * bounce; in a reel each pair of quavers goes long-short, 55:45 on the
+   * flute, 57:43 on the concertina. (1.6.0 had 8% and 53:47 for both, and
+   * it still sounded a bit even.) The beat itself still lands on time, so
+   * playing together their beats meet, and the notes between sit a few
+   * thousandths of a second apart, as two players' would. Triplets and
+   * halved notes bend with it (a piecewise-straight warp of the beat). */
+  var LILT = {
+    flute:      { jig: [[0, 0], [1, 1.12], [2, 2.06], [3, 3]], reel: [[0, 0], [1, 1.10], [2, 2]] },
+    concertina: { jig: [[0, 0], [1, 1.16], [2, 2.08], [3, 3]], reel: [[0, 0], [1, 1.14], [2, 2]] }
+  };
+  function warp(tick, who) {                  // ticks into the bar -> quavers, lilted for `who`
+    var ty = type(), per = ty.per, pts = (LILT[who] || LILT.flute)[tune.meta.type] || [[0, 0], [per, per]];
     var q = tick / TPQ, beat = Math.floor(q / per), p = q - beat * per;
     for (var i = 1; i < pts.length; i++) {
       if (p <= pts[i][0]) {
@@ -533,7 +545,9 @@
   /* Weight: the first beat of the bar leant on most, the other beats less,
    * the notes between them lighter, the last of a jig's three lifting into
    * the next beat; a gentle swell over each two-bar phrase; and a little of
-   * the unevenness of a real player, so no two times through are the same. */
+   * the unevenness of a real player, so no two times through are the same.
+   * The concertina leans harder still: its weights spread 1.4 times as far
+   * from the middle (see melody()). */
   var WEIGHT = {
     jig:  [0.95, 0.62, 0.7, 0.86, 0.62, 0.72],
     reel: [0.95, 0.62, 0.8, 0.64, 0.88, 0.62, 0.8, 0.66]
@@ -552,7 +566,7 @@
     var L = type().slots * TPQ, tBar = tNext - type().slots * q;
     pk.forEach(function (p, i) {
       var nx = pk[i + 1] || first, at = L + p.tick;
-      melody(tBar + warp(at) * q, warp(at + p.dur) - warp(at), p.midi, weight(at, 1) * 0.9, false, nx && nx.midi === p.midi);
+      melody(tBar, at, p.dur, p.midi, weight(at, 1) * 0.9, false, nx && nx.midi === p.midi);
     });
   }
 
@@ -575,9 +589,9 @@
     var cutAt = again ? L * TPQ + tune.lay.pickup[0].tick : Infinity;
     tb.notes.forEach(function (note, i) {
       if (note.tick >= cutAt) return;
-      var dur = Math.min(note.dur, cutAt - note.tick), from = warp(note.tick);
+      var dur = Math.min(note.dur, cutAt - note.tick);
       var nx = tb.notes[i + 1] || (FORM[(k + 1) % FORM.length].notes[0]);
-      melody(t0 + from * q, warp(note.tick + dur) - from, note.midi, weight(note.tick, k),
+      melody(t0, note.tick, dur, note.midi, weight(note.tick, k),
              last && i === tb.notes.length - 1, nx && nx.midi === note.midi);
     });
     if (again) pickupInto(t0 + L * q, q);
