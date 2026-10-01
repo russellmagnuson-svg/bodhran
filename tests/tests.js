@@ -2494,6 +2494,20 @@
       });
     });
 
+  check('Session Players', 'The app and Session Players link to each other at the foot',
+    'One tap at the bottom of either page switches to the other, the page you are on shown but not linked. The Kesh demo is no longer linked from there.',
+    function () {
+      return Promise.all([text('../index.html'), text('../players/')]).then(function (r) {
+        function foot(html) { var m = /<footer[\s\S]*?<\/footer>/.exec(html); return m ? m[0] : ''; }
+        var app = foot(r[0]), pl = foot(r[1]);
+        expect(/<a href="players\/">Session Players<\/a>/.test(app) && /aria-current="page">Bodhrán</.test(app),
+               'the app’s foot does not offer Session Players beside itself');
+        expect(/<a href="\.\.\/">Bodhrán<\/a>/.test(pl) && /aria-current="page">Session Players</.test(pl),
+               'Session Players’ foot does not offer the app beside itself');
+        expect(pl.indexOf('guitar/') === -1, 'Session Players’ foot still links to the Kesh demo');
+      });
+    });
+
   check('Session Players', 'It shows its own version, and the notes cover it',
     'Session Players has its own version number. Bump it? Add it to CHANGELOG.md and the release notes in the same change.',
     function () {

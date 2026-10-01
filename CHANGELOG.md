@@ -4,6 +4,11 @@ What changed in each version of Bodhrán, newest first. The version shows next
 to the title in the app; bump it at the top of `js/app.js` with every change
 that gets pushed (the last number for a fix, the middle one for a feature).
 
+## 1.7.1 — 2026-09-30
+
+- The foot of the page now switches between the app and Session Players:
+  "Bodhrán · Session Players", the page you're on shown in bold.
+
 ## 1.7.0 — 2026-09-30 — A longer count-in
 
 - The count-in now starts at **2 bars** (it was 1), time to start the drum and
@@ -337,6 +342,12 @@ The page at `/guitar/` has its own version number, shown next to its title.
 ## Session Players
 
 The page at `/players/` has its own version number, shown next to its title.
+
+### Session Players 1.2.1 — 2026-09-30
+
+- The foot of the page switches to the bodhrán app ("Bodhrán · Session
+  Players"), as the app's now switches here. The link to the Kesh demo is
+  gone from it.
 
 ### Session Players 1.2.0 — 2026-09-30
 

@@ -115,7 +115,7 @@ against the real code:
   tunes lay out in whole bars; chosen chords come from the key, start and end
   at home, and have shapes; every shape plays its chord; the page builds a
   tune and plays it; a changed chord holds through repeats and through save and
-  open; chords follow the shape of a part; the matches fold away once one is picked; reopening keeps your chords and
+  open; the app and Session Players link to each other at the foot; chords follow the shape of a part; the matches fold away once one is picked; reopening keeps your chords and
   chooses the rest afresh; finding a tune asks the Session and offers only
   jigs and reels; it
   shows its own version and the notes cover it
@@ -420,7 +420,8 @@ the guitar's tuning and the page itself.
 `/players/` is another page apart from the app: name a tune and it is found
 on thesession.org (its API answers any site, so the page asks it directly;
 there is no server of ours), fetched, and played with the guitar demo's
-guitar, flute and bodhrán. Jigs and reels for now. Not linked from the app.
+guitar, flute and bodhrán. Jigs and reels for now. The foot of the app and of
+Session Players switches between the two.
 
 - `players/abc.js` — reads the Session's ABC (the body only: the meter comes
   from the tune type, the key from the setting, L:1/8): repeats, first and
