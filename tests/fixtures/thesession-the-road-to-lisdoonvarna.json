@@ -1,0 +1,38 @@
+{
+ "id": 250,
+ "name": "The Road To Lisdoonvarna",
+ "type": "slide",
+ "url": "https://thesession.org/tunes/250",
+ "settings": [
+  {
+   "id": 250,
+   "url": "https://thesession.org/tunes/250#setting250",
+   "key": "Edorian",
+   "abc": "|:E2B B2A B2c d2A|F2A ABA D2E FED|! E2B B2A B2c d3|cdc B2A B2E E3:|! |:e2f gfe d2B Bcd|c2A ABc d2B B3|! e2f gfe d2B Bcd|cdc B2A B2E E3:|",
+   "date": "2001-08-24 03:34:17",
+   "member": {
+    "name": "Kerri Coombs"
+   }
+  },
+  {
+   "id": 12972,
+   "url": "https://thesession.org/tunes/250#setting12972",
+   "key": "Edorian",
+   "abc": "|:E2B B2A B2c d2A|F2A ABA D2E FED|! E2B B2A B2c d3|cdc B2A B2E E3:|! e2f gfe d2B Bcd|c2A ABc d2B B3|! e2f gfe d2B Bcd|cdc B2A B2E E3:|",
+   "date": "2010-04-22 09:07:09",
+   "member": {
+    "name": "birlibirdie"
+   }
+  },
+  {
+   "id": 21776,
+   "url": "https://thesession.org/tunes/250#setting21776",
+   "key": "Edorian",
+   "abc": "D|:\"Em\"E2B B2A B2c d3|\"D\"F2A ABA D2E FED|! \"Em\"E2B B2A B2c d3|\"D\"cdc B2A \"Em\"B2E E3:|! |:\"Em\"e2f gfe \"Bm\"d2B Bcd|\"A\"c2A ABc \"Bm\"d2B B3|! \"Em\"e2f gfe \"Bm\"d2B Bcd|\"A\"cdc B2A \"Em\"B2E E3:|",
+   "date": "2013-06-23 22:22:27",
+   "member": {
+    "name": "Bryce"
+   }
+  }
+ ]
+}

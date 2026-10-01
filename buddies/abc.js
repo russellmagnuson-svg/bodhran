@@ -57,13 +57,20 @@
              scale: scale, name: letter + acc + ' ' + MODE_NAMES[mode] };
   };
 
-  /* "6/8", "4/4", "C": ticks in a bar, and in a beat as the dance counts it. */
+  /* "6/8", "4/4", "C": ticks in a bar, and in a beat as the dance counts it;
+   * and where a bar's second chord can come in. That is half way, except in
+   * a bar of three beats (a slip jig's 9/8), where half way is mid-beat: the
+   * change comes on the third beat. phrase: bars to a pair of phrases, the
+   * shape the chords follow: eight, but four of a slide's 12/8, each of which
+   * holds two of a jig's bars. */
   P.meter = function (s) {
     if (s === 'C' || s === 'C|') s = '4/4';
     var m = /^(\d+)\/(\d+)$/.exec(s || '4/4'), n = +m[1], d = +m[2];
     var bar = n * 8 / d * TPQ;
     var compound = d === 8 && n % 3 === 0;
-    return { text: s, num: n, den: d, bar: bar, beat: compound ? 3 * TPQ : 8 / d * TPQ };
+    var beat = compound ? 3 * TPQ : 8 / d * TPQ, beats = bar / beat;
+    return { text: s, num: n, den: d, bar: bar, beat: beat,
+             half: beats % 2 ? (beats - 1) * beat : bar / 2, phrase: bar >= 12 * TPQ ? 4 : 8 };
   };
 
   /* Take the Session's line breaks and decorations out of the way. */

@@ -1,0 +1,38 @@
+{
+ "id": 1075,
+ "name": "The Britches Full Of Stitches",
+ "type": "polka",
+ "url": "https://thesession.org/tunes/1075",
+ "settings": [
+  {
+   "id": 1075,
+   "url": "https://thesession.org/tunes/1075#setting1075",
+   "key": "Dmajor",
+   "abc": "|:d>e fd|ed fd|d>e fd|edB2|! d>e fd|ed fa|d>e dB|BA A2:|! |:~a2af|ed ef|~a2af|edb2|! ~a2af|ed ef|d>e dB|BA A2:|",
+   "date": "2002-10-24 04:13:37",
+   "member": {
+    "name": "Paddy"
+   }
+  },
+  {
+   "id": 14304,
+   "url": "https://thesession.org/tunes/1075#setting14304",
+   "key": "Amajor",
+   "abc": "|:E/F/|A>B cA|BA cA|A>B c/B/A|FA EF|! AA/B/ cA|BA ce|A>B AF|FE E:|! c|ee/f/ ec|BA Bc|e>f ec|BA F2|! e>f ec|BA Bc|AA/B/ c/B/A|FA E>c|! ef ec|B>^A Bc|a>f e/f/e/c/|BA FA|! e2 ec|BA B2|AA/B/ A/G/F|FE E||",
+   "date": "2006-06-21 05:12:56",
+   "member": {
+    "name": "ceolachan"
+   }
+  },
+  {
+   "id": 22684,
+   "url": "https://thesession.org/tunes/1075#setting22684",
+   "key": "Gmajor",
+   "abc": "|:GA B/A/G|AG BG|G2 BG|AG E2|! G>A BG|AG Bd|GG/A/ GE|ED D2:|! |:d/e/d/c/ dB|A^G AB|g/a/g/f/ ge|dB A2|! d2 dB|A/B/A/^G/ AB/A/|GG/A/ B/A/G|EG D2:|",
+   "date": "2013-11-06 07:12:56",
+   "member": {
+    "name": "ceolachan"
+   }
+  }
+ ]
+}

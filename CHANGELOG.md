@@ -376,6 +376,29 @@ The page at `/buddies/` has its own version number, shown next to its title.
 It was called Session Players, at `/players/`, until 1.8.0; the entries
 before that keep the old name.
 
+### Session Buddies 1.10.0 — 2026-10-01
+
+- Hornpipes, polkas, slides and slip jigs can now be played, as well as jigs
+  and reels. Each has its own meter and tempo range, count-in, closing
+  strokes, two strums (Lilt and Driving) and the app's plain bodhrán
+  pattern for it:
+  - **Hornpipe** (4/4, from 80 bpm): swung long-short, about 60:40, in the
+    guitar and drum as the app swings it, and in the tune's straight
+    quavers too. Many settings write a hornpipe dotted already (`A>B`); those
+    notes are played as written, not dotted twice. The last bar closes on
+    three strokes, as a hornpipe ends.
+  - **Polka** (2/4, from 120 bpm): oom-pa strums, the Driving one pushing
+    the ups between the beats; a little lilt, dotted pairs as written.
+  - **Slide** (12/8, from 115 bpm): four beats a bar, leaning on 1 and 3,
+    and a lilt a touch stronger than a jig's. The chords follow a slide's
+    phrase: four of its long bars, as each holds two of a jig's.
+  - **Slip jig** (9/8, from 105 bpm): three beats a bar with a jig's lilt.
+    A bar's second chord comes in on the third beat (half way was mid-beat).
+- Tried on a real tune of each: The Boys of Bluehill, The Britches Full of
+  Stitches, The Road to Lisdoonvarna and The Butterfly. The chords chosen
+  for the slide match its setter's own on 11 of 16 half bars. Waltzes,
+  barndances, mazurkas and the rest are still listed but not yet playable.
+
 ### Session Buddies 1.9.0 — 2026-10-01
 
 - A first visit opens with a tune ready to play. Someone pressed Play before

@@ -124,10 +124,11 @@ against the real code:
   long, the concertina more than the flute; the concertina's notes carry over and a repeated note is struck again;
   the concertina sounds like a reed, plays in tune and sits with the
   flute, and ticking it plays the tune on it; the chosen tune and setting are
-  shown where you found it; a first visit opens with a tune ready to play; the app and
+  shown where you found it; a first visit opens with a tune ready to play; hornpipes, polkas,
+  slides and slip jigs play, each in its own time; the app and
   Session Buddies link to each other at the foot; chords follow the shape of a part; the matches fold away once one is picked; reopening keeps your chords and
   chooses the rest afresh; finding a tune asks the Session and offers only
-  jigs and reels; it
+  the types it can play; it
   shows its own version and the notes cover it
 - **Release notes** (under The app) — `CHANGELOG.md` and `release-notes/` both
   have an entry for the current version, so bumping the version means adding
@@ -440,8 +441,10 @@ the Session's setting 1, kept in the page), so Play plays before any search.
 `/buddies/` is another page apart from the app: name a tune and it is found
 on thesession.org (its API answers any site, so the page asks it directly;
 there is no server of ours), fetched, and played with the guitar demo's
-guitar, flute and bodhrán. Jigs and reels for now. The foot of the app and of
-Session Buddies switches between the two.
+guitar, flute and bodhrán, and a recorded concertina. Jigs, reels, hornpipes,
+polkas, slides and slip jigs for now (`TYPES` in buddies.js, keyed by the
+Session's names for them; a hornpipe swings as the app swings it). The foot
+of the app and of Session Buddies switches between the two.
 
 - `buddies/abc.js` — reads the Session's ABC (the body only: the meter comes
   from the tune type, the key from the setting, L:1/8): repeats, first and

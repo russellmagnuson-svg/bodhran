@@ -1,5 +1,7 @@
-/* buddies.js — Session Buddies (called Session Players until 1.8.0): find a tune on thesession.org, give it a
- * guitar, bodhrán and flute backing, and play along.
+/* buddies.js — Session Buddies (called Session Players until 1.8.0): find a
+ * tune on thesession.org (a jig, reel, hornpipe, polka, slide or slip jig),
+ * give it a guitar and bodhrán backing with the tune on flute and
+ * concertina, and play along.
  *
  * The Session lets a page read its tunes straight from the browser (its API
  * answers any site), so there is no server of our own. The tune is read
@@ -15,7 +17,7 @@
    * next to the title and at the foot. Bump it with every change pushed (the
    * last number for a fix, the middle for something new) and add it to the
    * "Session Buddies" sections of CHANGELOG.md and the release notes. */
-  var VERSION = '1.9.0';
+  var VERSION = '1.10.0';
 
   var $ = function (id) { return document.getElementById(id); };
   var P = window.BUDDIES, G = window.GTR, T = window.TRAD, TPQ = P.TPQ;
@@ -25,13 +27,20 @@
   var FORMATS = [FILE_FORMAT, 'session-players'];
 
   /* ---------- tune types ----------
-   * per: quavers to the beat the tempo counts. The strums are the demo's for
-   * a jig; a reel's run on eight quavers, leaning on 1 and 3. The drum plays
-   * the app's plain pattern for the type. */
+   * Keyed by the Session's own names for them. per: quavers to the beat the
+   * tempo counts; half: the quaver a bar's second chord comes in on (as
+   * abc.js's meter has it); clicks: the count-in; final: where the last
+   * bar's closing strokes fall. The strums are the demo's for a jig; a
+   * reel's run on eight quavers, leaning on 1 and 3. The drum plays the
+   * app's plain pattern for the type, and a hornpipe swings, backing and
+   * all, as the app swings it (since 1.10.0, with the polka, slide and slip
+   * jig). */
+  function appTune(id) { var t = T.tuneById && T.tuneById(id); return t && t.id === id ? t : null; }
   function grid(id, fallback) {
-    var t = T.tuneById && T.tuneById(id);
-    return t && t.id === id && t.grids && t.grids.simple ? t.grids.simple[0] : fallback;
+    var t = appTune(id);
+    return t && t.grids && t.grids.simple ? t.grids.simple[0] : fallback;
   }
+  function swingOf(id, fallback) { var t = appTune(id); return t && typeof t.swing === 'number' ? t.swing : fallback; }
   var TYPES = {
     jig: {
       name: 'Jig', meter: '6/8', slots: 6, half: 3, per: 3, unit: 'per dotted crotchet',
@@ -60,8 +69,71 @@
                          { s: 3, d: 'U', v: 0.45 }, { s: 4, d: 'D', v: 0.85 }, { s: 5, d: 'U', v: 0.4 },
                          { s: 6, d: 'D', v: 0.6 }, { s: 7, d: 'U', v: 0.45 }] }
       }
+    },
+    hornpipe: {
+      name: 'Hornpipe', meter: '4/4', slots: 8, half: 4, per: 2, unit: 'per crotchet',
+      bpm: { start: 80, min: 50, max: 120 }, grid: grid('hornpipe', 'DtdtDtdt'), swing: swingOf('hornpipe', 0.62),
+      clicks: [[0, 0.9], [2, 0.55], [4, 0.7], [6, 0.55]], final: [0, 2, 4],
+      strums: {
+        lilt: { text: 'Down on every beat, and up after the second and the fourth, swung long-short: ' +
+                      'the hornpipe’s dotted walk.',
+                slots: [{ s: 0, d: 'D', v: 1 }, { s: 2, d: 'D', v: 0.65 }, { s: 3, d: 'U', v: 0.45 },
+                        { s: 4, d: 'D', v: 0.85 }, { s: 6, d: 'D', v: 0.65 }, { s: 7, d: 'U', v: 0.45 }] },
+        drive: { text: 'Every quaver, down-up, swung long-short, leaning on 1 and 3. More push.',
+                 slots: [{ s: 0, d: 'D', v: 1 }, { s: 1, d: 'U', v: 0.4 }, { s: 2, d: 'D', v: 0.6 },
+                         { s: 3, d: 'U', v: 0.45 }, { s: 4, d: 'D', v: 0.85 }, { s: 5, d: 'U', v: 0.4 },
+                         { s: 6, d: 'D', v: 0.6 }, { s: 7, d: 'U', v: 0.45 }] }
+      }
+    },
+    polka: {
+      name: 'Polka', meter: '2/4', slots: 4, half: 2, per: 2, unit: 'per crotchet',
+      bpm: { start: 120, min: 60, max: 170 }, grid: grid('polka', 'Dtdt'),
+      clicks: [[0, 0.9], [2, 0.6]], final: [0, 2],
+      strums: {
+        lilt: { text: 'Down on each beat and up between, the beats leant on: oom-pa, oom-pa.',
+                slots: [{ s: 0, d: 'D', v: 1 }, { s: 1, d: 'U', v: 0.45 }, { s: 2, d: 'D', v: 0.8 }, { s: 3, d: 'U', v: 0.5 }] },
+        drive: { text: 'The same strokes with the ups between the beats pushed: the polka’s bounce.',
+                 slots: [{ s: 0, d: 'D', v: 0.95 }, { s: 1, d: 'U', v: 0.7 }, { s: 2, d: 'D', v: 0.8 }, { s: 3, d: 'U', v: 0.75 }] }
+      }
+    },
+    slide: {
+      name: 'Slide', meter: '12/8', slots: 12, half: 6, per: 3, unit: 'per dotted crotchet',
+      bpm: { start: 115, min: 60, max: 160 }, grid: grid('slide', 'D-tD-tD-tD-t'),
+      clicks: [[0, 0.9], [3, 0.5], [6, 0.7], [9, 0.5]], final: [0, 6],
+      strums: {
+        lilt: { text: 'Down on each of the four beats and up on the third quaver of each, leaning on 1 and 3: ' +
+                      'the slide’s long swing.',
+                slots: [{ s: 0, d: 'D', v: 1 }, { s: 2, d: 'U', v: 0.45 }, { s: 3, d: 'D', v: 0.65 }, { s: 5, d: 'U', v: 0.45 },
+                        { s: 6, d: 'D', v: 0.85 }, { s: 8, d: 'U', v: 0.45 }, { s: 9, d: 'D', v: 0.65 }, { s: 11, d: 'U', v: 0.45 }] },
+        drive: { text: 'All twelve quavers, down-up-down, up-down-up, leaning on 1 and 3. More push.',
+                 slots: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map(function (q) {
+                   return { s: q, d: q % 2 ? 'U' : 'D', v: q === 0 ? 1 : q === 6 ? 0.85 : q % 3 === 0 ? 0.65 : 0.4 };
+                 }) }
+      }
+    },
+    'slip jig': {
+      name: 'Slip jig', meter: '9/8', slots: 9, half: 6, per: 3, unit: 'per dotted crotchet',
+      bpm: { start: 105, min: 60, max: 140 }, grid: grid('slipjig', 'D-tD-tD-t'),
+      clicks: [[0, 0.9], [3, 0.55], [6, 0.55]], final: [0, 6],
+      strums: {
+        lilt: { text: 'Down on each of the three beats and up on the third quaver of each: DUM-da, DUM-da, DUM-da. ' +
+                      'The slip jig’s lilt.',
+                slots: [{ s: 0, d: 'D', v: 1 }, { s: 2, d: 'U', v: 0.5 }, { s: 3, d: 'D', v: 0.75 }, { s: 5, d: 'U', v: 0.5 },
+                        { s: 6, d: 'D', v: 0.8 }, { s: 8, d: 'U', v: 0.5 }] },
+        drive: { text: 'All nine quavers, down-up-down, up-down-up, down-up-down, leaning on the first. More push.',
+                 slots: [0, 1, 2, 3, 4, 5, 6, 7, 8].map(function (q) {
+                   return { s: q, d: q % 2 ? 'U' : 'D', v: q === 0 ? 1 : q % 3 === 0 ? 0.75 : 0.4 };
+                 }) }
+      }
     }
   };
+
+  // "Jigs, reels, hornpipes, polkas, slides and slip jigs", for the page to say.
+  var PLAYABLE = (function () {
+    var n = Object.keys(TYPES).map(function (k) { return TYPES[k].name.toLowerCase() + 's'; });
+    n[0] = n[0].charAt(0).toUpperCase() + n[0].slice(1);
+    return n.slice(0, -1).join(', ') + ' and ' + n[n.length - 1];
+  })();
 
   /* ---------- how loud each sound is: the demo's measured balance ----------
    * The concertina sits about 1 dB under the flute, each played as the page
@@ -173,7 +245,7 @@
     host.innerHTML = '';
     lastQuery = q; matchCount = list.length;
     if (!list.length) { $('find-status').textContent = 'Nothing on thesession.org called “' + q + '”.'; foldMatches(false); return; }
-    $('find-status').textContent = 'Jigs and reels can be played for now.';
+    $('find-status').textContent = PLAYABLE + ' can be played for now.';
     foldMatches(true);
     list.forEach(function (t) {
       var li = document.createElement('li'), b = document.createElement('button');
@@ -214,7 +286,7 @@
   /* A tune as the Session's API gives it. */
   function loadTune(j, index) {
     if (!TYPES[j.type] || !j.settings || !j.settings.length) {
-      $('find-status').textContent = 'Only jigs and reels can be played for now.';
+      $('find-status').textContent = 'Only ' + PLAYABLE.toLowerCase() + ' can be played for now.';
       return;
     }
     var meta = { id: j.id, name: j.name, type: j.type, url: j.url || API + '/tunes/' + j.id };
@@ -549,10 +621,22 @@
    * it still sounded a bit even.) The beat itself still lands on time, so
    * playing together their beats meet, and the notes between sit a few
    * thousandths of a second apart, as two players' would. Triplets and
-   * halved notes bend with it (a piecewise-straight warp of the beat). */
+   * halved notes bend with it (a piecewise-straight warp of the beat).
+   *
+   * Since 1.10.0: a slide and a slip jig lilt as a jig does, beat by beat
+   * (a slide's a touch more). A hornpipe swings hard, its quavers 60:40 (as
+   * the guitar and drum swing it), but many settings write it dotted
+   * already ("A>B", 75:25): the warp passes through the dotted note's place
+   * unchanged, so what is written dotted is not dotted twice. A polka lilts
+   * a little, its dotted pairs likewise left as written. */
+  var JIG_F = [[0, 0], [1, 1.12], [2, 2.06], [3, 3]], JIG_C = [[0, 0], [1, 1.16], [2, 2.08], [3, 3]];
   var LILT = {
-    flute:      { jig: [[0, 0], [1, 1.12], [2, 2.06], [3, 3]], reel: [[0, 0], [1, 1.10], [2, 2]] },
-    concertina: { jig: [[0, 0], [1, 1.16], [2, 2.08], [3, 3]], reel: [[0, 0], [1, 1.14], [2, 2]] }
+    flute:      { jig: JIG_F, reel: [[0, 0], [1, 1.10], [2, 2]], 'slip jig': JIG_F,
+                  slide: [[0, 0], [1, 1.14], [2, 2.07], [3, 3]],
+                  hornpipe: [[0, 0], [1, 1.2], [1.5, 1.5], [2, 2]], polka: [[0, 0], [1, 1.06], [1.5, 1.5], [2, 2]] },
+    concertina: { jig: JIG_C, reel: [[0, 0], [1, 1.14], [2, 2]], 'slip jig': JIG_C,
+                  slide: [[0, 0], [1, 1.18], [2, 2.09], [3, 3]],
+                  hornpipe: [[0, 0], [1, 1.24], [1.5, 1.5], [2, 2]], polka: [[0, 0], [1, 1.1], [1.5, 1.5], [2, 2]] }
   };
   function warp(tick, who) {                  // ticks into the bar -> quavers, lilted for `who`
     var ty = type(), per = ty.per, pts = (LILT[who] || LILT.flute)[tune.meta.type] || [[0, 0], [per, per]];
@@ -573,7 +657,11 @@
    * from the middle (see melody()). */
   var WEIGHT = {
     jig:  [0.95, 0.62, 0.7, 0.86, 0.62, 0.72],
-    reel: [0.95, 0.62, 0.8, 0.64, 0.88, 0.62, 0.8, 0.66]
+    reel: [0.95, 0.62, 0.8, 0.64, 0.88, 0.62, 0.8, 0.66],
+    hornpipe: [0.95, 0.6, 0.8, 0.62, 0.88, 0.6, 0.8, 0.64],
+    polka: [0.95, 0.66, 0.86, 0.7],
+    slide: [0.95, 0.62, 0.7, 0.8, 0.62, 0.7, 0.9, 0.62, 0.7, 0.8, 0.62, 0.72],     // leaning on 1 and 3
+    'slip jig': [0.95, 0.62, 0.7, 0.84, 0.62, 0.7, 0.86, 0.62, 0.72]
   };
   function weight(tick, k) {
     var ty = type(), w = WEIGHT[tune.meta.type], L = ty.slots * TPQ;
@@ -591,6 +679,15 @@
       var nx = pk[i + 1] || first, at = L + p.tick;
       melody(tBar, at, p.dur, p.midi, weight(at, 1) * 0.9, false, nx && nx.midi === p.midi);
     });
+  }
+
+  /* Where quaver s of the bar falls, in quavers: straight, or swung (a
+   * hornpipe), the quaver between the beats coming late. */
+  function swung(s) {
+    var ty = type(), per = ty.per;
+    if (!ty.swing) return s;
+    var beat = Math.floor(s / per);
+    return s + T.swingShift((s - beat * per) / per, ty.swing) * per;
   }
 
   function layBar(n, t0) {
@@ -627,7 +724,7 @@
         var chord = chords.length > 1 && x.s >= ty.half ? chords[1] : chords[0];
         (function (at, notes, dir, v) {
           pending.push({ t: at, fn: function (t) { guitar.strum(notes, t, dir, v, 4, open); } });
-        })(t0 + x.s * q, P.voicing(tuning, chord), x.d, x.v);
+        })(t0 + swung(x.s) * q, P.voicing(tuning, chord), x.d, x.v);
       });
     }
     if ($('on-drum').checked) {
@@ -642,11 +739,11 @@
           if (!voice) continue;
           (function (at, vc, v) {
             pending.push({ t: at, fn: function (t) { drum.hit(vc, t, v); } });
-          })(t0 + i * step * q, voice, T.VELOCITY[g[i]]);
+          })(t0 + swung(i * step) * q, voice, T.VELOCITY[g[i]]);
         }
       }
     }
-    slots.forEach(function (x) { shown.push({ t: t0 + x.s * q, strum: x.s }); });
+    slots.forEach(function (x) { shown.push({ t: t0 + swung(x.s) * q, strum: x.s }); });
     if (last) endAt = t0 + ty.final[ty.final.length - 1] * q + 3.2;
     return L * q;
   }
@@ -922,13 +1019,13 @@
     var last = stored('players.current', '');
     if (!(last && openText(last, true))) {
       loadTune(STARTER, 0);
-      $('find-status').textContent = 'The Kesh is ready to play, to start you off. Search above for any other jig or reel.';
+      $('find-status').textContent = 'The Kesh is ready to play, to start you off. Search above for any other tune.';
     }
   }
 
   // For the checks page.
   window.BUDDIES_PAGE = {
-    VERSION: VERSION, TYPES: TYPES, MIX: MIX, fluteLength: fluteLength, concertinaLength: concertinaLength,
+    VERSION: VERSION, TYPES: TYPES, PLAYABLE: PLAYABLE, MIX: MIX, fluteLength: fluteLength, concertinaLength: concertinaLength,
     tune: function () { return tune; },
     form: function () { return FORM; },
     STARTER: STARTER, loadTune: loadTune, openText: openText, saveText: saveText, setChord: setChord,

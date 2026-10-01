@@ -1,0 +1,38 @@
+{
+ "id": 651,
+ "name": "The Boys Of Bluehill",
+ "type": "hornpipe",
+ "url": "https://thesession.org/tunes/651",
+ "settings": [
+  {
+   "id": 651,
+   "url": "https://thesession.org/tunes/651#setting651",
+   "key": "Dmajor",
+   "abc": "|:FA|BA FA D2 FA|BA (3Bcd e2 de|fa gf eg fe|df ed B2 dB|! BA FA D2 FA|BA (3Bcd e2 de|fa gf eg fe|d2 f2 d2:|! |:fg|af df a2 g2|ef ga b2 ag|fa gf eg fe|df ed B2 dB|! BA FA D2 FA|BA (3Bcd e2 de|fa gf eg fe|d2 f2 d2:|",
+   "date": "2002-04-19 07:47:06",
+   "member": {
+    "name": "Caoimghgin"
+   }
+  },
+  {
+   "id": 13680,
+   "url": "https://thesession.org/tunes/651#setting13680",
+   "key": "Dmajor",
+   "abc": "|:A (3EFA|BA FA DE FA|BA Bd e2 de|fa af eg fe|de fd B2 dc|! BA FA DA FA|BA Bd e2 de|fa af eg fe|d2 d2 d2:|! |:fg|af df a2 gf|gf ga b2 ag|fa af eg fe|de fd Bc dc|! BA FA DE FA|BA Bd e2 de|fa af eg fe|d2 d2 d2:|",
+   "date": "2005-02-20 11:49:41",
+   "member": {
+    "name": "Bob himself"
+   }
+  },
+  {
+   "id": 13681,
+   "url": "https://thesession.org/tunes/651#setting13681",
+   "key": "Dmajor",
+   "abc": "dA|:{c}BAFA A,DFA|{c}BAAa eade|(3{g}fed df ed{g}fe|d2 (3fed Bd{e}dB|! (3ABA {B}Ad AdFA|{c}BAAa eade|(3{g}fed df ed{g}fe|1 d2 (3fed B d FA:|2 d2 (3fed ddef||! |:a3 f adfa|g2 Ba bdgb|aBfd edfe|d2 (3fed Bd{e}dB|! (3ABA {B}Ad AdFA|{c}BAAa eade|(3{g}fed df ed{g}fe|1 d2 (3fed d efg:|2 d2 (3fed d2 z2||",
+   "date": "2007-05-12 18:31:36",
+   "member": {
+    "name": "fidkid"
+   }
+  }
+ ]
+}

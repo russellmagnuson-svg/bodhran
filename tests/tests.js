@@ -2829,6 +2829,68 @@
       });
     });
 
+  check('Session Buddies', 'Hornpipes, polkas, slides and slip jigs play, each in its own time',
+    'Only jigs and reels could be played. Now a real tune of each of the four (The Boys of Bluehill, The Britches Full of Stitches, The Road to Lisdoonvarna, The Butterfly) reads in whole bars, every chord has a shape, and it plays: the strums of a bar where its type puts them, the hornpipe swung long-short (60:40) and the others straight, the tune’s beats on time; a hornpipe’s straight quavers lilted, a polka’s written dotted pair (d>e) left as written, not dotted twice; a slip jig’s second chord on its third beat, not mid-beat; a slide’s phrase four of its long bars.',
+    function () {
+      var names = ['the-boys-of-bluehill', 'britches-full-of-stitches', 'the-road-to-lisdoonvarna', 'the-butterfly'];
+      return Promise.all(names.map(function (n) { return json(FIX + n + '.json'); })).then(function (tunes) {
+        return withBuddies(function (win, doc) {
+          var PP = win.BUDDIES_PAGE, B = win.BUDDIES, bad = [], strums = [], notes = [];
+          var GP = win.GTR.Guitar.prototype, gs = GP.strum, FP = B.Flute.prototype, fn = FP.note;
+          GP.strum = function (n, t, dir) { strums.push({ t: t, d: dir }); return gs.apply(this, arguments); };
+          FP.note = function (t, d, m) { notes.push({ t: t, m: m }); return fn.apply(this, arguments); };
+          expect(/hornpipes, polkas, slides and slip jigs/.test(doc.querySelector('h2 .tag').textContent), 'Find a tune does not say what can be played');
+          var chain = Promise.resolve();
+          tunes.forEach(function (j) {
+            chain = chain.then(function () {
+              var ty = PP.TYPES[j.type];
+              if (!ty) { bad.push(j.name + ': a ' + j.type + ' cannot be played'); return; }
+              PP.loadTune(j, 0);
+              var t = PP.tune(), lay = t.lay, L = lay.meter.bar, name = j.name + ' (' + j.type + ')';
+              if (lay.meter.bar !== ty.slots * PL.TPQ) bad.push(name + ': its bar is ' + lay.meter.bar / PL.TPQ + ' quavers, not ' + ty.slots);
+              lay.timeline.forEach(function (tb) {
+                if (!/@0$/.test(tb.slot) && !/^end@/.test(tb.slot)) bad.push(name + ': bar ' + tb.slot + ' does not start on a bar line');
+                tb.notes.forEach(function (n) { if (n.tick + n.dur > L + 0.5) bad.push(name + ': a note runs past its bar'); });
+              });
+              lay.slots.forEach(function (sl) {
+                t.chords[sl.id].forEach(function (c) { ['standard', 'dadgad'].forEach(function (tn) { if (!B.shape(tn, c)) bad.push(name + ': no ' + tn + ' shape for ' + c); }); });
+              });
+              strums = []; notes = [];
+              doc.getElementById('countin').value = '1';
+              doc.getElementById('bpm').value = ty.bpm.max; doc.getElementById('bpm').dispatchEvent(new win.Event('input'));
+              var bpm = +doc.getElementById('bpm').value, q = 60 / bpm / ty.per, bar = ty.slots * q;
+              doc.getElementById('play').click();
+              return wait((2 * bar + 0.6) * 1000).then(function () {
+                doc.getElementById('play').click();
+                if (!strums.length) { bad.push(name + ': it did not play'); return; }
+                var t0 = strums[0].t, first = strums.filter(function (x) { return x.t < t0 + bar - 0.001; });
+                var pos = first.map(function (x) { return (x.t - t0) / q; }), want = ty.strums.lilt.slots;
+                if (first.length !== want.length) bad.push(name + ': ' + first.length + ' strums in a bar, not ' + want.length);
+                want.forEach(function (w, i) {
+                  var at = ty.swing && w.s % ty.per ? w.s + win.TRAD.swingShift((w.s % ty.per) / ty.per, ty.swing) * ty.per : w.s;
+                  if (pos[i] == null || Math.abs(pos[i] - at) > 0.03) bad.push(name + ': strum ' + (i + 1) + ' at ' + round(pos[i]) + ' quavers, not ' + round(at));
+                });
+                var tn = notes.filter(function (x) { return x.t >= t0 - 0.03 && x.t < t0 + bar - 0.03; }).map(function (x) { return (x.t - t0) / q; });
+                var beats = tn.filter(function (p) { return Math.abs(p - Math.round(p / ty.per) * ty.per) < 0.03; });
+                if (!beats.length || Math.abs(tn[0]) > 0.03) bad.push(name + ': the tune’s first note of the bar is at ' + round(tn[0]) + ' quavers, not on the beat');
+                if (j.type === 'hornpipe') {      // "BA FA D2 FA": the A between the beats lilted late
+                  if (!(tn[1] > 1.12 && tn[1] < 1.3)) bad.push(name + ': its straight quavers go ' + round(tn[1]) + ' : ' + round(2 - tn[1]) + ', not lilted long-short');
+                  if (Math.abs(pos[1] - 2) > 0.03) bad.push(name + ': the guitar’s beat 2 is at ' + round(pos[1]) + ' quavers');
+                }
+                if (j.type === 'polka' && Math.abs(tn[1] - 1.5) > 0.03) bad.push(name + ': its written d>e plays at ' + round(tn[1], 2) + ', not 1.5 (dotted twice)');
+                if (j.type === 'slip jig' && lay.meter.half !== 6 * PL.TPQ) bad.push(name + ': its second chord comes in at quaver ' + lay.meter.half / PL.TPQ + ', not on the third beat (6)');
+                if (j.type === 'slide' && lay.meter.phrase !== 4) bad.push(name + ': its phrase is ' + lay.meter.phrase + ' long bars, not 4');
+              });
+            });
+          });
+          return chain.then(function () {
+            GP.strum = gs; FP.note = fn;
+            expect(bad.length === 0, bad.join('\n'));
+          });
+        });
+      });
+    });
+
   check('Session Buddies', 'The page builds a tune and plays it',
     'From the Session’s JSON to a chart of the tune’s bars, a shape for each chord, and sound, with a count-in first.',
     function () {
@@ -2883,7 +2945,7 @@
     });
 
   check('Session Buddies', 'Finding a tune asks the Session, offers only what it can play, and folds away',
-    'The search goes to thesession.org’s own API, from the page. Jigs and reels can be picked; other types are listed but not yet playable. Once one is picked the list folds under one line, so it no longer pushes the tune far down the page.',
+    'The search goes to thesession.org’s own API, from the page. Jigs, reels, hornpipes, polkas, slides and slip jigs can be picked; other types (a waltz, say) are listed but not yet playable. Once one is picked the list folds under one line, so it no longer pushes the tune far down the page.',
     function () {
       return json(FIX + 'the-kesh.json').then(function (kesh) {
         return withBuddies(function (win, doc) {
@@ -2891,7 +2953,7 @@
           win.fetch = function (url) {
             asked.push(String(url));
             var body = /search/.test(url)
-              ? { tunes: [{ id: 55, name: 'The Kesh', type: 'jig' }, { id: 1, name: 'Some Hornpipe', type: 'hornpipe' }] }
+              ? { tunes: [{ id: 55, name: 'The Kesh', type: 'jig' }, { id: 1, name: 'Some Waltz', type: 'waltz' }] }
               : kesh;
             return Promise.resolve({ ok: true, json: function () { return Promise.resolve(body); } });
           };
@@ -2899,7 +2961,7 @@
           doc.getElementById('find-go').click();
           return wait(100).then(function () {
             var btns = doc.querySelectorAll('#results button'), box = doc.getElementById('matches');
-            var horn = btns[1] && btns[1].disabled;
+            var waltz = btns[1] && btns[1].disabled;
             var openFirst = box.open && !box.hidden, sumFirst = doc.getElementById('matches-sum').textContent;
             btns[0].click();
             return wait(100).then(function () {
@@ -2907,7 +2969,7 @@
               expect(openFirst && /^2 found for “kesh”/.test(sumFirst), 'the matches were not shown: "' + sumFirst + '"');
               expect(!box.open && /^1 other match for “kesh”/.test(sumAfter), 'after picking one the matches did not fold away: "' + sumAfter + '"');
               expect(/^https:\/\/thesession\.org\/tunes\/search\?q=kesh&format=json/.test(asked[0] || ''), 'it asked ' + asked[0]);
-              expect(btns.length === 2 && horn && !btns[0].disabled, 'the results were not two, with only the jig playable');
+              expect(btns.length === 2 && waltz && !btns[0].disabled, 'the results were not two, with the jig playable and the waltz not');
               expect(/^https:\/\/thesession\.org\/tunes\/55\?format=json/.test(asked[1] || ''), 'picking it fetched ' + asked[1]);
               expect(win.BUDDIES_PAGE.tune() && win.BUDDIES_PAGE.tune().meta.name === 'The Kesh', 'picking it did not load The Kesh');
             });

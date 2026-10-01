@@ -92,7 +92,7 @@
   P.chordSource = function (lay) { return lay.symbols.length ? 'setting' : 'auto'; };
 
   function choose(lay) {
-    var key = lay.key, cands = P.candidates(key), L = lay.meter.bar, H = L / 2, beat = lay.meter.beat;
+    var key = lay.key, cands = P.candidates(key), L = lay.meter.bar, H = lay.meter.half, beat = lay.meter.beat;
     var chs = cands.map(function (c) { return P.chord(c.name); });
     var tonic = 0, cadence = CADENCE[key.mode] != null ? CADENCE[key.mode] : 4;
     // Where each bar sits in its part, as first heard: a second ending, first
@@ -109,15 +109,16 @@
     lay.slots.forEach(function (sl, si) {
       var tb = first[sl.id], next = lay.slots[si + 1];
       var endOfPart = !next || next.part !== sl.part;
-      var pos = (firstK[sl.id] - partStart[sl.part]) % 8;   // 0 to 7: bar 1 to bar 8 of the phrase pair
+      var PH = lay.meter.phrase || 8;
+      var pos = (firstK[sl.id] - partStart[sl.part]) % PH;  // 0 to 7: bar 1 to bar 8 of the phrase pair
       [0, 1].forEach(function (h) {
         var notes = tb.notes.filter(function (n) { return n.tick >= h * H && n.tick < (h + 1) * H; })
                             .map(function (n) { return { tick: n.tick - h * H, dur: Math.min(n.dur, (h + 1) * H - n.tick), midi: n.midi }; });
         halves.push({ slot: sl.id, half: h, notes: notes, first: si === 0 && h === 0,
-                      home: (endOfPart || pos === 7) && h === 1,
-                      rest: pos === 3,                   // bar 4: the half-way rest
-                      lead: pos === 7 && h === 0,        // bar 8: the cadence chord, then home
-                      cadenceBar: pos === 7,
+                      home: (endOfPart || pos === PH - 1) && h === 1,
+                      rest: pos === PH / 2 - 1,          // bar 4: the half-way rest
+                      lead: pos === PH - 1 && h === 0,   // bar 8: the cadence chord, then home
+                      cadenceBar: pos === PH - 1,
                       end: si === lay.slots.length - 1 && h === 1 });
       });
     });
@@ -157,7 +158,7 @@
   }
 
   function fromSymbols(lay) {
-    var L = lay.meter.bar, H = L / 2;
+    var L = lay.meter.bar, H = lay.meter.half;
     var syms = lay.symbols.filter(function (s) { return P.chord(s.name); })
                           .sort(function (a, b) { return a.tick - b.tick; });
     if (!syms.length) return choose(lay);

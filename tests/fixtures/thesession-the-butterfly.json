@@ -1,0 +1,38 @@
+{
+ "id": 10,
+ "name": "The Butterfly",
+ "type": "slip jig",
+ "url": "https://thesession.org/tunes/10",
+ "settings": [
+  {
+   "id": 10,
+   "url": "https://thesession.org/tunes/10#setting10",
+   "key": "Eminor",
+   "abc": "|:B2E G2E F3|B2E G2E FED|B2E G2E F3|B2d d2B AFD:|! |:B2d e2f g3|B2d g2e dBA|B2d e2f g2a|b2a g2e dBA:|! |:B3 B2A G2A|B3 BAB dBA|B3 B2A G2A|B2d g2e dBA:|",
+   "date": "2001-05-18 03:53:30",
+   "member": {
+    "name": "Jeremy"
+   }
+  },
+  {
+   "id": 12370,
+   "url": "https://thesession.org/tunes/10#setting12370",
+   "key": "Eminor",
+   "abc": "|:B2 E G2 E F3|B2 E G2 E FF/G/A|B2 E G2 E F3|B2 d d2 B AFD:|! |:B2 d e2 f g2 d|B2 d g2 e dBA|B2 d dd/e/f g2 a|b2 a g2 e dBA:|! |:B3- B2 A G2 A|B3 B^AB dB=A|BcB B2 A G2 A|Bcd g2 e dB^A:|",
+   "date": "2007-06-10 11:43:10",
+   "member": {
+    "name": "ceolachan"
+   }
+  },
+  {
+   "id": 12371,
+   "url": "https://thesession.org/tunes/10#setting12371",
+   "key": "Eminor",
+   "abc": "|:B3 G3 F3|B3 G3 E3|B3 G3 F3|B3 d3 F3:|! |:B3 e3 g3|B3 g3 A3|B3 e3 g3|b3 g3 A3:|! |:B3 B3 G3|B3 B3 d3|B3 B3 G3|B3 g3 A3:|",
+   "date": "2008-09-29 06:12:17",
+   "member": {
+    "name": "ceolachan"
+   }
+  }
+ ]
+}
