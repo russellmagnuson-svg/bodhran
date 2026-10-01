@@ -17,7 +17,7 @@
    * next to the title and at the foot. Bump it with every change pushed (the
    * last number for a fix, the middle for something new) and add it to the
    * "Session Buddies" sections of CHANGELOG.md and the release notes. */
-  var VERSION = '1.10.0';
+  var VERSION = '1.10.1';
 
   var $ = function (id) { return document.getElementById(id); };
   var P = window.BUDDIES, G = window.GTR, T = window.TRAD, TPQ = P.TPQ;
@@ -32,15 +32,16 @@
    * abc.js's meter has it); clicks: the count-in; final: where the last
    * bar's closing strokes fall. The strums are the demo's for a jig; a
    * reel's run on eight quavers, leaning on 1 and 3. The drum plays the
-   * app's plain pattern for the type, and a hornpipe swings, backing and
-   * all, as the app swings it (since 1.10.0, with the polka, slide and slip
-   * jig). */
-  function appTune(id) { var t = T.tuneById && T.tuneById(id); return t && t.id === id ? t : null; }
+   * app's plain pattern for the type (since 1.10.0, with the hornpipe,
+   * polka, slide and slip jig).
+   *
+   * A hornpipe swings, backing and all: 2:1, the triplet feel (swing 1 to
+   * the app's swingShift). 1.10.0 took the app's own 0.62, 60:40, and The
+   * Boys of Bluehill sounded "devoid of the swing a hornpipe normally has". */
   function grid(id, fallback) {
-    var t = appTune(id);
-    return t && t.grids && t.grids.simple ? t.grids.simple[0] : fallback;
+    var t = T.tuneById && T.tuneById(id);
+    return t && t.id === id && t.grids && t.grids.simple ? t.grids.simple[0] : fallback;
   }
-  function swingOf(id, fallback) { var t = appTune(id); return t && typeof t.swing === 'number' ? t.swing : fallback; }
   var TYPES = {
     jig: {
       name: 'Jig', meter: '6/8', slots: 6, half: 3, per: 3, unit: 'per dotted crotchet',
@@ -72,7 +73,7 @@
     },
     hornpipe: {
       name: 'Hornpipe', meter: '4/4', slots: 8, half: 4, per: 2, unit: 'per crotchet',
-      bpm: { start: 80, min: 50, max: 120 }, grid: grid('hornpipe', 'DtdtDtdt'), swing: swingOf('hornpipe', 0.62),
+      bpm: { start: 80, min: 50, max: 120 }, grid: grid('hornpipe', 'DtdtDtdt'), swing: 1,
       clicks: [[0, 0.9], [2, 0.55], [4, 0.7], [6, 0.55]], final: [0, 2, 4],
       strums: {
         lilt: { text: 'Down on every beat, and up after the second and the fourth, swung long-short: ' +
@@ -589,19 +590,19 @@
   function concertinaLength(len, lenQ, nextSame) { return nextSame ? Math.max(len * 0.5, len - 0.06) : len; }
   /* One note of the tune, `tick` into the bar starting at tBar, `dur` ticks
    * long, weight w: placed by each instrument's own lilt. */
-  function melody(tBar, tick, dur, midi, w, finalNote, nextSame) {
+  function melody(tBar, tick, dur, midi, w, finalNote, nextSame, written) {
     var q = quaver(), ring = type().slots * q;
     // Playing together they play as one: the flute takes the concertina's
     // lilt, or their notes between the beats would start up to 12 ms apart.
     var both = $('on-tune').checked && $('on-concertina').checked, fw = both ? 'concertina' : 'flute';
     if ($('on-tune').checked) {
-      var fa = warp(tick, fw), fq = warp(tick + dur, fw) - fa, fl = fq * q;
+      var fa = warp(tick, fw, written), fq = warp(tick + dur, fw, written) - fa, fl = fq * q;
       var fd = finalNote ? fl + ring : fluteLength(fl, fq);
       // No vibrato with the concertina: against its steady reed it beat (flute.js).
       pending.push({ t: tBar + fa * q, fn: function (t) { flutePlayer.note(t, fd, midi, w, both ? 0 : 1); } });
     }
     if ($('on-concertina').checked) {
-      var ca = warp(tick, 'concertina'), cq = warp(tick + dur, 'concertina') - ca, cl = cq * q;
+      var ca = warp(tick, 'concertina', written), cq = warp(tick + dur, 'concertina', written) - ca, cl = cq * q;
       var cd = finalNote ? cl + ring : concertinaLength(cl, cq, nextSame);
       var cw = Math.max(0.3, Math.min(1, 0.8 + (w - 0.8) * 1.4));   // the bellows lean harder
       pending.push({ t: tBar + ca * q, fn: function (t) { concertina.note(t, cd, midi, cw); } });
@@ -624,23 +625,41 @@
    * halved notes bend with it (a piecewise-straight warp of the beat).
    *
    * Since 1.10.0: a slide and a slip jig lilt as a jig does, beat by beat
-   * (a slide's a touch more). A hornpipe swings hard, its quavers 60:40 (as
-   * the guitar and drum swing it), but many settings write it dotted
-   * already ("A>B", 75:25): the warp passes through the dotted note's place
-   * unchanged, so what is written dotted is not dotted twice. A polka lilts
-   * a little, its dotted pairs likewise left as written. */
+   * (a slide's a touch more). A polka lilts a little; the warp passes
+   * through a dotted note's place unchanged, so a written "d>e" is not
+   * dotted twice.
+   *
+   * A hornpipe swings its quavers 2:1, as the guitar and drum do (1.10.0's
+   * 60:40 sounded unswung). A beat it writes otherwise is played as written
+   * (see asWritten): a triplet stays even, as players keep it (swung, its
+   * notes went 0.8, 0.6 and 0.6 of a quaver), a dotted pair ("A>B", 3:1)
+   * is not dotted twice, and semiquavers are not squashed. The swung
+   * quaver falls where a triplet's third note does, so the two agree. */
   var JIG_F = [[0, 0], [1, 1.12], [2, 2.06], [3, 3]], JIG_C = [[0, 0], [1, 1.16], [2, 2.08], [3, 3]];
   var LILT = {
     flute:      { jig: JIG_F, reel: [[0, 0], [1, 1.10], [2, 2]], 'slip jig': JIG_F,
                   slide: [[0, 0], [1, 1.14], [2, 2.07], [3, 3]],
-                  hornpipe: [[0, 0], [1, 1.2], [1.5, 1.5], [2, 2]], polka: [[0, 0], [1, 1.06], [1.5, 1.5], [2, 2]] },
+                  hornpipe: [[0, 0], [1, 1.32], [2, 2]], polka: [[0, 0], [1, 1.06], [1.5, 1.5], [2, 2]] },
     concertina: { jig: JIG_C, reel: [[0, 0], [1, 1.14], [2, 2]], 'slip jig': JIG_C,
                   slide: [[0, 0], [1, 1.18], [2, 2.09], [3, 3]],
-                  hornpipe: [[0, 0], [1, 1.24], [1.5, 1.5], [2, 2]], polka: [[0, 0], [1, 1.1], [1.5, 1.5], [2, 2]] }
+                  hornpipe: [[0, 0], [1, 1.36], [2, 2]], polka: [[0, 0], [1, 1.1], [1.5, 1.5], [2, 2]] }
   };
-  function warp(tick, who) {                  // ticks into the bar -> quavers, lilted for `who`
+  /* In a swung tune, the beats of a bar's notes that are not plain quavers
+   * and longer (a triplet, a dotted pair, semiquavers): { beat: true }, for
+   * the warp to leave as written. `at(n)` is a note's tick in the bar. */
+  function asWritten(notes, at) {
+    var ty = type(), out = {}, B = ty.per * TPQ;
+    if (!ty.swing) return out;
+    notes.forEach(function (n) {
+      var t = at ? at(n) : n.tick;
+      if (t % TPQ || n.dur % TPQ) out[Math.floor(t / B)] = true;
+    });
+    return out;
+  }
+  function warp(tick, who, written) {         // ticks into the bar -> quavers, lilted for `who`
     var ty = type(), per = ty.per, pts = (LILT[who] || LILT.flute)[tune.meta.type] || [[0, 0], [per, per]];
     var q = tick / TPQ, beat = Math.floor(q / per), p = q - beat * per;
+    if (written && written[beat]) return q;
     for (var i = 1; i < pts.length; i++) {
       if (p <= pts[i][0]) {
         var a = pts[i - 1], b = pts[i];
@@ -675,9 +694,10 @@
   function pickupInto(tNext, q) {
     var pk = tune.lay.pickup, first = FORM[0] && FORM[0].notes[0];
     var L = type().slots * TPQ, tBar = tNext - type().slots * q;
+    var written = asWritten(pk, function (p) { return L + p.tick; });
     pk.forEach(function (p, i) {
       var nx = pk[i + 1] || first, at = L + p.tick;
-      melody(tBar, at, p.dur, p.midi, weight(at, 1) * 0.9, false, nx && nx.midi === p.midi);
+      melody(tBar, at, p.dur, p.midi, weight(at, 1) * 0.9, false, nx && nx.midi === p.midi, written);
     });
   }
 
@@ -707,12 +727,13 @@
     // in over its end, so the tune's own notes stop where the pickup starts.
     var again = k === FORM.length - 1 && !last && tune.lay.pickup.length;
     var cutAt = again ? L * TPQ + tune.lay.pickup[0].tick : Infinity;
+    var written = asWritten(tb.notes);
     tb.notes.forEach(function (note, i) {
       if (note.tick >= cutAt) return;
       var dur = Math.min(note.dur, cutAt - note.tick);
       var nx = tb.notes[i + 1] || (FORM[(k + 1) % FORM.length].notes[0]);
       melody(t0, note.tick, dur, note.midi, weight(note.tick, k),
-             last && i === tb.notes.length - 1, nx && nx.midi === note.midi);
+             last && i === tb.notes.length - 1, nx && nx.midi === note.midi, written);
     });
     if (again) pickupInto(t0 + L * q, q);
 

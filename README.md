@@ -443,7 +443,8 @@ on thesession.org (its API answers any site, so the page asks it directly;
 there is no server of ours), fetched, and played with the guitar demo's
 guitar, flute and bodhrán, and a recorded concertina. Jigs, reels, hornpipes,
 polkas, slides and slip jigs for now (`TYPES` in buddies.js, keyed by the
-Session's names for them; a hornpipe swings as the app swings it). The foot
+Session's names for them; a hornpipe swings 2:1, its triplets, dotted pairs
+and semiquavers played as written: `asWritten`). The foot
 of the app and of Session Buddies switches between the two.
 
 - `buddies/abc.js` — reads the Session's ABC (the body only: the meter comes

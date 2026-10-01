@@ -376,6 +376,18 @@ The page at `/buddies/` has its own version number, shown next to its title.
 It was called Session Players, at `/players/`, until 1.8.0; the entries
 before that keep the old name.
 
+### Session Buddies 1.10.1 — 2026-10-01
+
+- Hornpipes swing properly. 1.10.0 swung them 60:40, as the app's bodhrán
+  does, and The Boys of Bluehill sounded devoid of the swing a hornpipe
+  normally has. The guitar, drum and tune now swing 2:1, the triplet feel.
+- A hornpipe's triplets stay even, as players keep them. Swung, the three
+  notes of Bluehill's "(3Bcd" went 0.8, 0.6 and 0.6 of a quaver; and the
+  swung quaver now falls just where a triplet's third note does. Any beat a
+  setting writes other than in plain quavers (a triplet, a dotted pair,
+  semiquavers) is played as written, so a setting written dotted (`B>A`)
+  is not dotted twice.
+
 ### Session Buddies 1.10.0 — 2026-10-01
 
 - Hornpipes, polkas, slides and slip jigs can now be played, as well as jigs

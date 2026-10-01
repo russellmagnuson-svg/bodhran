@@ -2830,10 +2830,14 @@
     });
 
   check('Session Buddies', 'Hornpipes, polkas, slides and slip jigs play, each in its own time',
-    'Only jigs and reels could be played. Now a real tune of each of the four (The Boys of Bluehill, The Britches Full of Stitches, The Road to Lisdoonvarna, The Butterfly) reads in whole bars, every chord has a shape, and it plays: the strums of a bar where its type puts them, the hornpipe swung long-short (60:40) and the others straight, the tune’s beats on time; a hornpipe’s straight quavers lilted, a polka’s written dotted pair (d>e) left as written, not dotted twice; a slip jig’s second chord on its third beat, not mid-beat; a slide’s phrase four of its long bars.',
+    'Only jigs and reels could be played. Now a real tune of each of the four (The Boys of Bluehill, The Britches Full of Stitches, The Road to Lisdoonvarna, The Butterfly) reads in whole bars, every chord has a shape, and it plays: the strums of a bar where its type puts them, the hornpipe swung long-short and the others straight, the tune’s beats on time; a hornpipe swung 2:1, guitar and tune (1.10.0’s 60:40 sounded “devoid of the swing a hornpipe normally has”), its triplets kept even and a setting written dotted (B>A) played as written; a polka’s written dotted pair (d>e) not dotted twice; a slip jig’s second chord on its third beat, not mid-beat; a slide’s phrase four of its long bars.',
     function () {
       var names = ['the-boys-of-bluehill', 'britches-full-of-stitches', 'the-road-to-lisdoonvarna', 'the-butterfly'];
+      // And a hornpipe written dotted, as many settings are.
+      var dotted = { id: 0, name: 'A dotted hornpipe', type: 'hornpipe', url: '', dotted: true, settings: [{ id: 0, url: '', key: 'Dmajor',
+        date: '', member: { name: 'a check' }, abc: '|:B>AF>A D2F>A|B>AF>A d2e>d|B>AF>A D2F>A|B>AF>A d4:|' }] };
       return Promise.all(names.map(function (n) { return json(FIX + n + '.json'); })).then(function (tunes) {
+        tunes.push(dotted);
         return withBuddies(function (win, doc) {
           var PP = win.BUDDIES_PAGE, B = win.BUDDIES, bad = [], strums = [], notes = [];
           var GP = win.GTR.Guitar.prototype, gs = GP.strum, FP = B.Flute.prototype, fn = FP.note;
@@ -2860,7 +2864,7 @@
               doc.getElementById('bpm').value = ty.bpm.max; doc.getElementById('bpm').dispatchEvent(new win.Event('input'));
               var bpm = +doc.getElementById('bpm').value, q = 60 / bpm / ty.per, bar = ty.slots * q;
               doc.getElementById('play').click();
-              return wait((2 * bar + 0.6) * 1000).then(function () {
+              return wait((3 * bar + 0.6) * 1000).then(function () {
                 doc.getElementById('play').click();
                 if (!strums.length) { bad.push(name + ': it did not play'); return; }
                 var t0 = strums[0].t, first = strums.filter(function (x) { return x.t < t0 + bar - 0.001; });
@@ -2873,10 +2877,17 @@
                 var tn = notes.filter(function (x) { return x.t >= t0 - 0.03 && x.t < t0 + bar - 0.03; }).map(function (x) { return (x.t - t0) / q; });
                 var beats = tn.filter(function (p) { return Math.abs(p - Math.round(p / ty.per) * ty.per) < 0.03; });
                 if (!beats.length || Math.abs(tn[0]) > 0.03) bad.push(name + ': the tune’s first note of the bar is at ' + round(tn[0]) + ' quavers, not on the beat');
-                if (j.type === 'hornpipe') {      // "BA FA D2 FA": the A between the beats lilted late
-                  if (!(tn[1] > 1.12 && tn[1] < 1.3)) bad.push(name + ': its straight quavers go ' + round(tn[1]) + ' : ' + round(2 - tn[1]) + ', not lilted long-short');
+                if (j.type === 'hornpipe' && !j.dotted) {   // "BA FA D2 FA": the A between the beats swung late
+                  if (!(tn[1] > 1.27 && tn[1] < 1.42)) bad.push(name + ': its straight quavers go ' + round(tn[1], 2) + ' : ' + round(2 - tn[1], 2) + ', not swung about 2:1');
                   if (Math.abs(pos[1] - 2) > 0.03) bad.push(name + ': the guitar’s beat 2 is at ' + round(pos[1]) + ' quavers');
+                  if (!(pos[2] - 2 > 1.28)) bad.push(name + ': the guitar’s up between beats 2 and 3 is ' + round(pos[2] - 2, 2) + ' quavers after beat 2, not swung about 2:1');
+                  // Bar 2, "BA (3Bcd e2 de": the triplet even, on 2, 2.67, 3.33.
+                  var t2 = notes.filter(function (x) { return x.t >= t0 + bar - 0.03 && x.t < t0 + 2 * bar - 0.03; }).map(function (x) { return (x.t - t0 - bar) / q; });
+                  [2, 8 / 3, 10 / 3].forEach(function (want) {
+                    if (!t2.some(function (p) { return Math.abs(p - want) < 0.03; })) bad.push(name + ': its triplet is not even: bar 2’s notes at ' + t2.map(function (p) { return round(p, 2); }).join(', '));
+                  });
                 }
+                if (j.dotted && Math.abs(tn[1] - 1.5) > 0.03) bad.push(name + ': its written B>A plays at ' + round(tn[1], 2) + ', not 1.5 (dotted twice)');
                 if (j.type === 'polka' && Math.abs(tn[1] - 1.5) > 0.03) bad.push(name + ': its written d>e plays at ' + round(tn[1], 2) + ', not 1.5 (dotted twice)');
                 if (j.type === 'slip jig' && lay.meter.half !== 6 * PL.TPQ) bad.push(name + ': its second chord comes in at quaver ' + lay.meter.half / PL.TPQ + ', not on the third beat (6)');
                 if (j.type === 'slide' && lay.meter.phrase !== 4) bad.push(name + ': its phrase is ' + lay.meter.phrase + ' long bars, not 4');
