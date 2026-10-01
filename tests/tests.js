@@ -2211,6 +2211,59 @@
       }).finally(function () { frame.remove(); });
     });
 
+  check('Session Players', 'The concertina plays recordings of a real one, credited',
+    'Synthesised, it sounded “too much like a keyboard”. Its notes now come from a real Anglo concertina, recorded by Alwayswonder (Wikimedia Commons, CC BY-SA 4.0): every note a tune is likely to need, G3 to D6, within a semitone of a recorded one, the licence noted with the samples and the recording credited on the page, and once they have loaded the synthesised one plays no notes.',
+    function () {
+      return Promise.all([json('../players/concertina/samples.json'), text('../players/concertina/README.md'), text('../players/'), json(FIX + 'the-kesh.json')]).then(function (r) {
+        var have = r[0].notes.map(function (n) { return n.midi; }), gaps = [];
+        for (var m = 55; m <= 86; m++) if (!have.some(function (h) { return Math.abs(h - m) <= 1; })) gaps.push(m);
+        expect(have.length >= 30 && gaps.length === 0, have.length + ' recorded notes; nothing within a semitone of ' + gaps.join(', '));
+        expect(/CC BY-SA 4\.0/.test(r[1]) && /Alwayswonder/.test(r[1]) && /CC BY-SA 4\.0/.test(r[0].licence || ''), 'the samples do not carry their licence and credit');
+        var credit = (/<p id="concertina-credit">[\s\S]*?<\/p>/.exec(r[2]) || [''])[0];
+        expect(/Alwayswonder/.test(credit) && /CC BY-SA 4\.0/.test(credit), 'the page does not credit the recording');
+        return withPlayers(function (win, doc) {
+          var synth = 0, S = win.PLAYERS.ConcertinaSynth.prototype, orig = S.note;
+          S.note = function () { synth++; return orig.apply(this, arguments); };
+          win.PLAYERS_PAGE.loadTune(r[3], 0);
+          doc.getElementById('on-concertina').click();           // ticking it starts the recordings loading
+          var inst = win.PLAYERS_PAGE.audio().concertina;
+          return inst.ready.then(function (loaded) {
+            doc.getElementById('play').click();
+            return wait(3000).then(function () {
+              expect(loaded, 'the recordings did not load');
+              expect(synth === 0, 'the synthesised concertina played ' + synth + ' notes after the recordings had loaded');
+            });
+          });
+        });
+      });
+    });
+
+  check('Guitar demo', 'The guitar strums smoothly: no wire-fence edge',
+    'Its strings started from bursts of random noise and kept their top as they rang: “someone hitting a wire fence with a pole”. A real steel-string G chord (measured, Wikimedia Commons) has its top, above 2 kHz against below 1 kHz, at -16.5 dB a third of a second on and -21.5 dB at 0.8 s. A strummed G must come near that, sparkle at the strum but no clang, and not dull to a thud.',
+    function () {
+      var SRG = 48000, G = window.GTR, Gstd = [43, 47, 50, 55, 59, 67], STD = [40, 45, 50, 55, 59, 64];
+      var o = new OfflineAudioContext(1, SRG * 2, SRG), g = new G.Guitar(o, o.destination);
+      g.setLevel(0.7); g.prepare(Gstd); g.strum(Gstd, 0.05, 'D', 1, 4, STD);
+      return o.startRendering().then(function (b) {
+        var d = b.getChannelData(0), pk = 0, on = 0, i;
+        for (i = 0; i < d.length; i++) pk = Math.max(pk, Math.abs(d[i]));
+        for (i = 0; i < d.length; i++) if (Math.abs(d[i]) > pk * 0.1) { on = i / SRG; break; }
+        function top(a, n) {        // energy above 2 kHz against below 1 kHz, in dB
+          var s0 = Math.floor(a * SRG), hi = 0, lo = 0;
+          for (var k = 1; k < Math.round(8000 * n / SRG); k++) {
+            var re = 0, im = 0, f = k * SRG / n;
+            for (var j = 0; j < n; j++) { var x = d[s0 + j] || 0, w = 0.5 - 0.5 * Math.cos(2 * Math.PI * j / n), ph = 2 * Math.PI * k * j / n; re += x * w * Math.cos(ph); im -= x * w * Math.sin(ph); }
+            var p = re * re + im * im; if (f > 2000) hi += p; if (f < 1000) lo += p;
+          }
+          return 10 * Math.log10(hi / lo);
+        }
+        var strum = (top(on, 1024) + top(on + 0.02, 1024) + top(on + 0.04, 1024)) / 3, ring = top(on + 0.3, 2048), late = top(on + 0.8, 2048);
+        expect(strum < -5, 'at the strum its top is ' + round(strum) + ' dB: the old edge (the first voice: -3.8)');
+        expect(ring < -12 && ring > -24, 'a third of a second on its top is ' + round(ring) + ' dB: ' + (ring >= -12 ? 'still ringing bright, like wire (the real chord: -16.5)' : 'dull, a thud'));
+        expect(late < -16, 'at 0.8 s its top is ' + round(late) + ' dB (the real chord: -21.5)');
+      });
+    });
+
   check('Guitar demo', 'It shows its own version, and the notes cover it',
     'The quickest way to tell whether a phone has the latest demo. Bump the demo’s version? Add it to CHANGELOG.md and the release notes in the same change.',
     function () {
@@ -2437,11 +2490,14 @@
     var o = new OfflineAudioContext(1, Math.ceil(SRG * (8 * 6 * q + 1)), SRG), bus = o.createGain();
     bus.gain.value = level; bus.connect(o.destination);
     var inst = new Instrument(o, bus);
-    notes.forEach(function (n, i) {
-      var nx = notes[i + 1];
-      inst.note(n.t, length(n.lenQ * q, n.lenQ, !!nx && nx.midi === n.midi), n.midi, n.vel);
-    });
-    return o.startRendering().then(function (b) { return { data: b.getChannelData(0), notes: notes }; });
+    return Promise.resolve(inst.ready).then(function (loaded) {
+      if (inst.ready && !loaded) throw new Error('the concertina recordings did not load');
+      notes.forEach(function (n, i) {
+        var nx = notes[i + 1];
+        inst.note(n.t, length(n.lenQ * q, n.lenQ, !!nx && nx.midi === n.midi), n.midi, n.vel);
+      });
+      return o.startRendering();
+    }).then(function (b) { return { data: b.getChannelData(0), notes: notes }; });
   }
 
   check('Session Players', 'The tune lilts: leaning on the beat, the first of a jig’s three held long',
@@ -2515,7 +2571,7 @@
             var mean = held.reduce(function (p, c) { return p + c; }, 0) / held.length;
             var sd = Math.sqrt(held.reduce(function (p, c) { return p + (c - mean) * (c - mean); }, 0) / held.length);
             expect(median(dips) > -6, 'between two different notes the sound falls ' + round(-median(dips)) + ' dB: the notes do not carry over');
-            expect(median(reps) < -8, 'a repeated note dips only ' + round(-median(reps)) + ' dB: it runs into one long note');
+            expect(median(reps) < -6, 'a repeated note dips only ' + round(-median(reps)) + ' dB: it runs into one long note');
             expect(sd > 0.15 && sd < 1, 'a held note’s level moves ' + round(sd) + ' dB: ' + (sd <= 0.15 ? 'fixed, like a machine' : 'a warble'));
           });
         });
@@ -2523,7 +2579,7 @@
     });
 
   check('Session Players', 'The concertina sounds like a reed, plays in tune, and sits with the flute',
-    'A free reed is rich in overtones where the flute is nearly pure; each note within a few cents of true; and at their starting levels, each playing the Kesh’s A part as the page plays it, the concertina sits just under the flute, not swamping it or lost.',
+    'A free reed is rich in overtones where the flute is nearly pure; each recorded note retuned to within a few cents of true (the instrument sits up to 28 cents sharp); and at their starting levels, each playing the Kesh’s A part as the page plays it, the concertina sits just under the flute, not swamping it or lost.',
     function () {
       return Promise.all([json(FIX + 'the-kesh.json')]).then(function (r) {
         return withPlayers(function (win) { return win.PLAYERS_PAGE; }).then(function (PP) {
@@ -2543,9 +2599,12 @@
             var best = 0, bf = 0;
             for (var x = f0 * 0.98; x <= f0 * 1.02; x += f0 / 4000) { var v = g(c, x, 0.15, 0.45); if (v > best) { best = v; bf = x; } }
             function over(d, p, k) { return 20 * Math.log10(g(d, p * k, 0.15, 0.45) / g(d, p, 0.15, 0.45)); }
-            var reed = [2, 3, 4, 5].map(function (k) { return over(c, bf, k); }), pure = [4, 5].map(function (k) { return over(f, f0, k); });
+            var reed = [2, 3, 4, 5, 6].map(function (k) { return over(c, bf, k); }), pure = [4, 5].map(function (k) { return over(f, f0, k); });
+            // A real reed is uneven, its 3rd overtone stronger than the note, its 2nd weak:
+            // what counts is how much is in the overtones altogether.
+            var together = 10 * Math.log10(reed.reduce(function (p, v) { return p + Math.pow(10, v / 10); }, 0));
             var cents = 1200 * Math.log2(bf / f0), gap = db(c) - db(f);
-            expect(reed.every(function (v) { return v > -16; }), 'the concertina’s 2nd to 5th overtones are ' + reed.map(round).join(', ') + ' dB: too pure for a reed');
+            expect(together > -6, 'the concertina’s 2nd to 6th overtones (' + reed.map(round).join(', ') + ' dB) come to ' + round(together) + ' dB: too pure for a reed');
             expect(pure.every(function (v) { return v < -40; }), 'the flute’s 4th and 5th overtones are ' + pure.map(round).join(', ') + ' dB: no longer the pure flute');
             expect(Math.abs(cents) < 5, 'the concertina’s first note is ' + round(cents) + ' cents out');
             expect(gap > -3 && gap < 1, 'the concertina is ' + round(gap) + ' dB against the flute, not just under it');

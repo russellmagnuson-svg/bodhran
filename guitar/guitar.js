@@ -120,7 +120,7 @@
    *   - each loop is tuned exactly (the filter's delay taken off, the rest
    *     made up by a fractional-delay allpass), so both are in tune and the
    *     note needs no playback correction. */
-  function thumbString(sr, f, t60, cutoff, shape, seed) {
+  function thumbString(sr, f, t60, cutoff, shape, seed, noise) {
     var a = Math.exp(-2 * Math.PI * cutoff / sr), c = 1 - a, w = 2 * Math.PI * f / sr;
     var lag = Math.atan2(a * Math.sin(w), 1 - a * Math.cos(w)) / w;
     var total = sr / f - lag;
@@ -140,7 +140,7 @@
     var s = seed, mean = 0, i;
     for (i = 0; i < N; i++) {
       s = (s * 16807) % 2147483647;
-      out[i] = shape[Math.floor(i * shape.length / N)] + 0.02 * ((s / 2147483647) * 2 - 1);
+      out[i] = shape[Math.floor(i * shape.length / N)] + (noise == null ? 0.02 : noise) * ((s / 2147483647) * 2 - 1);
       mean += out[i];
     }
     mean /= N;
@@ -194,6 +194,73 @@
   }
   GTR.pluckThumb = pluckThumb;
 
+  /* A string strummed with a pick: the strum's own voice since guitar demo
+   * 1.11.0 and Session Players 1.7.0.
+   *
+   * The first strum voice (pluck, above) started every string from a burst
+   * of random noise and took almost nothing off its top as it rang: on the
+   * open D, more energy above 2 kHz than below 1 kHz at the attack, and
+   * still only 7 dB less a third of a second on. That bright, jagged, ringing
+   * edge is metal: "someone hitting a wire fence with a pole", a listener
+   * said. A real pick bends the string and lets go, scraping a little, and
+   * the string soon loses its top and settles warm. So, as for the thumb:
+   * the string starts from a softer pick (its noise smoothed to a set
+   * number of the note's own harmonics, so every string has the same
+   * character), two ways of vibrating a shade apart, each loop tuned
+   * exactly, and a gentle lowpass inside the loop, gentler on the high
+   * strings since they make more trips round it in the same time. (A pure
+   * bend, as for the thumb, was far too clean for a strum: through the body
+   * it came out a boom.) `bright` (0 to 1) varies the pick a little from one
+   * rendering to the next. */
+  // The pick's start, one period of it at 1024 points: noise softened to
+  // about `harm` harmonics (a pick, not a hammer), with the gaps a pluck
+  // `pos` of the way along leaves, and the same for every pitch, so each
+  // string has the same character. The seed varies it.
+  function pickStart(seed, harm, pos) {
+    var R = 1024, out = new Float32Array(R), b = Math.min(1, 2 * Math.PI * harm / R), s = seed, last = 0, mean = 0, i;
+    for (var pass = 0; pass < 2; pass++) {          // twice round, so it starts settled
+      for (i = 0; i < R; i++) {
+        s = (s * 16807) % 2147483647;
+        last += b * ((s / 2147483647) * 2 - 1 - last);
+        out[i] = last;
+      }
+    }
+    for (i = 0; i < R; i++) mean += out[i];
+    mean /= R;
+    for (i = 0; i < R; i++) out[i] -= mean;
+    var M = Math.max(1, Math.round(pos * R)), ex = out.slice();
+    for (i = 0; i < R; i++) out[i] = ex[i] - ex[(i - M + R) % R];
+    return out;
+  }
+  /* Set against a real steel-string G chord (Silcon, Wikimedia Commons,
+   * CC BY-SA 3.0, measured, not used): its top (above 2 kHz against below
+   * 1 kHz) is -16.5 dB a third of a second after the strum and -21.5 dB at
+   * 0.8 s; the first voice's was -9.6 and -16.9, and brighter still at the
+   * strum (-3.8). This pick, softened to about four of each note's
+   * harmonics, with a gentle loss of top on every trip round the string,
+   * measures -14.7 and -21.5, and -9 at the strum. 'level' keeps the
+   * guitar as loud as it was, so the measured balance with the flute and
+   * drum stands. */
+  var PICK = { harm: 4, pos: 0.14, cutoff: 16000, level: 0.85 };
+  GTR.PICK = PICK;
+  function pluckPick(sr, f, seed, bright) {
+    bright = bright == null ? 0.5 : bright;
+    var start = pickStart(seed, PICK.harm * (0.8 + 0.4 * bright), PICK.pos);
+    var t60 = 1.6 + 3.2 * Math.max(0, Math.min(1, (400 - f) / 320));
+    var cut = Math.min(sr * 0.45, PICK.cutoff * Math.sqrt(f / 146.8));
+    var one = thumbString(sr, f, t60, cut, start, seed, 0);
+    var two = thumbString(sr, f * Math.pow(2, -1.8 / 1200), t60 * 0.6, cut * 0.75, start, seed + 11, 0);
+    var out = new Float32Array(one.length), peak = 0, xPrev = 0, yPrev = 0, R20 = Math.exp(-2 * Math.PI * 20 / sr);
+    for (var i = 0; i < out.length; i++) {
+      var x = 0.6 * one[i] + 0.4 * two[i];
+      yPrev = x - xPrev + R20 * yPrev; xPrev = x;
+      out[i] = yPrev; peak = Math.max(peak, Math.abs(yPrev));
+    }
+    for (i = 0; i < out.length; i++) out[i] /= (peak || 1) / PICK.level;
+    return { data: out, sounds: f };
+  }
+  GTR.pluckPick = pluckPick;
+
   /* The guitar body's response: the note straight through, plus its main
    * low resonances (air near 100 Hz, the top near 200, and above), each a
    * decaying ring. */
@@ -221,6 +288,7 @@
   function Guitar(ctx, destination) {
     this.ctx = ctx;
     this.notes = {};         // midi -> [{ buffer, rate }]
+    this.string = 'pick';    // the strum's string model: 'pick', or 'noise' (the first, metallic one)
     this.picks = {};         // midi -> renderings for single picked notes (bass runs)
     this.voices = [];        // per string: { gain, src } of what is ringing
     this.sympathy = true;    // open strings ringing along with the rest (see _sympathize)
@@ -276,7 +344,8 @@
       // attack of a big-bodied guitar is round at the bottom.
       var bright = 0.24 + 0.2 * Math.min(1, f / 400);
       for (var v = 0; v < VARIANTS; v++) {
-        var p = pluck(ctx.sampleRate, f, bright + 0.06 * v, 1 + m * 97 + v * 7919);
+        var p = self.string === 'noise' ? pluck(ctx.sampleRate, f, bright + 0.06 * v, 1 + m * 97 + v * 7919)
+                                         : pluckPick(ctx.sampleRate, f, 1 + m * 97 + v * 7919, 0.35 + 0.3 * v);
         var buf = ctx.createBuffer(1, p.data.length, ctx.sampleRate);
         buf.getChannelData(0).set(p.data);
         list.push({ buffer: buf, rate: f / p.sounds });

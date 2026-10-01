@@ -1,0 +1,160 @@
+{
+ "source": "Demonstration of the note range of an Anglo Concertina (Alwayswonder, Wikimedia Commons, 11 April 2023)",
+ "url": "https://commons.wikimedia.org/wiki/File:Demonstration_of_the_note_range_of_an_Anglo_Concertina.webm",
+ "licence": "CC BY-SA 4.0 (https://creativecommons.org/licenses/by-sa/4.0/)",
+ "made": "Each note cut from the recording with its attack and tail, levelled to the same sustained loudness (-18 dBFS), mono, 48 kHz, AAC.",
+ "notes": [
+  {
+   "midi": 55,
+   "cents": 13.8
+  },
+  {
+   "midi": 57,
+   "cents": 27.5
+  },
+  {
+   "midi": 58,
+   "cents": 8.6
+  },
+  {
+   "midi": 59,
+   "cents": 11.6
+  },
+  {
+   "midi": 60,
+   "cents": 15.5
+  },
+  {
+   "midi": 61,
+   "cents": 18.9
+  },
+  {
+   "midi": 62,
+   "cents": 11.2
+  },
+  {
+   "midi": 63,
+   "cents": 14.7
+  },
+  {
+   "midi": 64,
+   "cents": 18.5
+  },
+  {
+   "midi": 65,
+   "cents": 10.8
+  },
+  {
+   "midi": 66,
+   "cents": 14.2
+  },
+  {
+   "midi": 67,
+   "cents": 17.2
+  },
+  {
+   "midi": 68,
+   "cents": 3.9
+  },
+  {
+   "midi": 69,
+   "cents": 6.9
+  },
+  {
+   "midi": 70,
+   "cents": 11.2
+  },
+  {
+   "midi": 71,
+   "cents": 14.7
+  },
+  {
+   "midi": 72,
+   "cents": 12.9
+  },
+  {
+   "midi": 73,
+   "cents": 5.2
+  },
+  {
+   "midi": 74,
+   "cents": 9.5
+  },
+  {
+   "midi": 75,
+   "cents": 10.4
+  },
+  {
+   "midi": 76,
+   "cents": 15.9
+  },
+  {
+   "midi": 77,
+   "cents": 5.6
+  },
+  {
+   "midi": 78,
+   "cents": 6.9
+  },
+  {
+   "midi": 79,
+   "cents": 3.9
+  },
+  {
+   "midi": 80,
+   "cents": 0
+  },
+  {
+   "midi": 81,
+   "cents": 3.9
+  },
+  {
+   "midi": 82,
+   "cents": 3
+  },
+  {
+   "midi": 83,
+   "cents": 0
+  },
+  {
+   "midi": 84,
+   "cents": 15.5
+  },
+  {
+   "midi": 85,
+   "cents": 11.2
+  },
+  {
+   "midi": 86,
+   "cents": 4.8
+  },
+  {
+   "midi": 87,
+   "cents": 7.3
+  },
+  {
+   "midi": 88,
+   "cents": 11.2
+  },
+  {
+   "midi": 89,
+   "cents": 8.6
+  },
+  {
+   "midi": 90,
+   "cents": 4.3
+  },
+  {
+   "midi": 91,
+   "cents": 6.9
+  },
+  {
+   "midi": 93,
+   "cents": 2.2
+  },
+  {
+   "midi": 95,
+   "cents": 12.1
+  }
+ ]
+}

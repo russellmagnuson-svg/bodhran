@@ -181,6 +181,17 @@ that gets pushed (the last number for a fix, the middle one for a feature).
 
 The page at `/guitar/` has its own version number, shown next to its title.
 
+### Guitar demo 1.11.0 — 2026-10-01 — A smoother guitar
+
+- The strings no longer start from a burst of random noise, the source of
+  a metallic, "wire fence" edge, nor keep their top as they ring. Each now
+  starts from a soft pick and loses its top as a real string does, set
+  against a real steel-string G chord (Silcon, Wikimedia Commons; measured,
+  not used): a third of a second after the strum its top (above 2 kHz
+  against below 1 kHz) is -14.7 dB where the real chord's is -16.5 (the old
+  strings: -9.6), and at 0.8 s -21.5, the same as the real chord's. At the
+  strum it is 5 dB softer than before. The level is unchanged.
+
 ### Guitar demo 1.10.0 — 2026-10-01
 
 - The green-and-gold colours of the app (1.8.0).
@@ -357,6 +368,22 @@ The page at `/guitar/` has its own version number, shown next to its title.
 ## Session Players
 
 The page at `/players/` has its own version number, shown next to its title.
+
+### Session Players 1.7.0 — 2026-10-01 — A real concertina, a smoother guitar
+
+Feedback from a mandolin teacher: the guitar "sounds like someone hitting a
+wire fence with a pole", and the concertina "too much like a keyboard".
+
+- The concertina now plays recordings of a real one: the notes of a modern
+  30-key Anglo concertina with steel reeds, G3 to B6, cut from a recording by
+  Alwayswonder on Wikimedia Commons (CC BY-SA 4.0, credited on the page and
+  with the samples). Each is retuned to A=440 (the instrument sits up to 28
+  cents sharp), starts as the reed speaks (the recording's slow swell, a
+  demonstration's, is left out), and is held as long as the tune needs by
+  looping through its steady part with its slow fade evened out, so long
+  notes don't pulse. The lilt, weighting and carry-over still shape it. The
+  recordings (596 KB) load when you tick the concertina.
+- The guitar is smoother: see guitar demo 1.11.0, which it shares.
 
 ### Session Players 1.6.1 — 2026-10-01
 

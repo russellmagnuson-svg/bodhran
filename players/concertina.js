@@ -1,4 +1,5 @@
-/* concertina.js — a concertina for the melody, synthesised as it plays.
+/* concertina.js — a concertina for the melody: recorded notes (Concertina,
+ * below) and, until they load, a synthesised one (ConcertinaSynth).
  *
  * In Irish music the concertina (mostly the Anglo) plays the tune, crisp
  * and bouncy, and without vibrato. It is a free reed: a brass tongue
@@ -31,7 +32,7 @@
     return w;
   }
 
-  function Concertina(ctx, dest) {
+  function ConcertinaSynth(ctx, dest) {
     this.ctx = ctx;
     this.out = ctx.createGain();
     // The box: little real bass, a lift where the reed chambers ring, and
@@ -68,7 +69,7 @@
    * a vibrato); it bends up into pitch as it starts; and pushed harder it
    * speaks brighter. (1.5.0 held each note as one fixed waveform: its level
    * moved 0.11 dB.) */
-  Concertina.prototype.note = function (t, dur, midi, vel) {
+  ConcertinaSynth.prototype.note = function (t, dur, midi, vel) {
     var ctx = this.ctx, f = 440 * Math.pow(2, (midi - 69) / 12), end = t + dur, REL = 0.05;
     var reed = ctx.createOscillator(), bright = ctx.createBiquadFilter(), amp = ctx.createGain();
     reed.setPeriodicWave(wave(ctx));
@@ -110,7 +111,144 @@
   };
 
   /* Stop: drop every note handed over but not yet begun. */
+  ConcertinaSynth.prototype.cancelFrom = function (t) {
+    this.queued = this.queued.filter(function (q) {
+      if (q.t < t) return true;
+      q.nodes.forEach(function (x) { x.disconnect(); });
+      return false;
+    });
+  };
+
+  P.ConcertinaSynth = ConcertinaSynth;
+
+  /* ---------- the concertina, recorded ----------
+   * Since Session Players 1.7.0 the concertina plays real recordings: the
+   * notes of a modern 30-key Anglo concertina with steel reeds, cut from
+   * "Demonstration of the note range of an Anglo Concertina" by Alwayswonder
+   * (Wikimedia Commons, CC BY-SA 4.0; see concertina/README.md). Synthesised,
+   * a listener's verdict was "too much like a keyboard".
+   *
+   * Each note plays the nearest recorded one, retuned to A=440 from its
+   * measured tuning (the instrument sits 0-28 cents sharp) and shifted at
+   * most a semitone or two where a note was not recorded. Its own attack
+   * lands on the beat. Held longer than recorded, it loops through the
+   * steady part of the note, a long stretch so the reed's own unevenness
+   * goes on (a short loop turns any instrument into an organ). The page's
+   * lilt and weighting shape it: softer notes quieter and a little darker,
+   * as a gentler push on the bellows makes them. Until the recordings have
+   * loaded, the synthesised concertina plays instead. */
+  var HERE = (document.currentScript && document.currentScript.src || '').replace(/[^\/]*$/, '');
+  P.CONCERTINA_SAMPLES = HERE + 'concertina/';
+
+  function Concertina(ctx, dest, base) {
+    this.ctx = ctx;
+    this.out = ctx.createGain();
+    this.out.connect(dest);
+    this.synth = new ConcertinaSynth(ctx, dest);
+    this.samples = null;          // [{ midi, cents, buf, lead, ls, le }] once loaded
+    this.queued = [];
+    this.ready = this.load(base || P.CONCERTINA_SAMPLES);
+  }
+
+  Concertina.prototype.load = function (base) {
+    var ctx = this.ctx, self = this;
+    function decode(ab) {          // the promise form, and Safari's older callback form
+      return new Promise(function (ok, bad) {
+        var p = ctx.decodeAudioData(ab, ok, bad);
+        if (p && p.then) p.then(ok, bad);
+      });
+    }
+    return fetch(base + 'samples.json').then(function (r) { return r.json(); }).then(function (meta) {
+      return Promise.all(meta.notes.map(function (n) {
+        return fetch(base + 'c-' + n.midi + '.m4a').then(function (r) { return r.arrayBuffer(); })
+          .then(decode).then(function (buf) { return prepare(buf, n); });
+      }));
+    }).then(function (list) {
+      self.samples = list.sort(function (a, b) { return a.midi - b.midi; });
+      return true;
+    }, function () { return false; });   // unreachable: the synthesised one carries on
+  };
+
+  /* Getting a recorded note ready to play.
+   *
+   * Where it starts: in the recording each reed swells in gently, taking
+   * 0.15-0.2 s to reach full voice (a demonstration, not a dance), which made
+   * every note late and blurred repeated ones. So it starts 25 ms before the
+   * note has spoken (within 6 dB of its steady level): the reed's own voicing
+   * is kept, the slow swell is not.
+   *
+   * A loop through its steady part, 0.12 s after it has spoken to at most
+   * 0.6 s, for notes held longer than recorded. The recorded note fades a
+   * little as the bellows run on, so looping it made long notes pulse, 5 dB
+   * twice a second; its slow fade is evened out across that stretch (its
+   * quicker wavering, the reed's own life, is left), and the loop's end is
+   * moved to where the wave best matches its start, so the join is smooth. */
+  function prepare(buf, n) {
+    var d = buf.getChannelData(0), sr = buf.sampleRate, hop = Math.round(sr * 0.005), i, k;
+    var env = [];
+    for (i = 0; i + 2 * hop < d.length; i += hop) {
+      var e2 = 0; for (k = 0; k < 2 * hop; k++) e2 += d[i + k] * d[i + k];
+      env.push(Math.sqrt(e2 / (2 * hop)) + 1e-9);
+    }
+    var mid = env.slice(Math.floor(env.length * 0.4), Math.floor(env.length * 0.7)).sort(function (x, y) { return x - y; });
+    var steady = mid[Math.floor(mid.length / 2)] || 1e-3, speak = 0;
+    for (i = 0; i < env.length; i++) if (env[i] >= steady * 0.5) { speak = i * hop; break; }
+    var start = Math.max(0, speak - Math.round(0.025 * sr));
+    var a = speak + Math.round(0.12 * sr), b = Math.min(d.length - Math.round(0.15 * sr), speak + Math.round(0.6 * sr));
+    if (b - a < Math.round(0.08 * sr)) { a = speak + Math.round(0.06 * sr); b = d.length - Math.round(0.06 * sr); }
+    // Even out the slow fade from where it has spoken to past the loop's end:
+    // the level smoothed over 80 ms, brought to the steady level (at most 6 dB either way).
+    var w = Math.round(0.08 * sr / hop), from = Math.floor(speak / hop), to = Math.min(env.length - 1, Math.ceil((b + 0.05 * sr) / hop));
+    var slow = [];
+    for (i = from; i <= to; i++) {
+      var sum = 0, cnt = 0;
+      for (k = Math.max(0, i - w); k <= Math.min(env.length - 1, i + w); k++) { sum += env[k]; cnt++; }
+      slow.push(Math.max(0.5, Math.min(2, steady / (sum / cnt))));
+    }
+    for (i = speak; i < Math.min(d.length, (to + 1) * hop); i++) {
+      var pos = (i / hop) - from, j = Math.min(slow.length - 1, Math.max(0, Math.floor(pos)));
+      var g = slow[j], ramp = Math.min(1, (i - speak) / (0.05 * sr));   // eased in over 50 ms from where it spoke
+      d[i] *= 1 + (g - 1) * ramp;
+    }
+    for (i = start; i < Math.min(d.length, start + Math.round(0.004 * sr)); i++) d[i] *= (i - start) / (0.004 * sr);  // no click at the cut
+    var period = sr / (440 * Math.pow(2, (n.midi - 69) / 12)), best = Infinity, e = b;
+    for (var c = Math.round(b - 2 * period); c <= b; c++) {
+      var err = 0;
+      for (k = 0; k < 96; k++) { var x = d[a + k] - d[c + k]; err += x * x; }
+      if (err < best) { best = err; e = c; }
+    }
+    return { midi: n.midi, cents: n.cents, buf: buf, start: start / sr, lead: (speak - start) / sr, ls: a / sr, le: e / sr };
+  }
+
+  Concertina.prototype.pick = function (midi) {
+    var s = this.samples, best = s[0];
+    for (var i = 1; i < s.length; i++) if (Math.abs(s[i].midi - midi) < Math.abs(best.midi - midi)) best = s[i];
+    return best;
+  };
+
+  /* One note: t start, dur seconds held, midi, vel 0-1 (as the synthesised one). */
+  Concertina.prototype.note = function (t, dur, midi, vel) {
+    if (!this.samples) return this.synth.note(t, dur, midi, vel);
+    var ctx = this.ctx, s = this.pick(midi), end = t + dur, REL = 0.045;
+    var rate = Math.pow(2, (midi - s.midi - s.cents / 100) / 12);
+    var src = ctx.createBufferSource(), tone = ctx.createBiquadFilter(), amp = ctx.createGain();
+    src.buffer = s.buf; src.loop = true; src.loopStart = s.ls; src.loopEnd = s.le;
+    src.playbackRate.value = rate;
+    // A gentler push: quieter, and darker.
+    tone.type = 'lowpass'; tone.Q.value = 0.5; tone.frequency.value = 2500 + 11000 * vel * vel;
+    var lead = s.lead / rate, from = t - lead, offset = s.start;
+    if (from < ctx.currentTime) { offset += (ctx.currentTime - from) * rate; from = ctx.currentTime; }
+    amp.gain.setValueAtTime(vel, from);
+    amp.gain.setValueAtTime(vel, end);
+    amp.gain.setTargetAtTime(0, end, REL);
+    src.connect(tone); tone.connect(amp); amp.connect(this.out);
+    src.start(from, offset); src.stop(end + 8 * REL);
+    this.queued = this.queued.filter(function (q) { return q.t > ctx.currentTime - 1; });
+    this.queued.push({ t: t, nodes: [amp] });
+  };
+
   Concertina.prototype.cancelFrom = function (t) {
+    this.synth.cancelFrom(t);
     this.queued = this.queued.filter(function (q) {
       if (q.t < t) return true;
       q.nodes.forEach(function (x) { x.disconnect(); });

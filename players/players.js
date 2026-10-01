@@ -15,7 +15,7 @@
    * next to the title and at the foot. Bump it with every change pushed (the
    * last number for a fix, the middle for something new) and add it to the
    * "Session Players" sections of CHANGELOG.md and the release notes. */
-  var VERSION = '1.6.1';
+  var VERSION = '1.7.0';
 
   var $ = function (id) { return document.getElementById(id); };
   var P = window.PLAYERS, G = window.GTR, T = window.TRAD, TPQ = P.TPQ;
@@ -63,10 +63,10 @@
 
   /* ---------- how loud each sound is: the demo's measured balance ----------
    * The concertina sits about 1 dB under the flute, each played as the page
-   * plays it: a bright reed carries more than its level says. (Its notes
-   * carrying over since 1.5.1 made it 2.6 dB fuller, so its level came down
-   * from 0.22.) */
-  var MIX = { guitar: 0.7, tune: 0.18, concertina: 0.16, drum: 0.7 };
+   * plays it: a bright reed carries more than its level says. (Recorded
+   * since 1.7.0: its notes, levelled to -18 dBFS, measured 2.8 dB under at
+   * the synthesised one's 0.16, hence 0.6.) */
+  var MIX = { guitar: 0.7, tune: 0.18, concertina: 0.6, drum: 0.7 };
   var DRUM = { lift: { f: 2500, q: 0.7, gain: 9 } };
   function stored(key, fallback) {
     try { var v = localStorage.getItem(key); return v == null ? fallback : v; } catch (e) { return fallback; }
@@ -300,8 +300,7 @@
       (tune.settings.length > 1 ? 'Another setting may be cleaner.' : '') : '';
     $('credit').innerHTML = esc(tune.meta.name) + ': <a href="' + esc(link.href) + '" target="_blank" rel="noopener">setting ' +
       number + '</a> on thesession.org' + (s.member ? ', by ' + esc(s.member) : '') + '. Chords ' +
-      (tune.source === 'setting' ? 'from the setting' : 'chosen for this page from the melody') +
-      '. Everything you hear is synthesised as it plays.';
+      (tune.source === 'setting' ? 'from the setting' : 'chosen for this page from the melody') + '.';
     // tempo for the type
     ['bpm', 'bpm-num'].forEach(function (id) { $(id).min = ty.bpm.min; $(id).max = ty.bpm.max; });
     setBpm(options.bpm || ty.bpm.start);
@@ -859,6 +858,9 @@
         store('players.volume', JSON.stringify(vol));
       });
       box.addEventListener('change', show);
+      // Ticking the concertina builds the audio at once, so its recordings
+      // load while you get ready rather than after the first notes.
+      if (k === 'concertina') box.addEventListener('change', function () { if (box.checked) ensureAudio(); });
     });
     Array.prototype.forEach.call($('sympathy').children, function (b) {
       b.setAttribute('aria-checked', String((b.dataset.sympathy === 'on') === sympathy));

@@ -95,7 +95,8 @@ against the real code:
 - **Offline copy** — its file list covers everything the page loads, and every
   file on it exists
 - **Guitar demo** — every bar of The Kesh is a full 6/8 bar; every chord has
-  a shape and the drone rings through; the guitar is in tune; the page builds;
+  a shape and the drone rings through; the guitar is in tune and strums
+  smoothly, near a real steel-string chord; the page builds;
   each sound's volume is heard straight away and remembered; DADGAD is
   D A D G A D with the low D and top D open in every shape, and the low D
   drones under every chord (standard has none); the tuning switch changes the
@@ -115,7 +116,7 @@ against the real code:
   tunes lay out in whole bars; chosen chords come from the key, start and end
   at home, and have shapes; every shape plays its chord; the page builds a
   tune and plays it; a changed chord holds through repeats and through save and
-  open; the tune lilts, leaning on the beat with a jig's first quaver held
+  open; the concertina plays recordings of a real one, credited; the tune lilts, leaning on the beat with a jig's first quaver held
   long, the concertina more than the flute; the concertina's notes carry over and a repeated note is struck again;
   the concertina sounds like a reed, plays in tune and sits with the
   flute, and ticking it plays the tune on it; the chosen tune and setting are
@@ -388,7 +389,10 @@ app's styles, its bodhrán and its output limiter.
 
 - `guitar/kesh.js` — the tune as data: the ABC, the chords bar by bar, the
   guitar shapes, and a small ABC reader
-- `guitar/guitar.js` — the guitar: each string a Karplus–Strong plucked
+- `guitar/guitar.js` — the guitar: since demo 1.11.0 each strummed string starts
+  from a soft pick (noise softened to ~4 of the note's harmonics, `GTR.PICK`)
+  and loses its top as it rings, set against a real steel-string G chord;
+  before that, each string a Karplus–Strong plucked
   string, rendered once and pitch-corrected to within a cent, strummed down
   from the bass or up from the treble a few milliseconds apart. The bass-run
   notes are a thumb-plucked string of their own (`pluckThumb`): started from
@@ -447,6 +451,13 @@ Session Players switches between the two.
 - `players/shapes.js` — shapes in both tunings: a hand-chosen table (the
   demo's DADGAD drone shapes among them) and a search for anything else
   (root in the bass, chord tones only, a four-fret stretch).
+- `players/concertina/` — the concertina's recorded notes (`c-<MIDI>.m4a`,
+  G3 to B6, 596 KB), cut from Alwayswonder's Anglo concertina recording on
+  Wikimedia Commons, CC BY-SA 4.0 (see its README); `samples.json` holds
+  each note's measured tuning. `Concertina` plays them: retuned, started as
+  the reed speaks (25 ms before it reaches its steady level), looped through
+  its steady part (from 0.12 s, at most 0.6 s, its slow fade evened out) for
+  long notes; `ConcertinaSynth`, the synthesised one, plays until they load.
 - `players/flute.js`, `players/concertina.js` — the two melody instruments,
   each `new X(ctx, dest)` with `.note(t, dur, midi, vel)` and `.cancelFrom(t)`.
   The flute is the demo's; the concertina a free reed (a narrow-pulse
