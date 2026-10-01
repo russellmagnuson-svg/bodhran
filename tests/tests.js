@@ -2805,6 +2805,30 @@
       });
     });
 
+  check('Session Buddies', 'A first visit opens with a tune ready to play',
+    'Someone pressed Play on a first visit, before finding a tune, and nothing played. A first visit now opens with The Kesh (the Session’s setting 1, kept in the page, so no search or network is needed) and says so, and Play plays it. A tune left on the page last time still comes back instead.',
+    function () {
+      return Promise.all([json(FIX + 'the-kesh.json'), json(FIX + 'cooleys.json')]).then(function (r) {
+        return withBuddies(function (win, doc) {
+          var PP = win.BUDDIES_PAGE, t = PP.tune(), play = doc.getElementById('play');
+          expect(!!t && t.meta.name === 'The Kesh', 'a first visit opens with ' + (t ? t.meta.name : 'no tune'));
+          expect(t.settings[0].abc === r[0].settings[0].abc && t.settings[0].key === r[0].settings[0].key, 'the starter is not the Session’s setting 1 of The Kesh');
+          expect(!play.disabled, 'Play is not ready');
+          expect(/The Kesh/.test(doc.getElementById('find-status').textContent), 'the page does not say The Kesh is there to start with');
+          play.click();
+          return wait(1500).then(function () {
+            expect(PP.playing(), 'pressing Play did not play it');
+            play.click();
+            PP.loadTune(r[1], 0);                          // a tune of your own, then the page reopened
+            return new Promise(function (ok) { win.frameElement.onload = ok; win.location.reload(); });
+          }).then(function () { return wait(300); }).then(function () {
+            var again = win.BUDDIES_PAGE.tune();
+            expect(again && again.meta.name === r[1].name, 'reopened, the page has ' + (again ? again.meta.name : 'no tune') + ' instead of ' + r[1].name);
+          });
+        });
+      });
+    });
+
   check('Session Buddies', 'The page builds a tune and plays it',
     'From the Session’s JSON to a chart of the tune’s bars, a shape for each chord, and sound, with a count-in first.',
     function () {

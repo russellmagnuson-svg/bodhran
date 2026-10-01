@@ -124,7 +124,7 @@ against the real code:
   long, the concertina more than the flute; the concertina's notes carry over and a repeated note is struck again;
   the concertina sounds like a reed, plays in tune and sits with the
   flute, and ticking it plays the tune on it; the chosen tune and setting are
-  shown where you found it; the app and
+  shown where you found it; a first visit opens with a tune ready to play; the app and
   Session Buddies link to each other at the foot; chords follow the shape of a part; the matches fold away once one is picked; reopening keeps your chords and
   chooses the rest afresh; finding a tune asks the Session and offers only
   jigs and reels; it
@@ -433,6 +433,9 @@ the guitar's tuning and the page itself.
 Called Session Players, at `/players/`, until 1.8.0. `players/index.html` now
 only says so and forwards to `/buddies/`, for old bookmarks. Saved settings
 keep their `players.` names in local storage, so they carry over.
+
+A first visit opens with a starter tune, The Kesh (`STARTER` in buddies.js:
+the Session's setting 1, kept in the page), so Play plays before any search.
 
 `/buddies/` is another page apart from the app: name a tune and it is found
 on thesession.org (its API answers any site, so the page asks it directly;

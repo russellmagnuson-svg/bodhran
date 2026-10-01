@@ -15,7 +15,7 @@
    * next to the title and at the foot. Bump it with every change pushed (the
    * last number for a fix, the middle for something new) and add it to the
    * "Session Buddies" sections of CHANGELOG.md and the release notes. */
-  var VERSION = '1.8.0';
+  var VERSION = '1.9.0';
 
   var $ = function (id) { return document.getElementById(id); };
   var P = window.BUDDIES, G = window.GTR, T = window.TRAD, TPQ = P.TPQ;
@@ -199,6 +199,17 @@
         foldMatches(true);
       });
   }
+
+  /* A tune on the page from the first visit, so that Play plays: someone
+   * pressed it with no tune found yet and heard nothing. The Kesh, the
+   * Session's setting 1 (the tune the guitar demo plays), kept here so it is
+   * ready with no search and no network. */
+  var STARTER = {
+    id: 55, name: 'The Kesh', type: 'jig', url: 'https://thesession.org/tunes/55',
+    settings: [{ id: 55, url: 'https://thesession.org/tunes/55#setting55', key: 'Gmajor', date: '2001-05-25 02:54:11',
+      member: { name: 'Jeremy' },
+      abc: "|:G3 GAB|A3 ABd|edd gdd|edB dBA|! GAG GAB|ABA ABd|edd gdd|BAF G3:|! |:B2B d2d|ege dBA|B2B dBG|ABA AGA|! BAB d^cd|ege dBd|gfg aga|bgg g3:|" }]
+  };
 
   /* A tune as the Session's API gives it. */
   function loadTune(j, index) {
@@ -907,9 +918,12 @@
     });
     drawShapes();
     drawStrum();
-    // The tune left on the page last time.
+    // The tune left on the page last time; on a first visit, the starter.
     var last = stored('players.current', '');
-    if (last) openText(last, true);
+    if (!(last && openText(last, true))) {
+      loadTune(STARTER, 0);
+      $('find-status').textContent = 'The Kesh is ready to play, to start you off. Search above for any other jig or reel.';
+    }
   }
 
   // For the checks page.
@@ -917,7 +931,7 @@
     VERSION: VERSION, TYPES: TYPES, MIX: MIX, fluteLength: fluteLength, concertinaLength: concertinaLength,
     tune: function () { return tune; },
     form: function () { return FORM; },
-    loadTune: loadTune, openText: openText, saveText: saveText, setChord: setChord,
+    STARTER: STARTER, loadTune: loadTune, openText: openText, saveText: saveText, setChord: setChord,
     playing: function () { return playing; },
     audio: function () { return { ctx: ctx, run: run, guitar: guitar, flute: fluteBus, concertina: concertina, concBus: concBus, drum: drum }; }
   };

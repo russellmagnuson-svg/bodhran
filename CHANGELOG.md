@@ -376,6 +376,15 @@ The page at `/buddies/` has its own version number, shown next to its title.
 It was called Session Players, at `/players/`, until 1.8.0; the entries
 before that keep the old name.
 
+### Session Buddies 1.9.0 — 2026-10-01
+
+- A first visit opens with a tune ready to play. Someone pressed Play before
+  finding a tune and nothing played. Now The Kesh (the Session's setting 1,
+  the tune the guitar demo plays) is on the page from the start, with a
+  note saying it is there to start you off and that any other jig or reel
+  can be found above. It is kept in the page, so it needs no search or
+  connection. A tune left on the page last time still comes back instead.
+
 ### Session Buddies 1.8.0 — 2026-10-01
 
 - Session Players is now **Session Buddies**, at `/buddies/` (the page's
