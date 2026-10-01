@@ -3,8 +3,8 @@
  * .note(t, dur, midi, vel), .cancelFrom(t).
  *
  * Nearly a pure tone (the second and third harmonics faint), a soft
- * attack, a little vibrato on held notes, and a breath of air at the start
- * of each note with a trace of it under the note.
+ * attack, a touch of vibrato late in long held notes, and a breath of air
+ * at the start of each note with a trace of it under the note.
  */
 (function (P) {
   'use strict';
@@ -28,8 +28,19 @@
    * heard on its time. */
   Flute.prototype.LEAD = 0.022;
 
-  Flute.prototype.note = function (t, dur, midi, vel) {
+  /* Vibrato: until Session Players 1.7.3 every note over 0.4 s wavered
+   * ±9 cents at 5.2 Hz, in full within 0.35 s. Against the recorded
+   * concertina, which holds its pitch to a cent or two, the same note
+   * a cent or more apart beats, and the pair sounded warbly. An Irish flute
+   * player uses little vibrato anyway: a slight one, late in a long note.
+   * So now only notes of at least minDur, from `after` seconds in, swelling
+   * over `swell` to ±cents; and note()'s `vib` scales it (0 for none: the
+   * flute playing with the concertina has none). */
+  Flute.prototype.VIBRATO = { cents: 4, rate: 5, minDur: 0.6, after: 0.25, swell: 0.3 };
+
+  Flute.prototype.note = function (t, dur, midi, vel, vib) {
     var ctx = this.ctx, f = 440 * Math.pow(2, (midi - 69) / 12), end = t + dur;
+    var V = this.VIBRATO, cents = V.cents * (vib == null ? 1 : vib);
     t = Math.max(ctx.currentTime, t - this.LEAD);
     var amp = ctx.createGain();
     amp.gain.setValueAtTime(0.0001, t);
@@ -40,11 +51,12 @@
     [[1, 1], [2, 0.16], [3, 0.05]].forEach(function (h) {
       var o = ctx.createOscillator(), g = ctx.createGain();
       o.frequency.value = f * h[0]; g.gain.value = h[1];
-      if (dur > 0.4) {                     // a little vibrato on held notes
+      if (cents > 0 && dur >= V.minDur) {  // a touch of vibrato, late in long notes
         var lfo = ctx.createOscillator(), depth = ctx.createGain();
-        lfo.frequency.value = 5.2;
+        lfo.frequency.value = V.rate;
         depth.gain.setValueAtTime(0, t);
-        depth.gain.linearRampToValueAtTime(9, t + 0.35);
+        depth.gain.setValueAtTime(0, t + V.after);
+        depth.gain.linearRampToValueAtTime(cents, t + V.after + V.swell);
         lfo.connect(depth); depth.connect(o.detune);
         lfo.start(t); lfo.stop(end + 0.02);
       }

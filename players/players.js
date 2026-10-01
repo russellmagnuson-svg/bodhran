@@ -15,7 +15,7 @@
    * next to the title and at the foot. Bump it with every change pushed (the
    * last number for a fix, the middle for something new) and add it to the
    * "Session Players" sections of CHANGELOG.md and the release notes. */
-  var VERSION = '1.7.2';
+  var VERSION = '1.7.3';
 
   var $ = function (id) { return document.getElementById(id); };
   var P = window.PLAYERS, G = window.GTR, T = window.TRAD, TPQ = P.TPQ;
@@ -510,7 +510,8 @@
     if ($('on-tune').checked) {
       var fa = warp(tick, fw), fq = warp(tick + dur, fw) - fa, fl = fq * q;
       var fd = finalNote ? fl + ring : fluteLength(fl, fq);
-      pending.push({ t: tBar + fa * q, fn: function (t) { flutePlayer.note(t, fd, midi, w); } });
+      // No vibrato with the concertina: against its steady reed it beat (flute.js).
+      pending.push({ t: tBar + fa * q, fn: function (t) { flutePlayer.note(t, fd, midi, w, both ? 0 : 1); } });
     }
     if ($('on-concertina').checked) {
       var ca = warp(tick, 'concertina'), cq = warp(tick + dur, 'concertina') - ca, cl = cq * q;

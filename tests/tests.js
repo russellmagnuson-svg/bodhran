@@ -2581,6 +2581,61 @@
       return chain.then(function () { expect(bad.length === 0, bad.join('\n')); });
     });
 
+  check('Session Players', 'The flute’s vibrato is light, late, and left out with the concertina',
+    'Every flute note over 0.4 s wavered ±9 cents, in full within a third of a second. Against the recorded concertina, which holds its pitch to a cent or two, that beat and sounded warbly; and an Irish flute player uses little vibrato. A held note is now steady at first, with a light vibrato coming in late; playing with the concertina, none at all.',
+    function () {
+      var SRG = 48000;
+      // A held A4, 1.2 s: its pitch in cents, every 20 ms, from zero crossings over 40 ms.
+      function held(vib) {
+        var o = new OfflineAudioContext(1, SRG * 1.5, SRG), fl = new PL.Flute(o, o.destination);
+        fl.note(0.1, 1.2, 69, 0.85, vib);
+        return o.startRendering().then(function (b) {
+          var d = b.getChannelData(0), ups = [];
+          for (var i = 1; i < d.length; i++) if (d[i - 1] < 0 && d[i] >= 0) ups.push(i - 1 + d[i - 1] / (d[i - 1] - d[i]));
+          var out = [];
+          for (var a = 0.15; a < 1.2; a += 0.02) {
+            var s = (a - 0.02) * SRG, e = (a + 0.02) * SRG, w = ups.filter(function (x) { return x >= s && x < e; });
+            var f = (w.length - 1) * SRG / (w[w.length - 1] - w[0]);
+            out.push({ a: a - 0.1, c: 1200 * Math.log2(f / 440) });
+          }
+          return out;
+        });
+      }
+      function spread(list, from, to) {
+        var c = list.filter(function (x) { return x.a >= from && x.a < to; }).map(function (x) { return x.c; });
+        return (Math.max.apply(null, c) - Math.min.apply(null, c)) / 2;
+      }
+      return Promise.all([held(), held(0)]).then(function (r) {
+        var early = spread(r[0], 0.05, 0.25), late = spread(r[0], 0.6, 1.05), none = spread(r[1], 0.05, 1.05);
+        expect(early < 1, 'the flute alone wavers ±' + round(early) + ' cents in the first quarter second of a held note: the vibrato comes in early');
+        expect(late > 1.5 && late < 5, 'later in the note it wavers ±' + round(late) + ' cents (want a light vibrato, ±1.5 to 5)');
+        expect(none < 1, 'asked for no vibrato it still wavers ±' + round(none) + ' cents');
+        return json(FIX + 'the-kesh.json');
+      }).then(function (j) {
+        return withPlayers(function (win, doc) {
+          var vibs = { alone: [], both: [] }, mode = 'alone', P0 = win.PLAYERS.Flute.prototype, orig = P0.note;
+          P0.note = function (t, d, m, v, vib) { vibs[mode].push(vib == null ? 1 : vib); return orig.apply(this, arguments); };
+          win.PLAYERS_PAGE.loadTune(j, 0);
+          var play = doc.getElementById('play');
+          play.click();
+          return wait(2500).then(function () {
+            play.click();
+            mode = 'both';
+            doc.getElementById('on-concertina').click();
+            return win.PLAYERS_PAGE.audio().concertina.ready;
+          }).then(function () {
+            play.click();
+            return wait(2500);
+          }).then(function () {
+            play.click();
+            function all(a, v) { return a.length > 3 && a.every(function (x) { return x === v; }); }
+            expect(all(vibs.alone, 1), 'the flute alone was asked for vibrato ' + JSON.stringify(vibs.alone.slice(0, 6)));
+            expect(all(vibs.both, 0), 'with the concertina the flute was asked for vibrato ' + JSON.stringify(vibs.both.slice(0, 6)));
+          });
+        });
+      });
+    });
+
   check('Session Players', 'Together, the flute and concertina start each note as one and don’t clash at the changes',
     'In The Sunny Banks the concertina’s old note sat against the flute’s new one for about 130 ms at most changes, seconds and thirds apart, and their notes between the beats started up to 12 ms apart (each with its own lilt). Playing together they now take one lilt, and the concertina’s note stops as quickly as a real reed does.',
     function () {

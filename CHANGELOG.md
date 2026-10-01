@@ -369,6 +369,16 @@ The page at `/guitar/` has its own version number, shown next to its title.
 
 The page at `/players/` has its own version number, shown next to its title.
 
+### Session Players 1.7.3 — 2026-10-01
+
+- The concertina no longer sounds warbly beside the flute. The concertina
+  itself holds steady, to a cent or two. The flute was the cause: every note
+  over 0.4 s wavered ±9 cents, five times a second, from a third of a second
+  in. In unison against a steady reed, that beat. With the concertina ticked,
+  the flute now plays with no vibrato. Alone it has a light one (±4 cents),
+  on notes of 0.6 s or more, coming in after a quarter of a second, as an
+  Irish flute player would.
+
 ### Session Players 1.7.2 — 2026-10-01
 
 - The flute and concertina together no longer sound jittery. The flute's
