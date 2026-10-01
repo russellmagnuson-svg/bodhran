@@ -358,6 +358,20 @@ The page at `/guitar/` has its own version number, shown next to its title.
 
 The page at `/players/` has its own version number, shown next to its title.
 
+### Session Players 1.6.0 — 2026-10-01 — The tune lilts
+
+- The melody, on the flute and the concertina alike, is now phrased the way
+  a player phrases it rather than dead even. In a jig the first quaver of
+  each group of three is held 8% long and the other two share the
+  difference; in a reel each pair of quavers goes a little long-short
+  (53:47); the beat itself still lands on time. Beat notes are leant on,
+  the first of the bar most, the notes between lighter, the last of a jig's
+  three lifting into the next beat, with a gentle swell over each two-bar
+  phrase and a little of a real player's unevenness, so no two times
+  through are quite the same. The guitar and drum stay steady under it.
+- The flute's line in the mixer reads "Flute (the tune)", like the
+  concertina's.
+
 ### Session Players 1.5.1 — 2026-10-01
 
 - The concertina's notes now carry over into each other, as they do when the

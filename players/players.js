@@ -15,7 +15,7 @@
    * next to the title and at the foot. Bump it with every change pushed (the
    * last number for a fix, the middle for something new) and add it to the
    * "Session Players" sections of CHANGELOG.md and the release notes. */
-  var VERSION = '1.5.1';
+  var VERSION = '1.6.0';
 
   var $ = function (id) { return document.getElementById(id); };
   var P = window.PLAYERS, G = window.GTR, T = window.TRAD, TPQ = P.TPQ;
@@ -493,7 +493,8 @@
    * start, the bellows keeping the air up, and re-strikes a repeated note
    * with a little gap ("edd": two Ds, not one long one). */
   // How long each holds a note of len seconds (lenQ quavers), before the next.
-  function fluteLength(len, lenQ) { return len * (Math.abs(lenQ - 1) < 0.01 ? 0.82 : lenQ < 1 ? 0.9 : 0.94); }
+  // (A quaver, lilted, is 0.96 to 1.08 of one.)
+  function fluteLength(len, lenQ) { return len * (Math.abs(lenQ - 1) < 0.15 ? 0.82 : lenQ < 1 ? 0.9 : 0.94); }
   function concertinaLength(len, lenQ, nextSame) { return nextSame ? Math.max(len * 0.5, len - 0.06) : len + 0.03; }
   function melody(at, lenQ, midi, vel, finalNote, nextSame) {
     var q = quaver(), len = lenQ * q, ring = len + type().slots * q;
@@ -507,12 +508,51 @@
     }
   }
 
+  /* ---------- the lilt: how a player phrases the tune ----------
+   * Played dead even, the melody ticked rather than danced (the guitar and
+   * drum stay steady under it, as backing does). A player leans on the
+   * beat and lilts within it.
+   *
+   * Timing: each beat is gently stretched and squeezed. In a jig the first
+   * quaver of a group of three is held 8% long, the other two sharing the
+   * difference; in a reel each pair of quavers goes long-short, 53:47. The
+   * beat itself still lands on time, and triplets and halved notes bend
+   * with it (a piecewise-straight warp of the beat). */
+  var LILT = { jig: [[0, 0], [1, 1.08], [2, 2.04], [3, 3]], reel: [[0, 0], [1, 1.06], [2, 2]] };
+  function warp(tick) {                       // ticks into the bar -> quavers, lilted
+    var ty = type(), per = ty.per, pts = LILT[tune.meta.type] || [[0, 0], [per, per]];
+    var q = tick / TPQ, beat = Math.floor(q / per), p = q - beat * per;
+    for (var i = 1; i < pts.length; i++) {
+      if (p <= pts[i][0]) {
+        var a = pts[i - 1], b = pts[i];
+        return beat * per + a[1] + (p - a[0]) / (b[0] - a[0]) * (b[1] - a[1]);
+      }
+    }
+    return q;
+  }
+  /* Weight: the first beat of the bar leant on most, the other beats less,
+   * the notes between them lighter, the last of a jig's three lifting into
+   * the next beat; a gentle swell over each two-bar phrase; and a little of
+   * the unevenness of a real player, so no two times through are the same. */
+  var WEIGHT = {
+    jig:  [0.95, 0.62, 0.7, 0.86, 0.62, 0.72],
+    reel: [0.95, 0.62, 0.8, 0.64, 0.88, 0.62, 0.8, 0.66]
+  };
+  function weight(tick, k) {
+    var ty = type(), w = WEIGHT[tune.meta.type], L = ty.slots * TPQ;
+    var slot = Math.floor(tick / TPQ), base = w ? w[Math.max(0, Math.min(w.length - 1, slot))] : 0.8;
+    if (tick % TPQ) base *= 0.9;              // a note off the quaver grid: a passing one
+    var swell = 0.93 + 0.07 * Math.sin(Math.PI * ((k % 2) * L + tick) / (2 * L));
+    return Math.min(1, base * swell * (0.94 + Math.random() * 0.12));
+  }
+
   /* The tune's pickup notes, coming in over the end of the bar before. */
   function pickupInto(tNext, q) {
     var pk = tune.lay.pickup, first = FORM[0] && FORM[0].notes[0];
+    var L = type().slots * TPQ, tBar = tNext - type().slots * q;
     pk.forEach(function (p, i) {
-      var nx = pk[i + 1] || first;
-      melody(tNext + p.tick / TPQ * q, p.dur / TPQ, p.midi, 0.75, false, nx && nx.midi === p.midi);
+      var nx = pk[i + 1] || first, at = L + p.tick;
+      melody(tBar + warp(at) * q, warp(at + p.dur) - warp(at), p.midi, weight(at, 1) * 0.9, false, nx && nx.midi === p.midi);
     });
   }
 
@@ -535,10 +575,10 @@
     var cutAt = again ? L * TPQ + tune.lay.pickup[0].tick : Infinity;
     tb.notes.forEach(function (note, i) {
       if (note.tick >= cutAt) return;
-      var lenQ = Math.min(note.dur, cutAt - note.tick) / TPQ;
-      var vel = note.tick % (ty.per * TPQ) === 0 ? 0.9 : 0.7;
+      var dur = Math.min(note.dur, cutAt - note.tick), from = warp(note.tick);
       var nx = tb.notes[i + 1] || (FORM[(k + 1) % FORM.length].notes[0]);
-      melody(t0 + note.tick / TPQ * q, lenQ, note.midi, vel, last && i === tb.notes.length - 1, nx && nx.midi === note.midi);
+      melody(t0 + from * q, warp(note.tick + dur) - from, note.midi, weight(note.tick, k),
+             last && i === tb.notes.length - 1, nx && nx.midi === note.midi);
     });
     if (again) pickupInto(t0 + L * q, q);
 

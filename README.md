@@ -115,7 +115,8 @@ against the real code:
   tunes lay out in whole bars; chosen chords come from the key, start and end
   at home, and have shapes; every shape plays its chord; the page builds a
   tune and plays it; a changed chord holds through repeats and through save and
-  open; the concertina's notes carry over and a repeated note is struck again;
+  open; the tune lilts, leaning on the beat with a jig's first quaver held
+  long; the concertina's notes carry over and a repeated note is struck again;
   the concertina sounds like a reed, plays in tune and sits with the
   flute, and ticking it plays the tune on it; the chosen tune and setting are
   shown where you found it; the app and
