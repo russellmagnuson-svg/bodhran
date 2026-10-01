@@ -1179,6 +1179,25 @@
       });
     });
 
+  check('The app', 'Text and buttons stay easy to read in the colours',
+    'Green and gold since 1.8.0. Every pairing of text on its ground must reach a contrast of 4.5 to 1, the usual standard for reading: button text on green, green and gold on the dark grounds, the quieter grey on the panels.',
+    function () {
+      return text('../css/app.css').then(function (css) {
+        var root = /:root\s*\{([\s\S]*?)\}/.exec(css)[1], tok = {}, m, re = /--([a-z0-9-]+):\s*(#[0-9a-fA-F]{6})/g;
+        while ((m = re.exec(root))) tok[m[1]] = m[2];
+        function lum(h) {
+          return [1, 3, 5].map(function (i) { var c = parseInt(h.substr(i, 2), 16) / 255; return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); })
+                          .reduce(function (a, c, i) { return a + c * [0.2126, 0.7152, 0.0722][i]; }, 0);
+        }
+        function ratio(a, b) { var x = lum(a), y = lum(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); }
+        var pairs = [['on-accent', 'accent'], ['accent', 'bg'], ['accent', 'panel'], ['skin', 'bg'], ['text', 'panel'],
+                     ['muted', 'panel'], ['muted', 'panel-2'], ['text', 'panel-2']];
+        var bad = pairs.filter(function (p) { return !tok[p[0]] || !tok[p[1]] || ratio(tok[p[0]], tok[p[1]]) < 4.5; })
+                       .map(function (p) { return p[0] + ' on ' + p[1] + ': ' + (tok[p[0]] && tok[p[1]] ? ratio(tok[p[0]], tok[p[1]]).toFixed(1) + ' to 1' : 'missing'); });
+        expect(bad.length === 0, bad.join('\n'));
+      });
+    });
+
   check('The app', 'In Mac Safari the sound goes out through an audio element, and nowhere else',
     'Three times a Safari tab went silent while the page was making sound. In the stuck tab a direct beep stayed silent and the same beep through an audio element played, and woke the direct one. Chrome and the iPhone never needed it.',
     function () {

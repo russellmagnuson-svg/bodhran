@@ -77,7 +77,7 @@ against the real code:
   length and times through are on show, counted, and kept per tune;
   the silent-switch setting is for phones only; every Play asks the sound to
   start; the count-in starts at two bars, goes to four, and is counted on
-  screen; while playing it says whether it is making sound; stopped and
+  screen; text and buttons stay easy to read in the green-and-gold colours; while playing it says whether it is making sound; stopped and
   quiet, it lets go of the speaker; in Mac Safari the sound goes out through
   an audio element, and nowhere else; the fallback nudge is a second long and
   far below hearing; every drone root plays the

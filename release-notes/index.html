@@ -3,37 +3,37 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#141110">
+<meta name="theme-color" content="#0f1411">
 <meta name="description" content="What has changed in the Bodhrán accompaniment app, version by version.">
 <title>Bodhrán Release Notes</title>
 <link rel="icon" href="../icons/icon-192.png" sizes="192x192" type="image/png">
 <link rel="apple-touch-icon" href="../icons/apple-touch-icon.png">
 <style>
-  /* Dark first, like the app itself: its goatskin browns and amber tipper. */
+  /* Dark first, like the app itself: green and gold. */
   :root {
     color-scheme: dark;
-    --bg: #141110;
-    --panel: #1e1a17;
-    --line: #3a3029;
-    --ink: #f0e8df;
-    --muted: #a2938a;
-    --brand: #c9a473;
-    --amber: #e0a04a;
-    --amber-ink: #1a1208;
-    --amber-soft: rgba(224, 160, 74, 0.12);
+    --bg: #0f1411;
+    --panel: #161d18;
+    --line: #2c3b31;
+    --ink: #eef0e8;
+    --muted: #9aa89c;
+    --brand: #d1b36a;
+    --accent: #3daa6d;
+    --accent-ink: #06150c;
+    --accent-soft: rgba(61, 170, 109, 0.12);
   }
   @media (prefers-color-scheme: light) {
     :root {
       color-scheme: light;
-      --bg: #f1ede8;
-      --panel: #fbf9f6;
-      --line: #dcd2c7;
-      --ink: #2a211b;
-      --muted: #74665c;
-      --brand: #8a5f2c;
-      --amber: #b8731f;
-      --amber-ink: #fffaf2;
-      --amber-soft: rgba(184, 115, 31, 0.10);
+      --bg: #eef2ed;
+      --panel: #fafcf9;
+      --line: #d2dbd3;
+      --ink: #1c261f;
+      --muted: #5d6b61;
+      --brand: #7d6320;
+      --accent: #1f7a4b;
+      --accent-ink: #f4fff8;
+      --accent-soft: rgba(31, 122, 75, 0.10);
     }
   }
 
@@ -83,7 +83,7 @@
     padding: 2px 10px; border-radius: 999px;
     border: 1px solid var(--line); color: var(--ink);
   }
-  .feature .ver { background: var(--amber); border-color: var(--amber); color: var(--amber-ink); }
+  .feature .ver { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
   .date { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
   h2 {
     font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
@@ -94,7 +94,7 @@
     text-wrap: balance;
   }
   ul.changes { margin: 0; padding-left: 1.1em; display: flex; flex-direction: column; gap: 5px; }
-  ul.changes li::marker { color: var(--amber); }
+  ul.changes li::marker { color: var(--accent); }
   .kind {
     font-size: 11.5px; letter-spacing: 0.08em; text-transform: uppercase;
     color: var(--muted); margin-left: 8px; font-family: -apple-system, "Segoe UI", system-ui, sans-serif;
@@ -102,7 +102,7 @@
   }
   code {
     font: 13.5px/1.4 ui-monospace, Menlo, Consolas, monospace;
-    background: var(--amber-soft); padding: 1px 5px; border-radius: 4px;
+    background: var(--accent-soft); padding: 1px 5px; border-radius: 4px;
   }
   .key {
     font: 600 12.5px/1 ui-monospace, Menlo, Consolas, monospace;
@@ -113,17 +113,17 @@
   .legend { display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: 13.5px; color: var(--muted); margin: -12px 0 0; }
   .legend span { display: inline-flex; align-items: center; gap: 7px; }
   .dot { width: 10px; height: 10px; border-radius: 50%; border: 1px solid var(--line); }
-  .dot.f { background: var(--amber); border-color: var(--amber); }
+  .dot.f { background: var(--accent); border-color: var(--accent); }
 
   .back {
     align-self: flex-start;
     display: inline-flex; align-items: center; gap: 8px;
-    font-size: 14.5px; font-weight: 600; color: var(--amber); text-decoration: none;
+    font-size: 14.5px; font-weight: 600; color: var(--accent); text-decoration: none;
     padding: 7px 14px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel);
   }
-  .back:hover, .back:focus-visible { border-color: var(--amber); }
-  a:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
-  footer a { color: var(--amber); }
+  .back:hover, .back:focus-visible { border-color: var(--accent); }
+  a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  footer a { color: var(--accent); }
   .demo-notes { display: flex; flex-direction: column; gap: 12px; }
   .section-h {
     font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
@@ -151,9 +151,9 @@
     <svg class="mark" viewBox="0 0 52 52" aria-hidden="true">
       <circle cx="26" cy="26" r="23" style="fill:var(--panel);stroke:var(--brand)" stroke-width="2.5"/>
       <circle cx="26" cy="26" r="17.5" fill="none" style="stroke:var(--line)" stroke-width="1"/>
-      <line x1="13" y1="39" x2="40" y2="12" style="stroke:var(--amber)" stroke-width="3" stroke-linecap="round"/>
-      <circle cx="13" cy="39" r="3" style="fill:var(--amber)"/>
-      <circle cx="40" cy="12" r="3" style="fill:var(--amber)"/>
+      <line x1="13" y1="39" x2="40" y2="12" style="stroke:var(--accent)" stroke-width="3" stroke-linecap="round"/>
+      <circle cx="13" cy="39" r="3" style="fill:var(--accent)"/>
+      <circle cx="40" cy="12" r="3" style="fill:var(--accent)"/>
     </svg>
     <div>
       <h1>Bodhrán Release Notes</h1>
@@ -161,7 +161,7 @@
       The version number shows next to the title in the app, so you can check which one
       your phone or browser is running.</p>
       <ul class="facts">
-        <li><b>1.1.0 → 1.7.1</b> over five days, 26–30 September 2026</li>
+        <li><b>1.1.0 → 1.8.0</b> over six days, 26 September – 1 October 2026</li>
         <li><b>36 → 71</b> automated checks</li>
       </ul>
     </div>
@@ -174,6 +174,16 @@
 
   <main class="releases">
 
+    <article class="release feature">
+      <div class="when"><span class="ver">1.8.0</span><span class="date">1 Oct</span></div>
+      <div>
+        <h2>Green and gold</h2>
+        <ul class="changes">
+          <li>A new colour scheme: deep green for what you press and what is playing, gold for names, and dark grounds with a hint of green, in place of the amber and browns.</li>
+          <li>Shared by the guitar demo, Session Players and these notes. Every piece of text stays easy to read.</li>
+        </ul>
+      </div>
+    </article>
     <article class="release">
       <div class="when"><span class="ver">1.7.1</span><span class="date">30 Sep</span></div>
       <div>
@@ -388,6 +398,13 @@
     <h2 class="section-h">Guitar demo</h2>
     <p class="section-note">The guitar backing page at <code>/guitar/</code> has its own version number, shown next to its title.</p>
     <article class="release">
+      <div class="when"><span class="ver">Guitar demo 1.10.0</span><span class="date">1 Oct</span></div>
+      <div>
+        <h2>Green and gold</h2>
+        <ul class="changes"><li>The app’s new colours.</li></ul>
+      </div>
+    </article>
+    <article class="release">
       <div class="when"><span class="ver">Guitar demo 1.9.4</span><span class="date">29 Sep</span></div>
       <div>
         <h2>Safari’s other way to the speaker</h2>
@@ -586,6 +603,13 @@
   <section class="demo-notes" id="players">
     <h2 class="section-h">Session Players</h2>
     <p class="section-note">The play-along page at <code>/players/</code> has its own version number, shown next to its title.</p>
+    <article class="release">
+      <div class="when"><span class="ver">Session Players 1.4.0</span><span class="date">1 Oct</span></div>
+      <div>
+        <h2>Green and gold</h2>
+        <ul class="changes"><li>The app’s new colours.</li></ul>
+      </div>
+    </article>
     <article class="release">
       <div class="when"><span class="ver">Session Players 1.3.1</span><span class="date">1 Oct</span></div>
       <div>

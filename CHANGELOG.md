@@ -4,6 +4,17 @@ What changed in each version of Bodhrán, newest first. The version shows next
 to the title in the app; bump it at the top of `js/app.js` with every change
 that gets pushed (the last number for a fix, the middle one for a feature).
 
+## 1.8.0 — 2026-10-01 — Green and gold
+
+- A new colour scheme, Irish without overdoing it: the amber and goatskin
+  browns give way to deep green for what you press and what is playing, gold
+  (from the bodhrán's rim) for names, and dark grounds with a hint of green.
+  In the bar display, the dum strokes are green and the taks gold. The
+  guitar demo, Session Players and the release notes share it. The icon
+  stays the bodhrán it always was.
+- Every pairing of text on its ground reads at 4.5 to 1 or better, the usual
+  standard; a check keeps it so.
+
 ## 1.7.1 — 2026-09-30
 
 - The foot of the page now switches between the app and Session Players:
@@ -169,6 +180,10 @@ that gets pushed (the last number for a fix, the middle one for a feature).
 ## Guitar demo
 
 The page at `/guitar/` has its own version number, shown next to its title.
+
+### Guitar demo 1.10.0 — 2026-10-01
+
+- The green-and-gold colours of the app (1.8.0).
 
 ### Guitar demo 1.9.4 — 2026-09-29
 
@@ -342,6 +357,10 @@ The page at `/guitar/` has its own version number, shown next to its title.
 ## Session Players
 
 The page at `/players/` has its own version number, shown next to its title.
+
+### Session Players 1.4.0 — 2026-10-01
+
+- The green-and-gold colours of the app (1.8.0).
 
 ### Session Players 1.3.1 — 2026-10-01
 

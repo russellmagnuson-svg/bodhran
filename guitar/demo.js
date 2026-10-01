@@ -13,7 +13,7 @@
    * with every change to the demo that gets pushed: the last number for a
    * fix, the middle one for something new. Add it to CHANGELOG.md and the
    * release notes in the same change (a check makes sure). */
-  var VERSION = '1.9.4';
+  var VERSION = '1.10.0';
 
   var $ = function (id) { return document.getElementById(id); };
   var K = window.KESH, G = window.GTR, T = window.TRAD;
