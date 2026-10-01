@@ -15,7 +15,7 @@
    * next to the title and at the foot. Bump it with every change pushed (the
    * last number for a fix, the middle for something new) and add it to the
    * "Session Players" sections of CHANGELOG.md and the release notes. */
-  var VERSION = '1.5.0';
+  var VERSION = '1.5.1';
 
   var $ = function (id) { return document.getElementById(id); };
   var P = window.PLAYERS, G = window.GTR, T = window.TRAD, TPQ = P.TPQ;
@@ -62,9 +62,11 @@
   };
 
   /* ---------- how loud each sound is: the demo's measured balance ----------
-   * The concertina measured 2.5 dB under the flute at the flute's level, but
-   * a bright reed carries more than its level says, so it sits just under. */
-  var MIX = { guitar: 0.7, tune: 0.18, concertina: 0.22, drum: 0.7 };
+   * The concertina sits about 1 dB under the flute, each played as the page
+   * plays it: a bright reed carries more than its level says. (Its notes
+   * carrying over since 1.5.1 made it 2.6 dB fuller, so its level came down
+   * from 0.22.) */
+  var MIX = { guitar: 0.7, tune: 0.18, concertina: 0.16, drum: 0.7 };
   var DRUM = { lift: { f: 2500, q: 0.7, gain: 9 } };
   function stored(key, fallback) {
     try { var v = localStorage.getItem(key); return v == null ? fallback : v; } catch (e) { return fallback; }
@@ -487,24 +489,30 @@
 
   /* The tune, on whichever of the flute and the concertina are ticked: one
    * note, its written length in quavers. A flute holds its notes nearly
-   * full; a concertina's short notes bounce, the bellows and the buttons
-   * between them. */
-  function melody(at, lenQ, midi, vel, finalNote) {
-    var q = quaver(), len = lenQ * q;
+   * full. The concertina carries each note a touch past the next one's
+   * start, the bellows keeping the air up, and re-strikes a repeated note
+   * with a little gap ("edd": two Ds, not one long one). */
+  // How long each holds a note of len seconds (lenQ quavers), before the next.
+  function fluteLength(len, lenQ) { return len * (Math.abs(lenQ - 1) < 0.01 ? 0.82 : lenQ < 1 ? 0.9 : 0.94); }
+  function concertinaLength(len, lenQ, nextSame) { return nextSame ? Math.max(len * 0.5, len - 0.06) : len + 0.03; }
+  function melody(at, lenQ, midi, vel, finalNote, nextSame) {
+    var q = quaver(), len = lenQ * q, ring = len + type().slots * q;
     if ($('on-tune').checked) {
-      var fd = finalNote ? len + type().slots * q : len * (Math.abs(lenQ - 1) < 0.01 ? 0.82 : lenQ < 1 ? 0.9 : 0.94);
+      var fd = finalNote ? ring : fluteLength(len, lenQ);
       pending.push({ t: at, fn: function (t) { flutePlayer.note(t, fd, midi, vel); } });
     }
     if ($('on-concertina').checked) {
-      var cd = finalNote ? len + type().slots * q : len * (Math.abs(lenQ - 1) < 0.01 ? 0.72 : lenQ < 1 ? 0.85 : 0.9);
+      var cd = finalNote ? ring : concertinaLength(len, lenQ, nextSame);
       pending.push({ t: at, fn: function (t) { concertina.note(t, cd, midi, vel); } });
     }
   }
 
   /* The tune's pickup notes, coming in over the end of the bar before. */
   function pickupInto(tNext, q) {
-    tune.lay.pickup.forEach(function (p) {
-      melody(tNext + p.tick / TPQ * q, p.dur / TPQ, p.midi, 0.75, false);
+    var pk = tune.lay.pickup, first = FORM[0] && FORM[0].notes[0];
+    pk.forEach(function (p, i) {
+      var nx = pk[i + 1] || first;
+      melody(tNext + p.tick / TPQ * q, p.dur / TPQ, p.midi, 0.75, false, nx && nx.midi === p.midi);
     });
   }
 
@@ -529,7 +537,8 @@
       if (note.tick >= cutAt) return;
       var lenQ = Math.min(note.dur, cutAt - note.tick) / TPQ;
       var vel = note.tick % (ty.per * TPQ) === 0 ? 0.9 : 0.7;
-      melody(t0 + note.tick / TPQ * q, lenQ, note.midi, vel, last && i === tb.notes.length - 1);
+      var nx = tb.notes[i + 1] || (FORM[(k + 1) % FORM.length].notes[0]);
+      melody(t0 + note.tick / TPQ * q, lenQ, note.midi, vel, last && i === tb.notes.length - 1, nx && nx.midi === note.midi);
     });
     if (again) pickupInto(t0 + L * q, q);
 
@@ -836,7 +845,7 @@
 
   // For the checks page.
   window.PLAYERS_PAGE = {
-    VERSION: VERSION, TYPES: TYPES, MIX: MIX,
+    VERSION: VERSION, TYPES: TYPES, MIX: MIX, fluteLength: fluteLength, concertinaLength: concertinaLength,
     tune: function () { return tune; },
     form: function () { return FORM; },
     loadTune: loadTune, openText: openText, saveText: saveText, setChord: setChord,

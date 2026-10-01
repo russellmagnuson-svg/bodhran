@@ -358,6 +358,23 @@ The page at `/guitar/` has its own version number, shown next to its title.
 
 The page at `/players/` has its own version number, shown next to its title.
 
+### Session Players 1.5.1 — 2026-10-01
+
+- The concertina's notes now carry over into each other, as they do when the
+  bellows keep the air up through a phrase. Each note is held a touch past
+  the next one's start and dies away over a twentieth of a second, with a
+  trace of bellows air under it. Before, the short notes were detached and
+  every note cut off: measured, the sound fell to silence (85 dB down)
+  between every two notes; now it dips about 1.5 dB. A repeated note, like
+  the two Ds of "edd", is still struck twice (a 13 dB break).
+- It sounds less like a machine: the reed wanders slightly in pitch and
+  level as bellows pressure does (randomly, about a cent and a third of a
+  decibel, not a vibrato), bends up into pitch as it speaks, and speaks
+  brighter when pushed harder. A held note's level used to sit dead still
+  (0.11 dB); now it moves 0.2 to 0.3 dB.
+- Fuller for carrying over, its level comes down to stay just under the
+  flute.
+
 ### Session Players 1.5.0 — 2026-10-01 — A concertina
 
 - A concertina for the tune: a fourth line in the mixer, with its own tick

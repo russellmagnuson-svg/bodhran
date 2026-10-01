@@ -115,7 +115,8 @@ against the real code:
   tunes lay out in whole bars; chosen chords come from the key, start and end
   at home, and have shapes; every shape plays its chord; the page builds a
   tune and plays it; a changed chord holds through repeats and through save and
-  open; the concertina sounds like a reed, plays in tune and sits with the
+  open; the concertina's notes carry over and a repeated note is struck again;
+  the concertina sounds like a reed, plays in tune and sits with the
   flute, and ticking it plays the tune on it; the chosen tune and setting are
   shown where you found it; the app and
   Session Players link to each other at the foot; chords follow the shape of a part; the matches fold away once one is picked; reopening keeps your chords and
@@ -449,8 +450,13 @@ Session Players switches between the two.
   each `new X(ctx, dest)` with `.note(t, dur, midi, vel)` and `.cancelFrom(t)`.
   The flute is the demo's; the concertina a free reed (a narrow-pulse
   spectrum, odd harmonics a shade stronger, one dry reed a few cents off at
-  random, overtones building over 30 ms, a breath of air, a box: highpass
-  180 Hz, a lift at 1.7 kHz, lowpass 6.5 kHz), sitting just under the flute.
+  random, overtones building over 35 ms and brighter pushed harder, a scoop
+  up into pitch, a slow random wander in pitch and level from the bellows,
+  a breath of air and a trace of it under the note, a box: highpass 180 Hz,
+  a lift at 1.7 kHz, lowpass 6.5 kHz). Its notes carry over: held 30 ms
+  past the next one's start, dying away with a 50 ms time constant; a
+  repeated note is let go 60 ms early so it is struck again
+  (`concertinaLength` in players.js). It sits about 1 dB under the flute.
 - `players/players.js` — search, settings, the chart and the chord chooser,
   saving and opening files (JSON, `format: "session-players"`), and the demo's
   clock, flute, guitar and drum. Its own version is at the top, apart from

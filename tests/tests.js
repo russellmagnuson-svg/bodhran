@@ -2426,30 +2426,71 @@
       expect(bad.length === 0, bad.join('\n'));
     });
 
-  check('Session Players', 'The concertina sounds like a reed, plays in tune, and sits with the flute',
-    'A free reed is rich in overtones where the flute is nearly pure; each note within a few cents of true; and at their starting levels the concertina playing the Kesh’s A part sits just under the flute, not swamping it or lost.',
+  /* The Kesh's A part on one melody instrument, each note held as the page
+   * holds it: { data, notes: [{ t, midi }] }. */
+  function playKeshA(lay, Instrument, level, length, SRG) {
+    var q = 60 / 100 / 3, bars = lay.timeline.slice(0, 8), notes = [], t0 = 0.05;
+    bars.forEach(function (tb) {
+      tb.notes.forEach(function (n) { notes.push({ t: t0 + n.tick / PL.TPQ * q, lenQ: n.dur / PL.TPQ, midi: n.midi, vel: n.tick % 72 === 0 ? 0.9 : 0.7 }); });
+      t0 += 6 * q;
+    });
+    var o = new OfflineAudioContext(1, Math.ceil(SRG * (8 * 6 * q + 1)), SRG), bus = o.createGain();
+    bus.gain.value = level; bus.connect(o.destination);
+    var inst = new Instrument(o, bus);
+    notes.forEach(function (n, i) {
+      var nx = notes[i + 1];
+      inst.note(n.t, length(n.lenQ * q, n.lenQ, !!nx && nx.midi === n.midi), n.midi, n.vel);
+    });
+    return o.startRendering().then(function (b) { return { data: b.getChannelData(0), notes: notes }; });
+  }
+
+  check('Session Players', 'The concertina’s notes carry over, and a repeated note is struck again',
+    'On the instrument the bellows keep the air up, so one note runs into the next; 1.5.0 fell silent, 85 dB down, between every two. A repeated note (the Ds of “edd”) is still played twice. And a held note lives, wandering a little in level, without warbling.',
     function () {
       return Promise.all([json(FIX + 'the-kesh.json')]).then(function (r) {
-        return withPlayers(function (win) { return win.PLAYERS_PAGE.MIX; }).then(function (MIX) {
-          var SRG = 48000, lay = layOf(r[0]), q = 60 / 100 / 3, bars = lay.timeline.slice(0, 8);
-          function render(Instrument, level) {
-            var o = new OfflineAudioContext(1, Math.ceil(SRG * (8 * 6 * q + 1)), SRG), bus = o.createGain();
-            bus.gain.value = level; bus.connect(o.destination);
-            var inst = new Instrument(o, bus), t0 = 0.05;
-            bars.forEach(function (tb) {
-              tb.notes.forEach(function (n) { inst.note(t0 + n.tick / PL.TPQ * q, n.dur / PL.TPQ * q * 0.85, n.midi, n.tick % 72 === 0 ? 0.9 : 0.7); });
-              t0 += 6 * q;
-            });
-            return o.startRendering().then(function (b) { return b.getChannelData(0); });
-          }
+        return withPlayers(function (win) { return win.PLAYERS_PAGE; }).then(function (PP) {
+          var SRG = 48000;
+          return playKeshA(layOf(r[0]), PL.Concertina, PP.MIX.concertina, PP.concertinaLength, SRG).then(function (out) {
+            var d = out.data, notes = out.notes;
+            function frame(a, w) {
+              var s = Math.floor(a * SRG), e = s + Math.floor(w * SRG), x = 0;
+              for (var i = s; i < e; i++) x += d[i] * d[i];
+              return 10 * Math.log10(x / (e - s) + 1e-12);
+            }
+            var dips = [], reps = [];
+            for (var i = 1; i < notes.length; i++) {
+              var b = notes[i].t, mid = (frame(b - 0.07, 0.03) + frame(b + 0.05, 0.03)) / 2, lo = Infinity;
+              for (var x = b - 0.03; x < b + 0.02; x += 0.002) lo = Math.min(lo, frame(x, 0.004));
+              (notes[i].midi === notes[i - 1].midi ? reps : dips).push(lo - mid);
+            }
+            function median(a) { var s = a.slice().sort(function (p, q) { return p - q; }); return s[Math.floor(s.length / 2)]; }
+            var held = [];
+            for (var y = 0.15; y < 0.45; y += 0.01) held.push(frame(y, 0.025));
+            var mean = held.reduce(function (p, c) { return p + c; }, 0) / held.length;
+            var sd = Math.sqrt(held.reduce(function (p, c) { return p + (c - mean) * (c - mean); }, 0) / held.length);
+            expect(median(dips) > -6, 'between two different notes the sound falls ' + round(-median(dips)) + ' dB: the notes do not carry over');
+            expect(median(reps) < -8, 'a repeated note dips only ' + round(-median(reps)) + ' dB: it runs into one long note');
+            expect(sd > 0.15 && sd < 1, 'a held note’s level moves ' + round(sd) + ' dB: ' + (sd <= 0.15 ? 'fixed, like a machine' : 'a warble'));
+          });
+        });
+      });
+    });
+
+  check('Session Players', 'The concertina sounds like a reed, plays in tune, and sits with the flute',
+    'A free reed is rich in overtones where the flute is nearly pure; each note within a few cents of true; and at their starting levels, each playing the Kesh’s A part as the page plays it, the concertina sits just under the flute, not swamping it or lost.',
+    function () {
+      return Promise.all([json(FIX + 'the-kesh.json')]).then(function (r) {
+        return withPlayers(function (win) { return win.PLAYERS_PAGE; }).then(function (PP) {
+          var MIX = PP.MIX, SRG = 48000, lay = layOf(r[0]), q = 60 / 100 / 3;
+          function render(Instrument, level, length) { return playKeshA(lay, Instrument, level, length, SRG); }
           function g(d, f, a, b) {
             var s = Math.floor(a * SRG), e = Math.floor(b * SRG), k = 2 * Math.cos(2 * Math.PI * f / SRG), q1 = 0, q2 = 0;
             for (var i = s; i < e; i++) { var q0 = k * q1 - q2 + d[i]; q2 = q1; q1 = q0; }
             return Math.sqrt(Math.max(0, q1 * q1 + q2 * q2 - k * q1 * q2));
           }
           function db(d) { var s = 0; for (var i = 0; i < d.length; i++) s += d[i] * d[i]; return 10 * Math.log10(s / d.length); }
-          return Promise.all([render(PL.Concertina, MIX.concertina), render(PL.Flute, MIX.tune)]).then(function (out) {
-            var c = out[0], f = out[1], f0 = 440 * Math.pow(2, (bars[0].notes[0].midi - 69) / 12);
+          return Promise.all([render(PL.Concertina, MIX.concertina, PP.concertinaLength), render(PL.Flute, MIX.tune, PP.fluteLength)]).then(function (out) {
+            var c = out[0].data, f = out[1].data, f0 = 440 * Math.pow(2, (lay.timeline[0].notes[0].midi - 69) / 12);
             // The note's actual pitch first: each reed is a few cents off on
             // purpose, and at the fifth harmonic that is enough to measure
             // beside the overtone instead of on it.
