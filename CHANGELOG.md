@@ -338,6 +338,21 @@ The page at `/guitar/` has its own version number, shown next to its title.
 
 The page at `/players/` has its own version number, shown next to its title.
 
+### Session Players 1.1.0 — 2026-09-30 — Chords that know the shape of a part
+
+- The chords chosen from the melody now follow the shape of a part: two
+  four-bar phrases, the fourth bar resting on the cadence chord (the dominant
+  in a major key, the chord a step below home in dorian, mixolydian and minor
+  tunes), and the eighth going from it to home. Hearing only the notes, the
+  page had put Em and Am under The Kesh's bar 4s, where a backer plays D. Now
+  6 of 8 bars of the A part match the guitar demo's hand-chosen chords (5
+  before) and 5 of 8 of the B part (4 before). Across six popular tunes only
+  bar 4s changed: the Silver Spear's B part now rests on A, Banish
+  Misfortune's on C.
+- Reopening the page brings back the last tune with the chords you changed,
+  and the rest chosen afresh, so it hears improvements like this one. A saved
+  file still comes back exactly as saved.
+
 ### Session Players 1.0.0 — 2026-09-30 — The first version
 
 - Name a tune and it is found on thesession.org, fetched, and given a backing:

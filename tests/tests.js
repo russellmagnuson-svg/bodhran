@@ -2340,6 +2340,44 @@
       });
     });
 
+  check('Session Players', 'Chords follow the shape of a part',
+    'A part is two four-bar phrases: the fourth bar rests on the cadence chord, the dominant in a major key. Hearing only notes, the page put Em and Am under the Kesh’s bar 4s, where a backer plays D.',
+    function () {
+      return Promise.all([json(FIX + 'the-kesh.json'), json(FIX + 'the-silver-spear.json')]).then(function (r) {
+        var kesh = layOf(r[0]), kch = PL.chords(kesh), spear = layOf(r[1]), sch = PL.chords(spear);
+        function bar4(lay, ch, part) {
+          var sl = lay.slots.filter(function (s) { return s.part === part; })[3];
+          return ch[sl.id].join(' ');
+        }
+        expect(bar4(kesh, kch, 0) === 'D' && bar4(kesh, kch, 1) === 'D',
+               'the Kesh’s bar 4s are ' + bar4(kesh, kch, 0) + ' and ' + bar4(kesh, kch, 1) + ', not D and D');
+        expect(bar4(spear, sch, 1) === 'A', 'the Silver Spear’s B part rests on ' + bar4(spear, sch, 1) + ' at bar 4, not A');
+      });
+    });
+
+  check('Session Players', 'Reopening the page keeps your chords and chooses the rest afresh',
+    'The last tune comes back with the chords you changed, and the others chosen again, so a better way of choosing reaches it. A saved file comes back exactly as saved.',
+    function () {
+      return json(FIX + 'the-kesh.json').then(function (j) {
+        return withPlayers(function (win, doc) {
+          var PP = win.PLAYERS_PAGE;
+          PP.loadTune(j, 0);
+          var slots = PP.tune().lay.slots, one = slots[0].id, three = slots[2].id;
+          PP.setChord(three, ['Am']);
+          var d = JSON.parse(PP.saveText());
+          d.chords[one] = ['Bm'];                       // as an older way of choosing left it
+          var text = JSON.stringify(d);
+          PP.openText(text, true);
+          var r1 = PP.tune().chords[one].join(' '), r3 = PP.tune().chords[three].join(' ');
+          PP.openText(text);
+          var f1 = PP.tune().chords[one].join(' '), f3 = PP.tune().chords[three].join(' ');
+          expect(r3 === 'Am' && !!PP.tune().mine[three], 'reopened, your Am in bar 3 became ' + r3);
+          expect(r1 === 'G', 'reopened, bar 1 kept the old chord ' + r1 + ' instead of choosing again');
+          expect(f1 === 'Bm' && f3 === 'Am', 'a saved file came back as ' + f1 + ' and ' + f3 + ', not exactly as saved');
+        });
+      });
+    });
+
   check('Session Players', 'Every shape plays its chord',
     'Hand-chosen shapes may add a ninth or a seventh, leave out the fifth, and in DADGAD sit on the open D, but the root and third must sound and nothing outside the chord. Any other chord gets a shape found by search.',
     function () {

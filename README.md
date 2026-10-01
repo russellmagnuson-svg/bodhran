@@ -115,7 +115,9 @@ against the real code:
   tunes lay out in whole bars; chosen chords come from the key, start and end
   at home, and have shapes; every shape plays its chord; the page builds a
   tune and plays it; a changed chord holds through repeats and through save and
-  open; finding a tune asks the Session and offers only jigs and reels; it
+  open; chords follow the shape of a part; reopening keeps your chords and
+  chooses the rest afresh; finding a tune asks the Session and offers only
+  jigs and reels; it
   shows its own version and the notes cover it
 - **Release notes** (under The app) — `CHANGELOG.md` and `release-notes/` both
   have an entry for the current version, so bumping the version means adding
@@ -433,7 +435,9 @@ guitar, flute and bodhrán. Jigs and reels for now. Not linked from the app.
   bVII IV bIII v; minor i bVII bIII iv v bVI), notes on the beat weighted
   more, the ninth counted half in, then a best path (Viterbi) that dislikes
   changing chord, above all mid-bar, starts on the home chord and ends the
-  tune on it.
+  tune on it. Since 1.1.0 it knows a part's shape: bar 4 of each eight leans
+  to the cadence chord (V in major; bVII in dorian, mixolydian and minor),
+  and bar 8 opens on it and goes home, a mid-bar change there costing little.
 - `players/shapes.js` — shapes in both tunings: a hand-chosen table (the
   demo's DADGAD drone shapes among them) and a search for anything else
   (root in the bass, chord tones only, a four-fret stretch).

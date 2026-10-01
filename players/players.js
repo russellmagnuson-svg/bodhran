@@ -15,7 +15,7 @@
    * next to the title and at the foot. Bump it with every change pushed (the
    * last number for a fix, the middle for something new) and add it to the
    * "Session Players" sections of CHANGELOG.md and the release notes. */
-  var VERSION = '1.0.0';
+  var VERSION = '1.1.0';
 
   var $ = function (id) { return document.getElementById(id); };
   var P = window.PLAYERS, G = window.GTR, T = window.TRAD, TPQ = P.TPQ;
@@ -205,16 +205,24 @@
     $('file-status').textContent = 'Saved as “' + fileName() + '”, in your Downloads (on a phone, in Files).';
   }
 
-  /* A saved file's text, or the last tune left on this page. */
-  function openText(text, quiet) {
+  /* A saved file's text, or the last tune left on this page (`restoring`).
+   * A file comes back exactly as saved. The last tune keeps only the chords
+   * you changed: the rest are chosen afresh, so a better way of choosing
+   * them reaches it. */
+  function openText(text, restoring) {
+    var quiet = restoring;
     var d;
     try { d = JSON.parse(text); } catch (e) { d = null; }
     if (!d || d.format !== FILE_FORMAT || !d.tune || !d.setting || !d.setting.abc || !TYPES[d.tune.type]) {
       if (!quiet) $('file-status').textContent = 'That file isn’t a tune saved from Session Players.';
       return false;
     }
-    var s = d.setting;
-    build(d.tune, [s], 0, { chords: d.chords, mine: d.mine || [], options: d.options || {} });
+    var s = d.setting, chords = d.chords || {}, mine = d.mine || [];
+    if (restoring) {
+      chords = {};
+      mine.forEach(function (id) { if (d.chords && d.chords[id]) chords[id] = d.chords[id]; });
+    }
+    build(d.tune, [s], 0, { chords: chords, mine: mine, options: d.options || {} });
     tune.savedNumber = d.settingNumber;
     showTune(d.options || {});
     if (!quiet) $('file-status').textContent = 'Opened “' + d.tune.name + '”, with its chords as saved.';
