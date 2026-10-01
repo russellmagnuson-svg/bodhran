@@ -338,6 +338,13 @@ The page at `/guitar/` has its own version number, shown next to its title.
 
 The page at `/players/` has its own version number, shown next to its title.
 
+### Session Players 1.2.0 — 2026-09-30
+
+- Once you pick a tune, the other matches fold away under one line ("19
+  other matches for “kesh”"), which opens them again. Left open, a long list
+  pushed the tune, the Play button and the chords far down the page. A new
+  search opens the list fresh.
+
 ### Session Players 1.1.0 — 2026-09-30 — Chords that know the shape of a part
 
 - The chords chosen from the melody now follow the shape of a part: two

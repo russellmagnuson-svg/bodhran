@@ -29,6 +29,13 @@
 .results button:disabled { color: var(--muted); cursor: default; }
 .results small { color: var(--muted); margin-left: 6px; }
 .results button[aria-pressed="true"] { border-color: var(--amber); }
+.matches { margin-top: 8px; }
+.matches summary {
+  cursor: pointer; font-size: 13px; color: var(--muted);
+  padding: 4px 0; list-style-position: inside;
+}
+.matches summary:hover { color: var(--text); }
+.matches[open] summary { color: var(--text); }
 .setting-row { margin-top: 12px; }
 .setting-row select { max-width: 100%; }
 .setting-link { font-size: 13px; color: var(--amber); }

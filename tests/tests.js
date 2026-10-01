@@ -2460,8 +2460,8 @@
       });
     });
 
-  check('Session Players', 'Finding a tune asks the Session, and offers only what it can play',
-    'The search goes to thesession.org’s own API, from the page. Jigs and reels can be picked; other types are listed but not yet playable.',
+  check('Session Players', 'Finding a tune asks the Session, offers only what it can play, and folds away',
+    'The search goes to thesession.org’s own API, from the page. Jigs and reels can be picked; other types are listed but not yet playable. Once one is picked the list folds under one line, so it no longer pushes the tune far down the page.',
     function () {
       return json(FIX + 'the-kesh.json').then(function (kesh) {
         return withPlayers(function (win, doc) {
@@ -2476,10 +2476,14 @@
           doc.getElementById('q').value = 'kesh';
           doc.getElementById('find-go').click();
           return wait(100).then(function () {
-            var btns = doc.querySelectorAll('#results button');
+            var btns = doc.querySelectorAll('#results button'), box = doc.getElementById('matches');
             var horn = btns[1] && btns[1].disabled;
+            var openFirst = box.open && !box.hidden, sumFirst = doc.getElementById('matches-sum').textContent;
             btns[0].click();
             return wait(100).then(function () {
+              var sumAfter = doc.getElementById('matches-sum').textContent;
+              expect(openFirst && /^2 found for “kesh”/.test(sumFirst), 'the matches were not shown: "' + sumFirst + '"');
+              expect(!box.open && /^1 other match for “kesh”/.test(sumAfter), 'after picking one the matches did not fold away: "' + sumAfter + '"');
               expect(/^https:\/\/thesession\.org\/tunes\/search\?q=kesh&format=json/.test(asked[0] || ''), 'it asked ' + asked[0]);
               expect(btns.length === 2 && horn && !btns[0].disabled, 'the results were not two, with only the jig playable');
               expect(/^https:\/\/thesession\.org\/tunes\/55\?format=json/.test(asked[1] || ''), 'picking it fetched ' + asked[1]);

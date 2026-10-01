@@ -115,7 +115,7 @@ against the real code:
   tunes lay out in whole bars; chosen chords come from the key, start and end
   at home, and have shapes; every shape plays its chord; the page builds a
   tune and plays it; a changed chord holds through repeats and through save and
-  open; chords follow the shape of a part; reopening keeps your chords and
+  open; chords follow the shape of a part; the matches fold away once one is picked; reopening keeps your chords and
   chooses the rest afresh; finding a tune asks the Session and offers only
   jigs and reels; it
   shows its own version and the notes cover it

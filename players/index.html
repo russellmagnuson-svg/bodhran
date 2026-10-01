@@ -35,7 +35,12 @@
       <button id="find-go" class="action" type="submit">Find</button>
     </form>
     <p id="find-status" class="blurb" role="status"></p>
-    <ul id="results" class="results"></ul>
+    <!-- The matches fold away once one is picked, so the tune is not pushed
+         far down the page; the summary line opens them again. -->
+    <details id="matches" class="matches" hidden>
+      <summary id="matches-sum"></summary>
+      <ul id="results" class="results"></ul>
+    </details>
     <div id="setting-row" class="row setting-row" hidden>
       <label class="inline">Setting
         <select id="setting"></select>

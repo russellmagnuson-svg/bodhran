@@ -15,7 +15,7 @@
    * next to the title and at the foot. Bump it with every change pushed (the
    * last number for a fix, the middle for something new) and add it to the
    * "Session Players" sections of CHANGELOG.md and the release notes. */
-  var VERSION = '1.1.0';
+  var VERSION = '1.2.0';
 
   var $ = function (id) { return document.getElementById(id); };
   var P = window.PLAYERS, G = window.GTR, T = window.TRAD, TPQ = P.TPQ;
@@ -139,11 +139,31 @@
       });
   }
 
+  /* The list of matches: open while choosing, folded under one line once a
+   * tune is picked (or opened from a file). */
+  var lastQuery = '', matchCount = 0;
+  function foldMatches(open) {
+    var box = $('matches');
+    box.hidden = !matchCount;
+    box.open = !!matchCount && open;
+    summarise();
+  }
+  // Open: how many were found. Folded: how many others there are to go back to.
+  function summarise() {
+    var more = matchCount === 20 ? '+' : '', others = matchCount - 1;
+    $('matches-sum').textContent = $('matches').open
+      ? matchCount + more + ' found for “' + lastQuery + '”'
+      : (others ? others + more + ' other match' + (others === 1 && !more ? '' : 'es') : 'The match') +
+        ' for “' + lastQuery + '”';
+  }
+
   function showResults(list, q) {
     var host = $('results');
     host.innerHTML = '';
-    if (!list.length) { $('find-status').textContent = 'Nothing on thesession.org called “' + q + '”.'; return; }
-    $('find-status').textContent = list.length + (list.length === 20 ? '+' : '') + ' found. Jigs and reels can be played for now.';
+    lastQuery = q; matchCount = list.length;
+    if (!list.length) { $('find-status').textContent = 'Nothing on thesession.org called “' + q + '”.'; foldMatches(false); return; }
+    $('find-status').textContent = 'Jigs and reels can be played for now.';
+    foldMatches(true);
     list.forEach(function (t) {
       var li = document.createElement('li'), b = document.createElement('button');
       b.type = 'button';
@@ -151,6 +171,7 @@
       b.innerHTML = esc(t.name) + '<small>' + esc(t.type) + (TYPES[t.type] ? '' : ' · not yet') + '</small>';
       b.addEventListener('click', function () {
         Array.prototype.forEach.call(host.querySelectorAll('button'), function (x) { x.setAttribute('aria-pressed', String(x === b)); });
+        foldMatches(false);
         fetchTune(t.id);
       });
       li.appendChild(b); host.appendChild(li);
@@ -164,6 +185,7 @@
       .then(function (j) { loadTune(j, 0); $('find-status').textContent = ''; })
       .catch(function () {
         $('find-status').textContent = 'Couldn’t fetch that tune from thesession.org. Try again.';
+        foldMatches(true);
       });
   }
 
@@ -225,7 +247,7 @@
     build(d.tune, [s], 0, { chords: chords, mine: mine, options: d.options || {} });
     tune.savedNumber = d.settingNumber;
     showTune(d.options || {});
-    if (!quiet) $('file-status').textContent = 'Opened “' + d.tune.name + '”, with its chords as saved.';
+    if (!quiet) { $('file-status').textContent = 'Opened “' + d.tune.name + '”, with its chords as saved.'; foldMatches(false); }
     return true;
   }
 
@@ -756,6 +778,7 @@
     $('players-version').textContent = 'v' + VERSION;
     $('foot-version').textContent = 'Session Players version ' + VERSION + '.';
     $('find').addEventListener('submit', function (e) { e.preventDefault(); find($('q').value); });
+    $('matches').addEventListener('toggle', summarise);
     $('setting').addEventListener('change', function () { build(tune.meta, tune.settings, +this.value); });
     $('save').addEventListener('click', save);
     $('open').addEventListener('click', function () { $('file').click(); });
