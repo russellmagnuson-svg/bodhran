@@ -369,6 +369,22 @@ The page at `/guitar/` has its own version number, shown next to its title.
 
 The page at `/players/` has its own version number, shown next to its title.
 
+### Session Players 1.7.4 — 2026-10-01
+
+- The concertina's long notes are steadier. A note held longer than its
+  recording is looped through its steady part. The loop began in a small dip
+  just after the attack, and its join was a rough match, so held notes
+  wavered with every pass, twice a second. Now the loop starts once the note
+  has settled, and the join is matched more closely and blended. The level is
+  evened out a little more closely too, keeping the reed's life. The
+  twice-a-second waver is about a third to a half smaller in level on most
+  notes, and on F♯4 it dropped from 18 cents to under 2.
+- The F♯4 recording wobbles on its own, ±11 cents five or six times a
+  second, as much as the flute's old vibrato. F♯ is in every D and G tune.
+  It and three milder ones (A♯3, A♯4, G♯5) are now played from a steady
+  recorded note a semitone away, retuned. `samples.json` records how much
+  each recording wavers.
+
 ### Session Players 1.7.3 — 2026-10-01
 
 - The concertina no longer sounds warbly beside the flute. The concertina

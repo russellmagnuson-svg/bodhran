@@ -6,155 +6,194 @@
  "notes": [
   {
    "midi": 55,
-   "cents": 13.8
+   "cents": 13.8,
+   "wobble": 1.32
   },
   {
    "midi": 57,
-   "cents": 27.5
+   "cents": 27.5,
+   "wobble": 0.79
   },
   {
    "midi": 58,
-   "cents": 8.6
+   "cents": 8.6,
+   "wobble": 2.42
   },
   {
    "midi": 59,
-   "cents": 11.6
+   "cents": 11.6,
+   "wobble": 0.52
   },
   {
    "midi": 60,
-   "cents": 15.5
+   "cents": 15.5,
+   "wobble": 1.02
   },
   {
    "midi": 61,
-   "cents": 18.9
+   "cents": 18.9,
+   "wobble": 0.3
   },
   {
    "midi": 62,
-   "cents": 11.2
+   "cents": 11.2,
+   "wobble": 1.27
   },
   {
    "midi": 63,
-   "cents": 14.7
+   "cents": 14.7,
+   "wobble": 0.32
   },
   {
    "midi": 64,
-   "cents": 18.5
+   "cents": 18.5,
+   "wobble": 0.73
   },
   {
    "midi": 65,
-   "cents": 10.8
+   "cents": 10.8,
+   "wobble": 1.13
   },
   {
    "midi": 66,
-   "cents": 14.2
+   "cents": 14.2,
+   "wobble": 4.97
   },
   {
    "midi": 67,
-   "cents": 17.2
+   "cents": 17.2,
+   "wobble": 0.56
   },
   {
    "midi": 68,
-   "cents": 3.9
+   "cents": 3.9,
+   "wobble": 0.53
   },
   {
    "midi": 69,
-   "cents": 6.9
+   "cents": 6.9,
+   "wobble": 0.81
   },
   {
    "midi": 70,
-   "cents": 11.2
+   "cents": 11.2,
+   "wobble": 1.59
   },
   {
    "midi": 71,
-   "cents": 14.7
+   "cents": 14.7,
+   "wobble": 0.69
   },
   {
    "midi": 72,
-   "cents": 12.9
+   "cents": 12.9,
+   "wobble": 0.45
   },
   {
    "midi": 73,
-   "cents": 5.2
+   "cents": 5.2,
+   "wobble": 0.57
   },
   {
    "midi": 74,
-   "cents": 9.5
+   "cents": 9.5,
+   "wobble": 0.51
   },
   {
    "midi": 75,
-   "cents": 10.4
+   "cents": 10.4,
+   "wobble": 0.37
   },
   {
    "midi": 76,
-   "cents": 15.9
+   "cents": 15.9,
+   "wobble": 0.44
   },
   {
    "midi": 77,
-   "cents": 5.6
+   "cents": 5.6,
+   "wobble": 0.64
   },
   {
    "midi": 78,
-   "cents": 6.9
+   "cents": 6.9,
+   "wobble": 0.41
   },
   {
    "midi": 79,
-   "cents": 3.9
+   "cents": 3.9,
+   "wobble": 0.38
   },
   {
    "midi": 80,
-   "cents": 0
+   "cents": 0,
+   "wobble": 1.99
   },
   {
    "midi": 81,
-   "cents": 3.9
+   "cents": 3.9,
+   "wobble": 0.38
   },
   {
    "midi": 82,
-   "cents": 3
+   "cents": 3,
+   "wobble": 0.26
   },
   {
    "midi": 83,
-   "cents": 0
+   "cents": 0,
+   "wobble": 0.38
   },
   {
    "midi": 84,
-   "cents": 15.5
+   "cents": 15.5,
+   "wobble": 0.44
   },
   {
    "midi": 85,
-   "cents": 11.2
+   "cents": 11.2,
+   "wobble": 0.33
   },
   {
    "midi": 86,
-   "cents": 4.8
+   "cents": 4.8,
+   "wobble": 0.69
   },
   {
    "midi": 87,
-   "cents": 7.3
+   "cents": 7.3,
+   "wobble": 0.64
   },
   {
    "midi": 88,
-   "cents": 11.2
+   "cents": 11.2,
+   "wobble": 0.68
   },
   {
    "midi": 89,
-   "cents": 8.6
+   "cents": 8.6,
+   "wobble": 0.46
   },
   {
    "midi": 90,
-   "cents": 4.3
+   "cents": 4.3,
+   "wobble": 0.48
   },
   {
    "midi": 91,
-   "cents": 6.9
+   "cents": 6.9,
+   "wobble": 0.56
   },
   {
    "midi": 93,
-   "cents": 2.2
+   "cents": 2.2,
+   "wobble": 1.12
   },
   {
    "midi": 95,
-   "cents": 12.1
+   "cents": 12.1,
+   "wobble": 0.28
   }
- ]
+ ],
+ "wobble": "How much each recorded note wavers in pitch on its own, in cents (standard deviation, 0.15-0.7 s after it speaks). Notes over 1.5 are played from a steady neighbour a semitone away instead."
 }

@@ -119,7 +119,8 @@ against the real code:
   open; flute and concertina are heard on time, together, on every note;
   the concertina plays recordings of a real one, credited; together the
   flute and concertina start each note as one and don't clash at the changes; the flute's
-  vibrato is light, late, and left out with the concertina; the tune lilts, leaning on the beat with a jig's first quaver held
+  vibrato is light, late, and left out with the concertina; the concertina holds
+  a long note steady, without a waver each time round its loop; the tune lilts, leaning on the beat with a jig's first quaver held
   long, the concertina more than the flute; the concertina's notes carry over and a repeated note is struck again;
   the concertina sounds like a reed, plays in tune and sits with the
   flute, and ticking it plays the tune on it; the chosen tune and setting are
@@ -459,8 +460,11 @@ Session Players switches between the two.
   Wikimedia Commons, CC BY-SA 4.0 (see its README); `samples.json` holds
   each note's measured tuning. `Concertina` plays them: retuned, started as
   the reed speaks (25 ms before it reaches its steady level), looped through
-  its steady part (from 0.12 s, at most 0.6 s, its slow fade evened out) for
-  long notes; `ConcertinaSynth`, the synthesised one, plays until they load.
+  its steady part (`LOOP`: from 0.2 s, at most 0.7 s, its slow fade evened
+  out over 60 ms, the join matched over 10 ms and blended over 100 ms) for
+  long notes; recordings that waver in pitch on their own (`wobble` in
+  samples.json over 1.5 cents: F♯4, A♯3, A♯4, G♯5) are played from the
+  steadier neighbour a semitone away; `ConcertinaSynth`, the synthesised one, plays until they load.
 - `players/flute.js`, `players/concertina.js` — the two melody instruments,
   each `new X(ctx, dest)` with `.note(t, dur, midi, vel)` and `.cancelFrom(t)`.
   The flute is the demo's, with a lighter vibrato (`VIBRATO`: ±4 cents on

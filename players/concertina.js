@@ -145,7 +145,7 @@
     this.out = ctx.createGain();
     this.out.connect(dest);
     this.synth = new ConcertinaSynth(ctx, dest);
-    this.samples = null;          // [{ midi, cents, buf, lead, ls, le }] once loaded
+    this.samples = null;          // [{ midi, cents, wobble, buf, start, lead, ls, le }] once loaded
     this.queued = [];
     this.ready = this.load(base || P.CONCERTINA_SAMPLES);
   }
@@ -159,7 +159,7 @@
       });
     }
     return fetch(base + 'samples.json').then(function (r) { return r.json(); }).then(function (meta) {
-      return Promise.all(meta.notes.map(function (n) {
+      return Promise.all(Concertina.steady(meta.notes).map(function (n) {
         return fetch(base + 'c-' + n.midi + '.m4a').then(function (r) { return r.arrayBuffer(); })
           .then(decode).then(function (buf) { return prepare(buf, n); });
       }));
@@ -167,6 +167,18 @@
       self.samples = list.sort(function (a, b) { return a.midi - b.midi; });
       return true;
     }, function () { return false; });   // unreachable: the synthesised one carries on
+  };
+
+  /* The recorded notes worth playing. A few waver in pitch on their own
+   * (F#4 by ±11 cents, five or six times a second: as much as the flute's old
+   * vibrato, and F# is in every D and G tune), which sounded warbly; each of
+   * those is played instead from a steady note a semitone away, retuned. */
+  Concertina.WOBBLE = 1.5;          // cents, the most a note may waver (samples.json)
+  Concertina.steady = function (notes) {
+    function ok(n) { return !(n.wobble > Concertina.WOBBLE); }
+    return notes.filter(function (n) {
+      return ok(n) || !notes.some(function (o) { return ok(o) && Math.abs(o.midi - n.midi) === 1; });
+    });
   };
 
   /* Getting a recorded note ready to play.
@@ -177,12 +189,19 @@
    * note has spoken (within 6 dB of its steady level): the reed's own voicing
    * is kept, the slow swell is not.
    *
-   * A loop through its steady part, 0.12 s after it has spoken to at most
-   * 0.6 s, for notes held longer than recorded. The recorded note fades a
-   * little as the bellows run on, so looping it made long notes pulse, 5 dB
-   * twice a second; its slow fade is evened out across that stretch (its
-   * quicker wavering, the reed's own life, is left), and the loop's end is
-   * moved to where the wave best matches its start, so the join is smooth. */
+   * A loop through its steady part, for notes held longer than recorded.
+   * The recorded note fades a little as the bellows run on, so looping it
+   * made long notes pulse, 5 dB twice a second; its slow fade is evened out
+   * across that stretch (its quicker wavering, the reed's own life, is
+   * left), and the loop's end is moved to where the wave best matches its
+   * start. Until Session Players 1.7.4 the loop began 0.12 s after the note
+   * spoke, in a small dip just after its attack, was matched at the join
+   * over 2 ms, and its level was evened over 80 ms: long notes still wavered
+   * with every pass, twice a second, a little in level and pitch (F#4 by 18
+   * cents). Now it begins at LOOP.from, once the note has settled, the join
+   * is matched over 10 ms and blended over LOOP.blend, and the level is
+   * evened over LOOP.even (its life kept: it still moves 0.1-1 dB). */
+  var LOOP = { from: 0.2, to: 0.7, blend: 0.1, even: 0.06 };
   function prepare(buf, n) {
     var d = buf.getChannelData(0), sr = buf.sampleRate, hop = Math.round(sr * 0.005), i, k;
     var env = [];
@@ -194,11 +213,11 @@
     var steady = mid[Math.floor(mid.length / 2)] || 1e-3, speak = 0;
     for (i = 0; i < env.length; i++) if (env[i] >= steady * 0.5) { speak = i * hop; break; }
     var start = Math.max(0, speak - Math.round(0.025 * sr));
-    var a = speak + Math.round(0.12 * sr), b = Math.min(d.length - Math.round(0.15 * sr), speak + Math.round(0.6 * sr));
-    if (b - a < Math.round(0.08 * sr)) { a = speak + Math.round(0.06 * sr); b = d.length - Math.round(0.06 * sr); }
+    var a = speak + Math.round(LOOP.from * sr), b = Math.min(d.length - Math.round(0.12 * sr), speak + Math.round(LOOP.to * sr));
+    if (b - a < Math.round(0.2 * sr)) { a = speak + Math.round(0.12 * sr); b = d.length - Math.round(0.06 * sr); }
     // Even out the slow fade from where it has spoken to past the loop's end:
     // the level smoothed over 80 ms, brought to the steady level (at most 6 dB either way).
-    var w = Math.round(0.08 * sr / hop), from = Math.floor(speak / hop), to = Math.min(env.length - 1, Math.ceil((b + 0.05 * sr) / hop));
+    var w = Math.round(LOOP.even * sr / hop), from = Math.floor(speak / hop), to = Math.min(env.length - 1, Math.ceil((b + 0.05 * sr) / hop));
     var slow = [];
     for (i = from; i <= to; i++) {
       var sum = 0, cnt = 0;
@@ -211,13 +230,19 @@
       d[i] *= 1 + (g - 1) * ramp;
     }
     for (i = start; i < Math.min(d.length, start + Math.round(0.004 * sr)); i++) d[i] *= (i - start) / (0.004 * sr);  // no click at the cut
-    var period = sr / (440 * Math.pow(2, (n.midi - 69) / 12)), best = Infinity, e = b;
+    // The loop's end: where the wave, over 10 ms, best matches its start.
+    var period = sr / (440 * Math.pow(2, (n.midi - 69) / 12)), best = -Infinity, e = b, N = Math.round(0.01 * sr);
     for (var c = Math.round(b - 2 * period); c <= b; c++) {
-      var err = 0;
-      for (k = 0; k < 96; k++) { var x = d[a + k] - d[c + k]; err += x * x; }
-      if (err < best) { best = err; e = c; }
+      var xy = 0, yy = 0;
+      for (k = 0; k < N; k++) { xy += d[a + k] * d[c + k]; yy += d[c + k] * d[c + k]; }
+      var r = xy / Math.sqrt(yy + 1e-12);
+      if (r > best) { best = r; e = c; }
     }
-    return { midi: n.midi, cents: n.cents, buf: buf, start: start / sr, lead: (speak - start) / sr, ls: a / sr, le: e / sr };
+    // And the join blended: the last stretch before the end fades into what
+    // led up to the start, so passing from end to start is seamless.
+    var X = Math.min(Math.round(LOOP.blend * sr), a - speak, Math.floor((e - a) / 3));
+    for (k = 0; k < X; k++) { var f = k / X; d[e - X + k] = d[e - X + k] * (1 - f) + d[a - X + k] * f; }
+    return { midi: n.midi, cents: n.cents, wobble: n.wobble || 0, buf: buf, start: start / sr, lead: (speak - start) / sr, ls: a / sr, le: e / sr };
   }
 
   /* A real reed stops quickly when its button is let go: its release, a
@@ -228,7 +253,10 @@
 
   Concertina.prototype.pick = function (midi) {
     var s = this.samples, best = s[0];
-    for (var i = 1; i < s.length; i++) if (Math.abs(s[i].midi - midi) < Math.abs(best.midi - midi)) best = s[i];
+    for (var i = 1; i < s.length; i++) {           // the nearest; of two as near, the steadier
+      var d = Math.abs(s[i].midi - midi) - Math.abs(best.midi - midi);
+      if (d < 0 || (d === 0 && s[i].wobble < best.wobble)) best = s[i];
+    }
     return best;
   };
 

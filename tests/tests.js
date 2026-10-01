@@ -2212,10 +2212,10 @@
     });
 
   check('Session Players', 'The concertina plays recordings of a real one, credited',
-    'Synthesised, it sounded “too much like a keyboard”. Its notes now come from a real Anglo concertina, recorded by Alwayswonder (Wikimedia Commons, CC BY-SA 4.0): every note a tune is likely to need, G3 to D6, within a semitone of a recorded one, the licence noted with the samples and the recording credited on the page, and once they have loaded the synthesised one plays no notes.',
+    'Synthesised, it sounded “too much like a keyboard”. Its notes now come from a real Anglo concertina, recorded by Alwayswonder (Wikimedia Commons, CC BY-SA 4.0): every note a tune is likely to need, G3 to D6, within a semitone of a steady recorded one, the licence noted with the samples and the recording credited on the page, and once they have loaded the synthesised one plays no notes.',
     function () {
       return Promise.all([json('../players/concertina/samples.json'), text('../players/concertina/README.md'), text('../players/'), json(FIX + 'the-kesh.json')]).then(function (r) {
-        var have = r[0].notes.map(function (n) { return n.midi; }), gaps = [];
+        var have = PL.Concertina.steady(r[0].notes).map(function (n) { return n.midi; }), gaps = [];   // those it plays
         for (var m = 55; m <= 86; m++) if (!have.some(function (h) { return Math.abs(h - m) <= 1; })) gaps.push(m);
         expect(have.length >= 30 && gaps.length === 0, have.length + ' recorded notes; nothing within a semitone of ' + gaps.join(', '));
         expect(/CC BY-SA 4\.0/.test(r[1]) && /Alwayswonder/.test(r[1]) && /CC BY-SA 4\.0/.test(r[0].licence || ''), 'the samples do not carry their licence and credit');
@@ -2701,6 +2701,50 @@
           });
         });
       });
+    });
+
+  check('Session Players', 'The concertina holds a long note steady, without a waver each time round its loop',
+    'Long notes are looped through their steady part, and until 1.7.4 the loop’s join and its start in a dip just after the attack made them waver with every pass, twice a second (F#4 by 18 cents); and the F#4 recording wobbles ±11 cents on its own. Held for 3 s, each note from D4 to A5 now wavers under 1.5 cents, and with each pass of the loop under 2 cents and 1.3 dB.',
+    function () {
+      var SR = 48000, secs = 3, bad = [], chain = Promise.resolve();
+      function mean(x) { return x.reduce(function (p, v) { return p + v; }, 0) / x.length; }
+      function sd(x) { var m = mean(x); return Math.sqrt(mean(x.map(function (v) { return (v - m) * (v - m); }))); }
+      function at(x, f) {            // how much of the track moves at f Hz (samples every 10 ms)
+        var m = mean(x), re = 0, im = 0;
+        x.forEach(function (v, i) { re += (v - m) * Math.cos(2 * Math.PI * f * i * 0.01); im += (v - m) * Math.sin(2 * Math.PI * f * i * 0.01); });
+        return 2 * Math.sqrt(re * re + im * im) / x.length;
+      }
+      function held(midi) {
+        var o = new OfflineAudioContext(1, SR * (secs + 0.5), SR), c = new PL.Concertina(o, o.destination);
+        return Promise.resolve(c.ready).then(function (loaded) {
+          if (!loaded) throw new Error('the concertina recordings did not load');
+          c.note(0.1, secs, midi, 0.85);
+          return o.startRendering();
+        }).then(function (b) {
+          var d = b.getChannelData(0), s = c.pick(midi), P = SR / (440 * Math.pow(2, (midi - 69) / 12)), W = Math.round(0.04 * SR);
+          var hz = Math.pow(2, (midi - s.midi - s.cents / 100) / 12) / (s.le - s.ls), pitch = [], level = [];
+          for (var t = 0.9; t < secs; t += 0.01) {   // well into the loop: pitch by autocorrelation over 40 ms, level over 40 ms
+            var a = Math.round(t * SR), sc = {}, best = -1, bl = 0, L, k, v = 0;
+            for (L = Math.floor(P * 0.97); L <= Math.ceil(P * 1.03); L++) {
+              var xy = 0, xx = 0, yy = 0;
+              for (k = 0; k < W; k++) { var x = d[a + k], y = d[a + k + L]; xy += x * y; xx += x * x; yy += y * y; }
+              sc[L] = xy / Math.sqrt(xx * yy + 1e-12);
+              if (sc[L] > best) { best = sc[L]; bl = L; }
+            }
+            var p = sc[bl - 1], q = sc[bl + 1], off = p != null && q != null ? 0.5 * (p - q) / (p - 2 * best + q) : 0;
+            pitch.push(1200 * Math.log2(P / (bl + off)));
+            for (k = 0; k < 1920; k++) v += d[a + k] * d[a + k];
+            level.push(10 * Math.log10(v / 1920));
+          }
+          function loop(x) { return Math.sqrt([1, 2, 3].reduce(function (p, k) { return p + Math.pow(at(x, hz * k), 2); }, 0)); }
+          var w = sd(pitch), lp = loop(pitch), ll = loop(level), name = 'MIDI ' + midi + (s.midi !== midi ? ' (from ' + s.midi + ')' : '');
+          if (w > 1.5) bad.push(name + ' wavers ' + round(w) + ' cents');
+          if (lp > 2) bad.push(name + ' wavers ' + round(lp) + ' cents with each pass of its loop');
+          if (ll > 1.3) bad.push(name + ' wavers ' + round(ll) + ' dB with each pass of its loop');
+        });
+      }
+      [62, 64, 66, 67, 69, 71, 74, 76, 78, 79, 81].forEach(function (m) { chain = chain.then(function () { return held(m); }); });
+      return chain.then(function () { expect(bad.length === 0, bad.join('\n')); });
     });
 
   check('Session Players', 'The concertina sounds like a reed, plays in tune, and sits with the flute',

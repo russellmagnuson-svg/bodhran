@@ -14,3 +14,8 @@ with its own attack and tail, levelled to the same sustained loudness, made
 mono and encoded as AAC (`c-<MIDI note>.m4a`). `samples.json` lists each
 note's tuning as recorded, in cents above A=440 equal temperament, which the
 page corrects when it plays them.
+
+Each note also has a `wobble`: how much it wavers in pitch on its own, in
+cents (standard deviation, 0.15-0.7 s after it speaks). A few waver more
+than 1.5 cents (F♯4 most, by about 5), and the page plays those from a steady
+note a semitone away instead.
