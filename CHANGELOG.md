@@ -343,6 +343,15 @@ The page at `/guitar/` has its own version number, shown next to its title.
 
 The page at `/players/` has its own version number, shown next to its title.
 
+### Session Players 1.3.0 — 2026-10-01
+
+- The tune you pick is shown clearly where you found it: its name fills the
+  search box and stands out large under it, with its type, key and which
+  setting is playing ("Jig · 6/8 · G major · Setting 1 of 44 by Jeremy"),
+  the setting chooser and the link to it on thesession.org beside it. A tune
+  opened from a file says so. Clicking the search box selects the name, so a
+  new search is just typing.
+
 ### Session Players 1.2.1 — 2026-09-30
 
 - The foot of the page switches to the bodhrán app ("Bodhrán · Session

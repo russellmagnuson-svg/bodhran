@@ -15,7 +15,7 @@
    * next to the title and at the foot. Bump it with every change pushed (the
    * last number for a fix, the middle for something new) and add it to the
    * "Session Players" sections of CHANGELOG.md and the release notes. */
-  var VERSION = '1.2.1';
+  var VERSION = '1.3.0';
 
   var $ = function (id) { return document.getElementById(id); };
   var P = window.PLAYERS, G = window.GTR, T = window.TRAD, TPQ = P.TPQ;
@@ -274,7 +274,14 @@
     });
     sel.value = String(tune.index);
     sel.disabled = tune.settings.length < 2;
-    $('setting-row').hidden = false;
+    // In the Find panel: the tune's name, in the search box and large under
+    // it, and which setting of it is playing.
+    $('chosen').hidden = false;
+    $('chosen-name').textContent = tune.meta.name;
+    $('chosen-facts').textContent = ty.name + ' · ' + ty.meter + ' · ' + lay.key.name + ' · Setting ' + number +
+      (tune.settings.length > 1 ? ' of ' + tune.settings.length : tune.savedNumber ? ', from a saved file' : '') +
+      (s.member ? ' by ' + s.member : '');
+    $('q').value = tune.meta.name;
     var link = $('setting-link');
     link.href = (s.url || tune.meta.url) || API;
     link.textContent = 'on thesession.org';
@@ -778,6 +785,8 @@
     $('players-version').textContent = 'v' + VERSION;
     $('foot-version').textContent = 'Session Players version ' + VERSION + '.';
     $('find').addEventListener('submit', function (e) { e.preventDefault(); find($('q').value); });
+    // The box shows the tune on the page; a click selects it, so typing starts a new search.
+    $('q').addEventListener('focus', function () { var q = this; setTimeout(function () { q.select(); }, 0); });
     $('matches').addEventListener('toggle', summarise);
     $('setting').addEventListener('change', function () { build(tune.meta, tune.settings, +this.value); });
     $('save').addEventListener('click', save);

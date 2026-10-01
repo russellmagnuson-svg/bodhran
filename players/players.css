@@ -36,6 +36,13 @@
 }
 .matches summary:hover { color: var(--text); }
 .matches[open] summary { color: var(--text); }
+.chosen {
+  margin-top: 12px; padding: 12px 14px;
+  background: var(--panel-2); border: 1px solid var(--amber-dim); border-radius: 10px;
+}
+.chosen-name { font-size: 22px; line-height: 1.2; font-weight: 600; color: var(--skin); }
+.chosen-facts { margin-top: 3px; font-size: 13.5px; color: var(--text); }
+.chosen .setting-row { margin-top: 10px; }
 .setting-row { margin-top: 12px; }
 .setting-row select { max-width: 100%; }
 .setting-link { font-size: 13px; color: var(--amber); }

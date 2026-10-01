@@ -2494,6 +2494,27 @@
       });
     });
 
+  check('Session Players', 'The chosen tune and setting are shown where you found it',
+    'Once picked, the tune’s name fills the search box and stands out under it, with which setting of how many is playing, so it is clear what is on the page.',
+    function () {
+      return json(FIX + 'the-kesh.json').then(function (j) {
+        return withPlayers(function (win, doc) {
+          var PP = win.PLAYERS_PAGE, $ = function (id) { return doc.getElementById(id); };
+          PP.loadTune(j, 0);
+          var box = $('q').value, name = $('chosen-name').textContent, facts1 = $('chosen-facts').textContent, shown = !$('chosen').hidden;
+          $('setting').value = '1'; $('setting').dispatchEvent(new win.Event('change'));
+          var facts2 = $('chosen-facts').textContent;
+          PP.openText(PP.saveText());
+          var facts3 = $('chosen-facts').textContent;
+          expect(box === 'The Kesh', 'the search box says "' + box + '"');
+          expect(shown && name === 'The Kesh', 'the chosen tune is not shown under the search: "' + name + '"');
+          expect(/^Jig · 6\/8 · G major · Setting 1 of 3 by /.test(facts1), 'it says "' + facts1 + '"');
+          expect(/Setting 2 of 3/.test(facts2), 'after choosing setting 2 it says "' + facts2 + '"');
+          expect(/Setting 2, from a saved file/.test(facts3), 'opened from a file it says "' + facts3 + '"');
+        });
+      });
+    });
+
   check('Session Players', 'The app and Session Players link to each other at the foot',
     'One tap at the bottom of either page switches to the other, the page you are on shown but not linked. The Kesh demo is no longer linked from there.',
     function () {

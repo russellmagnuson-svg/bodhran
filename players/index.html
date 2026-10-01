@@ -41,13 +41,18 @@
       <summary id="matches-sum"></summary>
       <ul id="results" class="results"></ul>
     </details>
-    <div id="setting-row" class="row setting-row" hidden>
-      <label class="inline">Setting
-        <select id="setting"></select>
-      </label>
-      <a id="setting-link" class="setting-link" target="_blank" rel="noopener">on thesession.org</a>
+    <!-- The tune on the page, and which setting of it. -->
+    <div id="chosen" class="chosen" hidden>
+      <div id="chosen-name" class="chosen-name"></div>
+      <div id="chosen-facts" class="chosen-facts"></div>
+      <div class="row setting-row">
+        <label class="inline">Setting
+          <select id="setting"></select>
+        </label>
+        <a id="setting-link" class="setting-link" target="_blank" rel="noopener">on thesession.org</a>
+      </div>
+      <p id="setting-warn" class="blurb warn" hidden></p>
     </div>
-    <p id="setting-warn" class="blurb warn" hidden></p>
     <div class="file-row">
       <button id="save" class="action ghost" type="button" disabled>Save to a file</button>
       <button id="open" class="action ghost" type="button">Open a saved tune</button>
