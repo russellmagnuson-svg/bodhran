@@ -116,7 +116,8 @@ against the real code:
   tunes lay out in whole bars; chosen chords come from the key, start and end
   at home, and have shapes; every shape plays its chord; the page builds a
   tune and plays it; a changed chord holds through repeats and through save and
-  open; the concertina plays recordings of a real one, credited; together the
+  open; flute and concertina are heard on time, together, on every note;
+  the concertina plays recordings of a real one, credited; together the
   flute and concertina start each note as one and don't clash at the changes; the tune lilts, leaning on the beat with a jig's first quaver held
   long, the concertina more than the flute; the concertina's notes carry over and a repeated note is struck again;
   the concertina sounds like a reed, plays in tune and sits with the

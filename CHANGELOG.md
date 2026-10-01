@@ -369,6 +369,16 @@ The page at `/guitar/` has its own version number, shown next to its title.
 
 The page at `/players/` has its own version number, shown next to its title.
 
+### Session Players 1.7.2 — 2026-10-01
+
+- The flute and concertina together no longer sound jittery. The flute's
+  notes swell in over 30 ms, so each was heard 27 ms after its time, while
+  the recorded concertina's are heard right on it: a flam on every note.
+  The flute's swell now starts early, and each note of both is heard within
+  a few milliseconds of its time and of the other (the flute 5-6 ms, the
+  concertina -1 to 5). This also puts the flute on the beat with the guitar
+  and drum, where it had always sat a touch behind.
+
 ### Session Players 1.7.1 — 2026-10-01
 
 - No more momentary clash between the flute and the concertina. Their notes

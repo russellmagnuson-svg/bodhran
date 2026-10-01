@@ -2553,6 +2553,34 @@
       });
     });
 
+  check('Session Players', 'Flute and concertina are heard on time, together, on every note',
+    'The flute swells in over 30 ms, so it was heard 27 ms after every note’s time while the recorded concertina was heard on it: a flam on every note, which made the two together sound jittery, and put the flute behind the backing. Each is now heard (within 6 dB of its full level) within a few milliseconds of the time, D4 to D6, and of the other.',
+    function () {
+      var SRG = 48000;
+      function heard(Instrument, m) {
+        var o = new OfflineAudioContext(1, SRG, SRG), inst = new Instrument(o, o.destination);
+        return Promise.resolve(inst.ready).then(function () {
+          inst.note(0.2, 0.5, m, 0.85);
+          return o.startRendering();
+        }).then(function (b) {
+          var d = b.getChannelData(0);
+          function fr(a) { var s0 = Math.floor(a * SRG), x = 0; for (var i = s0; i < s0 + 96; i++) x += d[i] * d[i]; return 10 * Math.log10(x / 96 + 1e-12); }
+          var st = 0; for (var a = 0.35; a < 0.55; a += 0.002) st += fr(a); st /= 100;
+          for (a = 0.15; a < 0.35; a += 0.001) if (fr(a) > st - 6) return (a - 0.2) * 1000;
+          return 999;
+        });
+      }
+      var notes = [62, 66, 69, 74, 78, 81, 86], chain = Promise.resolve(), bad = [];
+      notes.forEach(function (m) {
+        chain = chain.then(function () { return Promise.all([heard(PL.Flute, m), heard(PL.Concertina, m)]); }).then(function (r) {
+          if (r[0] < -8 || r[0] > 10) bad.push('MIDI ' + m + ': the flute is heard at ' + Math.round(r[0]) + ' ms');
+          if (r[1] < -8 || r[1] > 10) bad.push('MIDI ' + m + ': the concertina is heard at ' + Math.round(r[1]) + ' ms');
+          if (Math.abs(r[0] - r[1]) > 8) bad.push('MIDI ' + m + ': ' + Math.round(Math.abs(r[0] - r[1])) + ' ms apart');
+        });
+      });
+      return chain.then(function () { expect(bad.length === 0, bad.join('\n')); });
+    });
+
   check('Session Players', 'Together, the flute and concertina start each note as one and don’t clash at the changes',
     'In The Sunny Banks the concertina’s old note sat against the flute’s new one for about 130 ms at most changes, seconds and thirds apart, and their notes between the beats started up to 12 ms apart (each with its own lilt). Playing together they now take one lilt, and the concertina’s note stops as quickly as a real reed does.',
     function () {

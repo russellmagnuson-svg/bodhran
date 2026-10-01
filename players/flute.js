@@ -20,8 +20,17 @@
     this.air = buf;
   }
 
+  /* Heard on time: the flute's notes swell in over 30 ms, so each was heard
+   * (within 6 dB of its full level) 27 ms after the time it was asked for,
+   * behind the guitar and drum and, from Session Players 1.7.0, behind the
+   * recorded concertina on every note: a flam that made the two together
+   * sound jittery. So the swell starts LEAD seconds early, and the note is
+   * heard on its time. */
+  Flute.prototype.LEAD = 0.022;
+
   Flute.prototype.note = function (t, dur, midi, vel) {
     var ctx = this.ctx, f = 440 * Math.pow(2, (midi - 69) / 12), end = t + dur;
+    t = Math.max(ctx.currentTime, t - this.LEAD);
     var amp = ctx.createGain();
     amp.gain.setValueAtTime(0.0001, t);
     amp.gain.exponentialRampToValueAtTime(vel, t + 0.03);
