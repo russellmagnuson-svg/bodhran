@@ -17,7 +17,7 @@
    * next to the title and at the foot. Bump it with every change pushed (the
    * last number for a fix, the middle for something new) and add it to the
    * "Session Buddies" sections of CHANGELOG.md and the release notes. */
-  var VERSION = '1.12.3';
+  var VERSION = '1.13.0';
 
   var $ = function (id) { return document.getElementById(id); };
   var P = window.BUDDIES, G = window.GTR, T = window.TRAD, TPQ = P.TPQ;
@@ -793,7 +793,65 @@
 
   function quaver() { return 60 / +$('bpm').value / type().per; }
   function times() { return +$('times').value; }
-  function isLast(n) { return times() > 0 && n === times() * FORM.length - 1; }
+  /* The tune ends on the last bar of a time through: the last time "Play it"
+   * asks for, or the one Finish was pressed in. Until 1.13.0 only the exact
+   * bar times x length counted, so "Play it" lowered below the time already
+   * reached (to "once through" in time 2) left nothing to end on: the music
+   * stopped dead, no closing chord, and the page stayed "playing" for good.
+   * Now it ends at the end of the time through it is in. */
+  var finishAt = null;                    // Finish: the time through (from 1) that ends the tune
+  function endTime() {
+    var t = times() > 0 ? times() : Infinity;
+    return finishAt != null ? Math.min(t, finishAt) : t;
+  }
+  function isLast(n) {
+    var L = FORM.length;
+    return n >= 0 && n % L === L - 1 && Math.floor(n / L) + 1 >= endTime();
+  }
+  /* Finish: end at the end of this time through, with the closing strokes.
+   * Its last bar may already be handed to the audio (a moment ahead, or
+   * seconds ahead with the page hidden); then it goes round once more.
+   * Pressed again, it is taken back, until the last bar is laid. */
+  function finish() {
+    if (!playing || endAt != null) return;
+    finishAt = finishAt != null ? null : (barN < 0 ? 1 : Math.floor(barN / FORM.length) + 1);
+    showState();
+    if (heard >= 0) showBar(heard);       // "finishing" in the Now panel at once
+  }
+
+  /* "Your turn": the flute and concertina leave the melody to you at set
+   * points while the guitar and bodhrán carry on. Taking turns: they play a
+   * time through, you the next; or they play one part and you the other
+   * (A: they play the A part only; B: the B part only). The lead-in at the
+   * end of a bar goes with that bar, so they bring you in. During your turn
+   * the melody is silent, or there quietly as a guide. */
+  var MELODY = {
+    every: 'The flute and concertina play the tune every time.',
+    turns: 'They play the tune once, you play it the next time, and so on: the backing carries on.',
+    a: 'They play the A part, you play the B part (and any others), every time.',
+    b: 'They play the B part, you play the A part (and any others), every time.'
+  };
+  var melodyMode = MELODY[stored('players.melody', '')] ? stored('players.melody') : 'every';
+  var yourTurnLevel = stored('players.yourturn', '') === 'quiet' ? 'quiet' : 'silent';
+  var QUIET = 0.3;                        // the melody's weight during your turn, quietly: about 10 dB down
+  function yourTurn(n) {
+    if (melodyMode === 'every' || !FORM.length) return false;
+    if (n < 0) n = 0;                     // the count-in's lead-in belongs to bar 1
+    if (melodyMode === 'turns') return Math.floor(n / FORM.length) % 2 === 1;
+    var info = slotInfo[FORM[n % FORM.length].slot], part = info ? info.part : 0;
+    return melodyMode === 'a' ? part !== 0 : part !== 1;
+  }
+  function drawMelody() {
+    Array.prototype.forEach.call($('melody-mode').children, function (b) {
+      b.setAttribute('aria-checked', String(b.dataset.melody === melodyMode));
+    });
+    Array.prototype.forEach.call($('your-turn-level').children, function (b) {
+      b.setAttribute('aria-checked', String(b.dataset.level === yourTurnLevel));
+    });
+    $('your-turn-box').hidden = melodyMode === 'every';
+    $('melody-desc').textContent = MELODY[melodyMode] + (melodyMode === 'every' ? '' :
+      yourTurnLevel === 'quiet' ? ' On your turn they play along quietly, as a guide.' : ' On your turn they are silent.');
+  }
 
   /* The tune, on whichever of the flute and the concertina are ticked: one
    * note, its written length in quavers. A flute holds its notes nearly
@@ -811,7 +869,11 @@
   function concertinaLength(len, lenQ, nextSame) { return nextSame ? Math.max(len * 0.5, len - 0.06) : len; }
   /* One note of the tune, `tick` into the bar starting at tBar, `dur` ticks
    * long, weight w: placed by each instrument's own lilt. */
-  function melody(tBar, tick, dur, midi, w, finalNote, nextSame, written) {
+  function melody(tBar, tick, dur, midi, w, finalNote, nextSame, written, yours) {
+    if (yours) {
+      if (yourTurnLevel !== 'quiet') return;
+      w *= QUIET;
+    }
     var q = quaver(), ring = type().slots * q;
     // Playing together they play as one: the flute takes the concertina's
     // lilt, or their notes between the beats would start up to 12 ms apart.
@@ -820,14 +882,14 @@
       var fa = warp(tick, fw, written), fq = warp(tick + dur, fw, written) - fa, fl = fq * q;
       var fd = finalNote ? fl + ring : fluteLength(fl, fq);
       // No vibrato with the concertina: against its steady reed it beat (flute.js).
-      pending.push({ t: tBar + fa * q, note: { who: 'flute', midi: midi, dur: fd, final: !!finalNote },
+      pending.push({ t: tBar + fa * q, note: { who: 'flute', midi: midi, dur: fd, final: !!finalNote, w: w },
                      fn: function (t) { flutePlayer.note(t, fd, midi, w, both ? 0 : 1); } });
     }
     if ($('on-concertina').checked) {
       var ca = warp(tick, 'concertina', written), cq = warp(tick + dur, 'concertina', written) - ca, cl = cq * q;
       var cd = finalNote ? cl + ring : concertinaLength(cl, cq, nextSame);
       var cw = Math.max(0.3, Math.min(1, 0.8 + (w - 0.8) * 1.4));   // the bellows lean harder
-      pending.push({ t: tBar + ca * q, note: { who: 'concertina', midi: midi, dur: cd, final: !!finalNote },
+      pending.push({ t: tBar + ca * q, note: { who: 'concertina', midi: midi, dur: cd, final: !!finalNote, w: cw },
                      fn: function (t) { concertina.note(t, cd, midi, cw); } });
     }
   }
@@ -918,13 +980,13 @@
   }
 
   /* The tune's pickup notes, coming in over the end of the bar before. */
-  function pickupInto(tNext, q) {
+  function pickupInto(tNext, q, yours) {
     var pk = tune.lay.pickup, first = FORM[0] && FORM[0].notes[0];
     var L = type().slots * TPQ, tBar = tNext - type().slots * q;
     var written = asWritten(pk, function (p) { return L + p.tick; });
     pk.forEach(function (p, i) {
       var nx = pk[i + 1] || first, at = L + p.tick;
-      melody(tBar, at, p.dur, p.midi, weight(at, 1) * 0.9, false, nx && nx.midi === p.midi, written);
+      melody(tBar, at, p.dur, p.midi, weight(at, 1) * 0.9, false, nx && nx.midi === p.midi, written, yours);
     });
   }
 
@@ -956,7 +1018,7 @@
         (function (at, v) { pending.push({ t: at, fn: function (t) { clicker.hit('click', t, v); } }); })(t0 + c[0] * q, c[1]);
       });
       shown.push({ t: t0, n: n });
-      if (n === -1) pickupInto(t0 + L * q, q);
+      if (n === -1) pickupInto(t0 + L * q, q, yourTurn(0));
       return L * q;
     }
     var k = n % FORM.length, tb = FORM[k], last = isLast(n), chords = tune.chords[tb.slot];
@@ -986,14 +1048,14 @@
     var again = atEnd && !last && (!tail.length || asPickup);
     var kept = again ? tb.notes.filter(function (nt) { return nt.tick < cutAt; }) : tb.notes;
     if (atEnd && last && tail.length) kept = endWithout(tb.notes, cutAt, asPickup);
-    var written = asWritten(tb.notes);
+    var written = asWritten(tb.notes), mine = yourTurn(n);
     kept.forEach(function (note, i) {
       var dur = again ? Math.min(note.dur, cutAt - note.tick) : note.dur;
       var nx = kept[i + 1] || (again ? pk[0] : FORM[(k + 1) % FORM.length].notes[0]);
       melody(t0, note.tick, dur, note.midi, weight(note.tick, k),
-             last && i === kept.length - 1, nx && nx.midi === note.midi, written);
+             last && i === kept.length - 1, nx && nx.midi === note.midi, written, mine);
     });
-    if (again) pickupInto(t0 + L * q, q);
+    if (again) pickupInto(t0 + L * q, q, mine);
 
     var slots = last ? ty.final.map(function (s, i) { return { s: s, d: 'D', v: i ? 1 : 0.85 }; })
                      : ty.strums[strum].slots;
@@ -1023,15 +1085,14 @@
       }
     }
     slots.forEach(function (x) { shown.push({ t: t0 + swung(x.s) * q, strum: x.s }); });
-    if (last) endAt = t0 + ty.final[ty.final.length - 1] * q + 3.2;
+    if (last) { endAt = t0 + ty.final[ty.final.length - 1] * q + 3.2; showState(); }
     return L * q;
   }
 
   function tick() {
     var now = ctx.currentTime;
     if (endAt == null) {
-      var limit = times() > 0 ? times() * FORM.length : Infinity;
-      while (nextBar < now + ahead + 0.18 && barN < limit) {
+      while (nextBar < now + ahead + 0.18 && endAt == null) {
         nextBar += layBar(barN, nextBar);
         barN++;
       }
@@ -1055,7 +1116,7 @@
     barN = -(+$('countin').value || 1);
     nextBar = ctx.currentTime + 0.12;
     ahead = T.lookahead(AHEAD);
-    pending = []; shown = []; endAt = null;
+    pending = []; shown = []; endAt = null; finishAt = null;
     tick();
     timer = setInterval(tick, 25);
     T.keepAwake(true, ctx);               // the screen held on while it plays (js/wake.js)
@@ -1065,7 +1126,7 @@
   function stop(ended) {
     playing = false;
     clearInterval(timer); timer = null;
-    pending = []; shown = []; endAt = null;
+    pending = []; shown = []; endAt = null; finishAt = null;
     T.keepAwake(false);
     if (ctx) {
       var now = ctx.currentTime;
@@ -1167,7 +1228,9 @@
     var c = tune.chords[tb.slot];
     nowChord(c[0], c[1] || tune.chords[nb.slot][0]);
     var info = slotInfo[tb.slot], t = Math.floor(n / FORM.length) + 1;
-    $('where').textContent = (info ? partName(info) : 'bar ' + (k + 1)) + ' · time ' + t + (times() > 0 ? ' of ' + times() : '');
+    var end = endTime(), of = end < Infinity ? ' of ' + Math.max(end, t) : '';
+    $('where').textContent = (info ? partName(info) : 'bar ' + (k + 1)) + ' · time ' + t + of +
+      (finishAt != null ? ' · finishing' : '') + (yourTurn(n) ? ' · your turn' : '');
   }
 
   function frame() { requestAnimationFrame(frame); draw(); }
@@ -1198,6 +1261,10 @@
     b.classList.toggle('playing', playing);
     b.setAttribute('aria-pressed', String(playing));
     b.querySelector('.play-label').textContent = playing ? 'Stop' : 'Play';
+    var f = $('finish');
+    f.disabled = !playing || endAt != null;
+    f.setAttribute('aria-pressed', String(playing && finishAt != null));
+    f.textContent = playing && (finishAt != null || endAt != null) ? 'Finishing' : 'Finish';
     if (!playing) {
       Array.prototype.forEach.call(document.querySelectorAll('.bar.on'), function (el) { el.classList.remove('on'); });
       $('where').textContent = '—';
@@ -1301,12 +1368,23 @@
     Array.prototype.forEach.call($('strums').children, function (b) {
       b.addEventListener('click', function () { strum = b.dataset.strum; drawStrum(); remember(); });
     });
+    $('finish').addEventListener('click', finish);
+    Array.prototype.forEach.call($('melody-mode').children, function (b) {
+      b.addEventListener('click', function () {               // heard from the next bar
+        melodyMode = b.dataset.melody; store('players.melody', melodyMode); drawMelody();
+      });
+    });
+    Array.prototype.forEach.call($('your-turn-level').children, function (b) {
+      b.addEventListener('click', function () {
+        yourTurnLevel = b.dataset.level; store('players.yourturn', yourTurnLevel); drawMelody();
+      });
+    });
+    drawMelody();
     document.addEventListener('keydown', function (e) {
-      if (e.code !== 'Space' || /^(INPUT|SELECT|TEXTAREA|BUTTON)$/.test(e.target.tagName) &&
-          !(e.target.type === 'range')) return;
-      if ($('chooser').open || !tune) return;
-      e.preventDefault();
-      toggle();
+      var typing = /^(INPUT|SELECT|TEXTAREA|BUTTON)$/.test(e.target.tagName) && !(e.target.type === 'range');
+      if (typing || $('chooser').open || !tune || e.metaKey || e.ctrlKey || e.altKey) return;
+      if (e.code === 'Space') { e.preventDefault(); toggle(); }
+      else if (e.key === 'f' || e.key === 'F') finish();     // as in the app
     });
     drawShapes();
     drawStrum();
@@ -1322,7 +1400,9 @@
 
   // For the checks page.
   window.BUDDIES_PAGE = {
-    VERSION: VERSION, TYPES: TYPES, PLAYABLE: PLAYABLE, swingNow: function () { return tune ? swingNow() : 0.5; }, MIX: MIX, fluteLength: fluteLength, concertinaLength: concertinaLength,
+    VERSION: VERSION, TYPES: TYPES, PLAYABLE: PLAYABLE, finishing: function () { return finishAt; },
+    laid: function () { return barN; },     // the next bar to be handed to the audio
+    swingNow: function () { return tune ? swingNow() : 0.5; }, MIX: MIX, fluteLength: fluteLength, concertinaLength: concertinaLength,
     tune: function () { return tune; },
     form: function () { return FORM; },
     STARTER: STARTER, loadTune: loadTune, openText: openText, listText: listText,
@@ -1334,7 +1414,7 @@
       try {
         layBar(n, 0);
         return pending.filter(function (x) { return x.note; }).map(function (x) {
-          return { t: x.t, who: x.note.who, midi: x.note.midi, dur: x.note.dur, final: x.note.final };
+          return { t: x.t, who: x.note.who, midi: x.note.midi, dur: x.note.dur, final: x.note.final, w: x.note.w };
         }).sort(function (a, b) { return a.t - b.t; });
       } finally { pending = keep.p; shown = keep.s; endAt = keep.e; }
     }, saveText: saveText, setChord: setChord,

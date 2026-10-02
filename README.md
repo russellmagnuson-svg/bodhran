@@ -127,7 +127,7 @@ against the real code:
   long, the concertina more than the flute; the concertina's notes carry over and a repeated note is struck again;
   the concertina sounds like a reed, plays in tune and sits with the
   flute, and ticking it plays the tune on it; the chosen tune and setting are
-  shown where you found it; a first visit opens with a tune ready to play; your tunes are a tap away; your work is kept when you search a tune you have; settings the audit found misread read right; the last time through ends on the tune's own last note; a chord you change is kept, played or not, and a reset can be undone; hornpipes, polkas,
+  shown where you found it; a first visit opens with a tune ready to play; your tunes are a tap away; your work is kept when you search a tune you have; settings the audit found misread read right; the last time through ends on the tune's own last note; a chord you change is kept, played or not, and a reset can be undone; Finish ends at the end of this time through, and so does lowering “Play it”; your turn drops the melody where you choose; hornpipes, polkas,
   slides and slip jigs play, each in its own time; the app and
   Session Buddies link to each other at the foot; chords follow the shape of a part; the matches fold away once one is picked; reopening keeps your chords and
   chooses the rest afresh; finding a tune asks the Session and offers only
@@ -454,6 +454,12 @@ keep their `players.` names in local storage, so they carry over.
 
 A first visit opens with a starter tune, The Kesh (`STARTER` in buddies.js:
 the Session's setting 1, kept in the page), so Play plays before any search.
+
+Finish (under Play, or F) ends the tune at the end of the time through it is
+pressed in (`finishAt`, `isLast()`); lowering "Play it" does the same. The
+Melody choice (`melodyMode`: every, turns, a, b; `players.melody`) drops the
+flute and concertina on your turn (`yourTurn(n)`), silent or quietly
+(`players.yourturn`), the backing carrying on.
 
 My tunes (in Find a tune): favourites (`buddies.favourites`, by name) and the
 twelve played lately (`buddies.recent`, added on Play), each kept as a saved

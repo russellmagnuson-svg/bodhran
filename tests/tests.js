@@ -2563,7 +2563,7 @@
   /* The Session Buddies page in a frame, its saved state put back after. */
   function withBuddies(fn) {
     var keys = ['players.current', 'players.tuning', 'players.sympathy', 'players.volume', 'players.swing.hornpipe',
-                'buddies.favourites', 'buddies.recent'], saved = {};
+                'buddies.favourites', 'buddies.recent', 'players.melody', 'players.yourturn'], saved = {};
     keys.forEach(function (k) { saved[k] = localStorage.getItem(k); localStorage.removeItem(k); });
     var frame = document.createElement('iframe');
     frame.src = '../buddies/';
@@ -3450,6 +3450,96 @@
           PP.setChord(other, ['D']);
           if (/Undo/.test($('reset-chords').textContent)) bad.push('the undo is still offered after a new change');
           expect(bad.length === 0, bad.join('\n'));
+        });
+      });
+    });
+
+  check('Session Buddies', 'Finish ends at the end of this time through, and so does lowering “Play it”',
+    'Finish (button or F) plays on to the end of the time through it is pressed in and closes the tune there; pressed when that time’s last bar is already on its way, it goes round once more; pressed again, it is taken back. And lowering “Play it” mid-tune below the time already reached used to stop the music dead and leave the page “playing” for good (the audit’s B5): now it too ends at the end of the time through it is in.',
+    function () {
+      var polka = { id: 0, name: 'A made-up polka', type: 'polka', url: '', settings: [{ id: 0, url: '', key: 'Dmajor', date: '', member: { name: 'a check' },
+        abc: '|:d2 fd|ed BA|d2 fd|e2 d2:|' }] };
+      return withBuddies(function (win, doc) {
+        var PP = win.BUDDIES_PAGE, $ = function (id) { return doc.getElementById(id); }, bad = [];
+        function setTimes(v) { $('times').value = v; $('times').dispatchEvent(new win.Event('change')); }
+        function until(test, ms) {
+          var end = Date.now() + ms;
+          return new Promise(function (ok) { (function poll() { if (test() || Date.now() > end) ok(test()); else setTimeout(poll, 50); })(); });
+        }
+        PP.loadTune(polka, 0);
+        $('countin').value = '1';
+        $('bpm').value = 170; $('bpm').dispatchEvent(new win.Event('input'));
+        var L = PP.form().length;
+        // Finish: pressed, taken back (F), pressed again; then it ends by itself.
+        // Bars are laid ahead (seconds ahead if the page is hidden), so Finish
+        // ends the time through of the next bar still to be laid.
+        setTimes('0');
+        $('play').click();
+        var n0 = PP.laid(), want = n0 < 0 ? 1 : Math.floor(n0 / L) + 1;
+        $('finish').click();
+        var on = PP.finishing(), pressed = $('finish').getAttribute('aria-pressed'), label = $('finish').textContent;
+        var finalPlanned = PP.plan(want * L - 1).some(function (x) { return x.final; });
+        if (!(on === want && want * L - 1 >= n0 && pressed === 'true' && label === 'Finishing' && finalPlanned))
+          bad.push('Finish pressed with bar ' + n0 + ' next: ends after time ' + on + ' (want ' + want + '), button ' + pressed + ' “' + label + '”' + (finalPlanned ? '' : ', no closing note planned'));
+        key(win, doc.body, 'KeyF', 'f');                     // F takes it back
+        var off = PP.finishing(), noFinal = !PP.plan(want * L - 1).some(function (x) { return x.final; });
+        if (!(off === null && noFinal)) bad.push('pressed again (F), Finish was not taken back');
+        $('finish').click();
+        return until(function () { return !PP.playing(); }, 20000).then(function (stopped) {
+          if (!stopped) { bad.push('after Finish the tune did not end by itself'); $('play').click(); }
+          if ($('play').querySelector('.play-label').textContent !== 'Play') bad.push('after Finish the button still says Stop');
+          // "Play it" lowered below the time reached: it ends at the end of the time it is in.
+          setTimes('0');
+          $('play').click();
+          return until(function () { return PP.laid() > L; }, 10000);
+        }).then(function () {
+          setTimes('1');                                      // once through, in time 2
+          return until(function () { return !PP.playing(); }, 20000);
+        }).then(function (stopped) {
+          if (!stopped) { bad.push('“Play it” lowered to once through in time 2: still playing, the page hung'); $('play').click(); }
+          expect(bad.length === 0, bad.join('\n'));
+        });
+      });
+    });
+
+  check('Session Buddies', 'Your turn: the melody drops out where you choose, the lead-in still brings you in',
+    'Taking turns, they play a time through and you the next; or they play the A part and you the B, or the other way round. During your turn the melody is silent, or there quietly (about 10 dB down) as a guide. The lead-in at the end of their bar is still played, so you know where to come in. The choice is kept.',
+    function () {
+      return Promise.all([json(FIX + 'the-kesh.json'), json(FIX + 'the-silver-spear.json')]).then(function (r) {
+        return withBuddies(function (win, doc) {
+          var PP = win.BUDDIES_PAGE, bad = [];
+          function pick(group, attr, v) { doc.querySelector('#' + group + ' [data-' + attr + '="' + v + '"]').click(); }
+          function fl(n) { return PP.plan(n).filter(function (x) { return x.who === 'flute'; }); }
+          PP.loadTune(r[0], 0);                               // The Kesh: AABB, 32 bars a time
+          var L = PP.form().length, B1 = 16;
+          doc.getElementById('times').value = '2';
+          pick('melody-mode', 'melody', 'turns');
+          if (!fl(0).length) bad.push('taking turns, they do not play time 1');
+          if (fl(L).length) bad.push('taking turns, they still play time 2 (your turn)');
+          pick('your-turn-level', 'level', 'quiet');
+          var quiet = fl(L), loud = fl(0);
+          if (!quiet.length) bad.push('“quietly”, there is no melody on your turn');
+          else if (Math.max.apply(null, quiet.map(function (x) { return x.w; })) > 0.35 * Math.max.apply(null, loud.map(function (x) { return x.w; }))) bad.push('“quietly” is not about 10 dB down');
+          pick('your-turn-level', 'level', 'silent');
+          pick('melody-mode', 'melody', 'a');                 // they play A, you play B
+          if (!fl(0).length || fl(B1).length) bad.push('“You play B”: A ' + (fl(0).length ? 'played' : 'silent') + ', B ' + (fl(B1).length ? 'played' : 'silent'));
+          pick('melody-mode', 'melody', 'b');                 // they play B, you play A
+          if (fl(0).length || !fl(B1).length) bad.push('“You play A”: A ' + (fl(0).length ? 'played' : 'silent') + ', B ' + (fl(B1).length ? 'played' : 'silent'));
+          if (PP.plan(-1).some(function (x) { return x.who === 'flute'; })) bad.push('“You play A”: they play the lead-in to your A part from the count-in');
+          // The Silver Spear's pickup: taking turns, their last bar brings you in.
+          PP.loadTune(r[1], 0);
+          var S = PP.form().length;
+          pick('melody-mode', 'melody', 'turns');
+          var q = 60 / +doc.getElementById('bpm').value / 2, end1 = fl(S - 1);
+          var lead = end1.filter(function (x) { return x.t > 6.5 * q; });   // "B2 AG": the G
+          if (!lead.length) bad.push('taking turns, the lead-in into your turn is not played');
+          if (fl(2 * S - 1).length) bad.push('taking turns, they play in your turn’s last bar');
+          // Kept for next time.
+          return new Promise(function (ok) { win.frameElement.onload = ok; win.location.reload(); }).then(function () { return wait(300); }).then(function () {
+            var d = win.document, mode = d.querySelector('#melody-mode [aria-checked="true"]'), lvl = d.querySelector('#your-turn-level [aria-checked="true"]');
+            if (!mode || mode.dataset.melody !== 'turns' || !lvl || lvl.dataset.level !== 'silent') bad.push('after a reload the choice is ' + (mode && mode.dataset.melody) + ' / ' + (lvl && lvl.dataset.level));
+            expect(bad.length === 0, bad.join('\n'));
+          });
         });
       });
     });

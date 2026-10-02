@@ -87,6 +87,9 @@
         <span class="play-icon" aria-hidden="true"></span>
         <span class="play-label">Play</span>
       </button>
+      <!-- Plays on to the end of this time through, and closes the tune there.
+           Press again to carry on. -->
+      <button id="finish" class="ghost-btn finish" type="button" aria-pressed="false" disabled>Finish</button>
     </div>
     <div class="tempo">
       <div class="tempo-readout">
@@ -146,6 +149,20 @@
     </div>
     <p class="blurb">The flute and the concertina both play the tune: tick either, or both
     together as at a session. Untick both to play the tune yourself over the backing.</p>
+    <h3 class="sub-h">Melody</h3>
+    <div id="melody-mode" class="modes" role="radiogroup" aria-label="When the melody plays">
+      <button class="mode" type="button" role="radio" data-melody="every" aria-checked="true">Every time</button>
+      <button class="mode" type="button" role="radio" data-melody="turns" aria-checked="false">Taking turns</button>
+      <button class="mode" type="button" role="radio" data-melody="a" aria-checked="false">You play B</button>
+      <button class="mode" type="button" role="radio" data-melody="b" aria-checked="false">You play A</button>
+    </div>
+    <div id="your-turn-box" hidden>
+      <div id="your-turn-level" class="modes" role="radiogroup" aria-label="During your turn">
+        <button class="mode" type="button" role="radio" data-level="silent" aria-checked="true">Your turn: silent</button>
+        <button class="mode" type="button" role="radio" data-level="quiet" aria-checked="false">Your turn: quietly</button>
+      </div>
+    </div>
+    <p id="melody-desc" class="blurb"></p>
     <h3 class="sub-h">Strum</h3>
     <div id="strums" class="modes" role="radiogroup" aria-label="Strum">
       <button class="mode" type="button" role="radio" data-strum="lilt" aria-checked="true">Lilt</button>
@@ -218,7 +235,7 @@
     <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener">CC BY-SA 4.0</a>.
     The guitar, flute and bodhrán are synthesised as they play.</p>
     <nav class="apps" aria-label="Switch app"><a href="../">Bodhrán</a> · <b aria-current="page">Session Buddies</b></nav>
-    <p><span id="foot-version"></span> <a href="../release-notes/#buddies">What’s new</a> · <b>Space</b> play/stop</p>
+    <p><span id="foot-version"></span> <a href="../release-notes/#buddies">What’s new</a> · <b>Space</b> play/stop · <b>F</b> finish</p>
   </footer>
 
 </main>

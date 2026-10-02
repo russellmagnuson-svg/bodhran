@@ -429,6 +429,26 @@ The page at `/buddies/` has its own version number, shown next to its title.
 It was called Session Players, at `/players/`, until 1.8.0; the entries
 before that keep the old name.
 
+### Session Buddies 1.13.0 — 2026-10-02 — Finish, and your turn
+
+- **Finish** (the button under Play, or F). While a tune plays, one press
+  plays on to the end of this time through and closes the tune there, with
+  the closing strokes and the last note held. If that time's last bar is
+  already on its way, it goes round once more. Press again to carry on. With
+  "Play it" on "until I stop", it is how to end a tune properly instead of
+  cutting it off.
+- **Lowering "Play it" mid-tune now ends it properly.** Set to "once through"
+  during the second time, the music stopped dead with no closing chord and
+  the page stayed "playing", showing Stop, until you pressed it (audit B5).
+  Now it ends at the end of the time through it is in, like Finish.
+- **Your turn.** A new Melody choice: Every time (as before); Taking turns
+  (they play the tune once, you the next time, and so on); You play B (they
+  play the A part, you the B part and any others); You play A (the other way
+  round). The guitar and bodhrán carry on throughout. The lead-in at the end
+  of their bar is still played, so they bring you in. On your turn the
+  melody is silent, or plays along quietly (about 10 dB down) as a guide: you
+  choose. Now shows "your turn" when it is. Both choices are kept.
+
 ### Session Buddies 1.12.3 — 2026-10-02
 
 Reading the Session's tunes right (from the audit; each fix tried on all
