@@ -3219,6 +3219,105 @@
       });
     });
 
+  check('Session Buddies', 'Real settings the audit found misread now read right',
+    'A second ending closed by a plain bar line before |: marked the whole next part as “ending 2”, and it was never played (Off To California #17, The Swallowtail #23). Any quoted text starting A–G was a chord, and any chord at all set the whole tune: The Star of Munster #19, whose only quoted text is “Ending”, was strummed on E major throughout, and The Silver Spear #9, with one “D” on bar 1, on D for all 32 bars. Now: the parts are all there; a quoted word is a chord only if it is a whole chord name; and a setting’s chords are used only if they cover the tune, else they are chosen from the melody — while a setting that really is chorded keeps its own.',
+    function () {
+      return Promise.all([json(FIX + 'audit-settings.json'), json(FIX + 'the-road-to-lisdoonvarna.json')]).then(function (r) {
+        var cases = {}, bad = [];
+        r[0].forEach(function (t) { cases[t.name] = t; });
+        function lay(t, i) { var st = t.settings[i || 0]; return PL.layout(st.abc, { key: st.key, meter: { jig: '6/8', reel: '4/4', hornpipe: '4/4' }[t.type] || '12/8' }); }
+        ['Off To California', 'The Swallowtail'].forEach(function (n) {
+          var l = lay(cases[n]), parts = {}, heard = {};
+          l.slots.forEach(function (sl) { parts[sl.part] = true; });
+          l.timeline.forEach(function (tb) { heard[tb.slot] = true; });
+          var unheard = l.slots.filter(function (sl) { return !heard[sl.id]; }).length;
+          if (Object.keys(parts).length < 2 || l.timeline.length < 32 || unheard) bad.push(n + ' #' + cases[n].settingNumber + ': ' + Object.keys(parts).length + ' parts, ' + l.timeline.length + ' bars played');
+        });
+        var munster = lay(cases['The Star Of Munster']), spear = lay(cases['The Silver Spear']);
+        if (PL.chordSource(munster) !== 'auto') bad.push('The Star of Munster #19 still takes its chords from “Ending”');
+        var mc = PL.chords(munster), allE = munster.slots.every(function (sl) { return mc[sl.id].join() === 'E'; });
+        if (allE) bad.push('The Star of Munster #19 is still on E throughout');
+        if (PL.chordSource(spear) !== 'auto') bad.push('The Silver Spear #9 still takes every chord from one “D”');
+        var road = lay({ type: 'slide', settings: r[1].settings }, 2);
+        if (PL.chordSource(road) !== 'setting') bad.push('The Road to Lisdoonvarna #3, chorded by its setter, no longer uses its own chords');
+        var names = { G: 1, Em7: 1, 'D/F#': 1, Bm7b5: 1, Asus4: 1, 'C (2nd time)': 1, 'D/H': 1, 'Am(7x0700)': 1, Ending: 0, Chorus: 0, "A'": 0, Fine: 0, 'D G': 0 };
+        Object.keys(names).forEach(function (n) { if (!!PL.isChordName(n) !== !!names[n]) bad.push('“' + n + '” ' + (names[n] ? 'is not taken as a chord' : 'is taken as a chord')); });
+        expect(bad.length === 0, bad.join('\n'));
+      });
+    });
+
+  check('Session Buddies', 'The last time through ends on the tune’s own last note',
+    'Many settings write a lead-in back to the top at the end of the last bar. On the last time it became the final note, held for a bar over the home chord: The Silver Spear ended on a G over D (about 1 in 12 popular settings did the like). Between times, a written lead-in that differed from the pickup was cut and the pickup added, so “B2 AG” came out “B2 A A”. Now the last time leaves a written lead-in off (never a held note, and not if the tune ends better with it), and between times a bar is played as written unless its lead-in is the pickup, which is then played once.',
+    function () {
+      return Promise.all([json(FIX + 'the-silver-spear.json'), json(FIX + 'audit-settings.json')]).then(function (r) {
+        var cooleys7 = r[1].filter(function (t) { return t.name === "Cooley's"; })[0];
+        var made = { id: 0, name: 'A made-up reel', type: 'reel', url: '', settings: [{ id: 0, url: '', key: 'Dmajor', date: '', member: { name: 'a check' },
+          abc: 'A|:DFAd fdAF|GBdB AFDF|DFAd fdAF|d2fe d3A:|' }] };
+        return withBuddies(function (win, doc) {
+          var PP = win.BUDDIES_PAGE, bad = [], times = doc.getElementById('times');
+          function flute(n) { return PP.plan(n).filter(function (x) { return x.who === 'flute'; }); }
+          function names(list) { return list.map(function (x) { return 'C C# D D# E F F# G G# A A# B'.split(' ')[x.midi % 12]; }).join(' '); }
+          // The Silver Spear #1 ends "dfed B2 AG"; its pickup is A.
+          PP.loadTune(r[0], 0);
+          var L = PP.form().length;
+          times.value = '1';
+          var end = flute(L - 1), fin = end.filter(function (x) { return x.final; });
+          if (names(end.slice(-3)) !== 'D B A' || fin.length !== 1 || fin[0].midi % 12 !== 9) bad.push('The Silver Spear ends ' + names(end.slice(-4)) + (fin[0] ? ', holding ' + names(fin) : '') + ' (want D B A, holding the A)');
+          times.value = '2';
+          var turn = flute(L - 1);
+          if (names(turn.slice(-3)) !== 'B A G') bad.push('Between times The Silver Spear’s last bar goes ' + names(turn.slice(-4)) + ' (want B2 AG as written)');
+          // Cooley's #7 ends on a held E: never cut.
+          PP.loadTune(cooleys7, 0);
+          times.value = '1';
+          var c = flute(PP.form().length - 1), cf = c.filter(function (x) { return x.final; })[0];
+          if (!cf || cf.midi % 12 !== 4) bad.push('Cooley’s #7 ends on ' + (cf ? names([cf]) : 'nothing') + ', not its held E');
+          // A lead-in that is the pickup: played once between times, left off at the end.
+          PP.loadTune(made, 0);
+          var M = PP.form().length;
+          times.value = '2';
+          var q = 60 / +doc.getElementById('bpm').value / 2;
+          var mid = flute(M - 1).filter(function (x) { return x.midi % 12 === 9 && x.t > 6.5 * q; });
+          if (mid.length !== 1) bad.push('the made-up reel’s lead-in A is played ' + mid.length + ' times at the turn, not once');
+          var last = flute(2 * M - 1), lf = last.filter(function (x) { return x.final; })[0];
+          if (!lf || lf.midi % 12 !== 2 || last.some(function (x) { return x.t > 6.5 * q; })) bad.push('the made-up reel ends ' + names(last.slice(-2)) + ' (want the held D, the lead-in A left off)');
+          expect(bad.length === 0, bad.join('\n'));
+        });
+      });
+    });
+
+  check('Session Buddies', 'A chord you change is kept, played or not, and a reset can be undone',
+    'A tune joined those played lately only on Play, and the page keeps only its last tune: chords changed and then a search, and they were gone. And “Back to the chosen chords” wiped every change at one tap. Now a changed chord puts the tune in those played lately, and the reset offers to undo it until you change a chord or the tune.',
+    function () {
+      return Promise.all([json(FIX + 'cooleys.json'), json(FIX + 'the-kesh.json')]).then(function (r) {
+        return withBuddies(function (win, doc) {
+          var PP = win.BUDDIES_PAGE, $ = function (id) { return doc.getElementById(id); }, bad = [];
+          PP.loadTune(r[0], 0);
+          var slot = PP.tune().lay.slots[2].id, other = PP.tune().lay.slots[3].id, before = PP.tune().chords[slot].join('/');
+          PP.setChord(slot, [before === 'Bm' ? 'G' : 'Bm']);
+          var mineChord = PP.tune().chords[slot].join('/');
+          var rec = JSON.parse(win.localStorage.getItem('buddies.recent') || '[]');
+          if (!rec.length || !/Cooley/.test(rec[0].name)) bad.push('changing a chord without Play did not keep the tune in those played lately');
+          PP.loadTune(r[1], 0);                              // away, then back from the list
+          var row = Array.prototype.filter.call(doc.querySelectorAll('#recent .open'), function (b) { return /Cooley/.test(b.textContent); })[0];
+          if (row) row.click();
+          if (!PP.tune() || PP.tune().chords[slot].join('/') !== mineChord) bad.push('back from the list, the changed chord is gone');
+          $('reset-chords').click();
+          var afterReset = PP.tune().chords[slot].join('/'), undoText = $('reset-chords').textContent, undoShown = !$('reset-chords').hidden;
+          $('reset-chords').click();
+          var undone = PP.tune().chords[slot].join('/'), mineBack = !!PP.tune().mine[slot];
+          var rec2 = JSON.parse(win.localStorage.getItem('buddies.recent') || '[]').filter(function (x) { return /Cooley/.test(x.name); })[0];
+          if (afterReset === mineChord) bad.push('the reset did not put the chord back to the chosen one');
+          if (!undoShown || !/Undo/.test(undoText)) bad.push('after the reset the button says “' + undoText + '”' + (undoShown ? '' : ' and is hidden'));
+          if (undone !== mineChord || !mineBack) bad.push('undo gave ' + undone + ', not ' + mineChord);
+          if (!rec2 || (rec2.data.mine || []).indexOf(slot) === -1) bad.push('after the undo your copy no longer has the change');
+          $('reset-chords').click();                           // reset again, then change another chord: no undo now
+          PP.setChord(other, ['D']);
+          if (/Undo/.test($('reset-chords').textContent)) bad.push('the undo is still offered after a new change');
+          expect(bad.length === 0, bad.join('\n'));
+        });
+      });
+    });
+
   check('Session Buddies', 'The page builds a tune and plays it',
     'From the Session’s JSON to a chart of the tune’s bars, a shape for each chord, and sound, with a count-in first.',
     function () {

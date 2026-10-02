@@ -17,7 +17,7 @@
    * next to the title and at the foot. Bump it with every change pushed (the
    * last number for a fix, the middle for something new) and add it to the
    * "Session Buddies" sections of CHANGELOG.md and the release notes. */
-  var VERSION = '1.12.2';
+  var VERSION = '1.12.3';
 
   var $ = function (id) { return document.getElementById(id); };
   var P = window.BUDDIES, G = window.GTR, T = window.TRAD, TPQ = P.TPQ;
@@ -548,6 +548,11 @@
   }
 
   /* ---------- showing the tune ---------- */
+  // A setting with chord symbols of its own (whole chord names, not "Ending").
+  function hasChords(abc) {
+    return (String(abc).match(/"[^"]*"/g) || []).filter(function (q) { return P.isChordName(q.slice(1, -1)); }).length >= 4;
+  }
+
   function showTune(options) {
     var ty = type(), s = setting(), lay = tune.lay;
     options = options || {};
@@ -562,7 +567,7 @@
       var o = document.createElement('option');
       o.value = i;
       o.textContent = 'Setting ' + (tune.settings.length > 1 ? i + 1 : number) + ' · ' + P.parseKey(st.key).name +
-        (st.member ? ' · ' + st.member : '') + (/"[A-G]/.test(st.abc) ? ' · has chords' : '');
+        (st.member ? ' · ' + st.member : '') + (hasChords(st.abc) ? ' · has chords' : '');
       sel.appendChild(o);
     });
     sel.value = String(tune.index);
@@ -632,7 +637,7 @@
       row.appendChild(bars);
       host.appendChild(row);
     });
-    $('reset-chords').hidden = !Object.keys(tune.mine).length;
+    showReset();
   }
 
   function paintSlot(id) {
@@ -702,12 +707,27 @@
   function setChord(id, chords, back) {
     tune.chords[id] = chords;
     if (back) delete tune.mine[id]; else tune.mine[id] = true;
+    undoChords = null;                    // a new change: the undo of a reset is gone
     prepareGuitar();
     paintSlot(id);
     drawShapes();
     renderChooser();
-    $('reset-chords').hidden = !Object.keys(tune.mine).length;
+    showReset();
     remember();
+    // A chord changed is work to keep: the tune goes into those played
+    // lately, played or not. Until 1.12.3 only Play put it there, and the
+    // page keeps only its last tune, so changes followed by a search were lost.
+    if (!back && !listOf(RECENT).some(function (x) { return x.key === currentKey(); })) addRecent();
+  }
+
+  /* "Back to the chosen chords" puts every chord you changed back to the
+   * chosen one; pressed by mistake, it wiped them all at a tap. Now the
+   * button then offers to undo it, until you change a chord or the tune. */
+  var undoChords = null;
+  function showReset() {
+    var b = $('reset-chords'), undo = !!undoChords && undoChords.tune === tune;
+    b.hidden = !undo && !Object.keys(tune.mine).length;
+    b.textContent = undo ? 'Undo: put my chord changes back' : 'Back to the chosen chords';
   }
 
   /* ---------- audio, built on the first press of Play ---------- */
@@ -800,13 +820,15 @@
       var fa = warp(tick, fw, written), fq = warp(tick + dur, fw, written) - fa, fl = fq * q;
       var fd = finalNote ? fl + ring : fluteLength(fl, fq);
       // No vibrato with the concertina: against its steady reed it beat (flute.js).
-      pending.push({ t: tBar + fa * q, fn: function (t) { flutePlayer.note(t, fd, midi, w, both ? 0 : 1); } });
+      pending.push({ t: tBar + fa * q, note: { who: 'flute', midi: midi, dur: fd, final: !!finalNote },
+                     fn: function (t) { flutePlayer.note(t, fd, midi, w, both ? 0 : 1); } });
     }
     if ($('on-concertina').checked) {
       var ca = warp(tick, 'concertina', written), cq = warp(tick + dur, 'concertina', written) - ca, cl = cq * q;
       var cd = finalNote ? cl + ring : concertinaLength(cl, cq, nextSame);
       var cw = Math.max(0.3, Math.min(1, 0.8 + (w - 0.8) * 1.4));   // the bellows lean harder
-      pending.push({ t: tBar + ca * q, fn: function (t) { concertina.note(t, cd, midi, cw); } });
+      pending.push({ t: tBar + ca * q, note: { who: 'concertina', midi: midi, dur: cd, final: !!finalNote },
+                     fn: function (t) { concertina.note(t, cd, midi, cw); } });
     }
   }
 
@@ -906,6 +928,18 @@
     });
   }
 
+  // The last bar's notes on the last time, its written lead-in left off (see layBar).
+  function endWithout(notes, cutAt, asPickup) {
+    var kept = asPickup ? notes.filter(function (nt) { return nt.tick < cutAt; }) : notes.slice();
+    if (!asPickup) {
+      while (kept.length > 1 && kept[kept.length - 1].tick >= cutAt && kept[kept.length - 1].dur <= TPQ) kept.pop();
+    }
+    if (!kept.length) return notes;
+    var tones = P.tones(P.chord(P.candidates(tune.lay.key)[0].name));
+    function score(m) { return m % 12 === tune.lay.key.tonic ? 2 : tones.indexOf(m % 12) >= 0 ? 1 : 0; }
+    return score(notes[notes.length - 1].midi) > score(kept[kept.length - 1].midi) ? notes : kept;
+  }
+
   /* Where quaver s of the bar falls, in quavers: straight, or swung (a
    * hornpipe), the quaver between the beats coming late. */
   function swung(s) {
@@ -928,17 +962,36 @@
     var k = n % FORM.length, tb = FORM[k], last = isLast(n), chords = tune.chords[tb.slot];
     shown.push({ t: t0, n: n });
 
-    // The last bar of a time through, with another to come: the pickup comes
-    // in over its end, so the tune's own notes stop where the pickup starts.
-    var again = k === FORM.length - 1 && !last && tune.lay.pickup.length;
-    var cutAt = again ? L * TPQ + tune.lay.pickup[0].tick : Infinity;
+    /* The last bar of a time through, in a tune with a pickup. With another
+     * time to come, the pickup comes in over its end, so the bar's own notes
+     * stop where it starts. Many settings write a lead-in there themselves
+     * ("B2 AG|" back to the top): if it is the pickup, it is played once; if
+     * written otherwise, the bar is played as written and the pickup left out
+     * (1.12.2 played both, "B2 A A"). And on the last time, the written
+     * lead-in is left off and the tune ends on the note before it: until
+     * 1.12.3 the lead-in became the final note, held for a bar over the home
+     * chord (The Silver Spear ended on a G over D; 1 in 12 settings did so).
+     * Left off: the pickup itself, or the short notes (a quaver or less) at
+     * the very end, in the pickup's place; never a held note (Cooley's #7
+     * ends on E2 there), and not if the tune ends better with them, on the
+     * keynote or the home chord (Foxhunter's #3 ends on a quaver D). Over the
+     * popular settings this ends 85 of 100 such tunes on the home chord,
+     * against 32, and none worse. */
+    var pk = tune.lay.pickup, atEnd = k === FORM.length - 1 && pk.length;
+    var cutAt = atEnd ? L * TPQ + pk[0].tick : Infinity;
+    var tail = tb.notes.filter(function (nt) { return nt.tick >= cutAt; });
+    var asPickup = tail.length === pk.length && tail.every(function (nt, i) {
+      return nt.midi === pk[i].midi && nt.dur === pk[i].dur && nt.tick - cutAt === pk[i].tick - pk[0].tick;
+    });
+    var again = atEnd && !last && (!tail.length || asPickup);
+    var kept = again ? tb.notes.filter(function (nt) { return nt.tick < cutAt; }) : tb.notes;
+    if (atEnd && last && tail.length) kept = endWithout(tb.notes, cutAt, asPickup);
     var written = asWritten(tb.notes);
-    tb.notes.forEach(function (note, i) {
-      if (note.tick >= cutAt) return;
-      var dur = Math.min(note.dur, cutAt - note.tick);
-      var nx = tb.notes[i + 1] || (FORM[(k + 1) % FORM.length].notes[0]);
+    kept.forEach(function (note, i) {
+      var dur = again ? Math.min(note.dur, cutAt - note.tick) : note.dur;
+      var nx = kept[i + 1] || (again ? pk[0] : FORM[(k + 1) % FORM.length].notes[0]);
       melody(t0, note.tick, dur, note.midi, weight(note.tick, k),
-             last && i === tb.notes.length - 1, nx && nx.midi === note.midi, written);
+             last && i === kept.length - 1, nx && nx.midi === note.midi, written);
     });
     if (again) pickupInto(t0 + L * q, q);
 
@@ -1185,9 +1238,15 @@
       this.value = '';
     });
     $('reset-chords').addEventListener('click', function () {
-      Object.keys(tune.mine).forEach(function (id) { tune.chords[id] = (tune.auto[id] || tune.chords[id]).slice(); });
-      tune.mine = {};
-      prepareGuitar(); buildChart(); drawShapes(); idleNow(); remember();
+      if (undoChords && undoChords.tune === tune) {              // put them back
+        tune.chords = undoChords.chords; tune.mine = undoChords.mine;
+        undoChords = null;
+      } else {
+        undoChords = { tune: tune, chords: JSON.parse(JSON.stringify(tune.chords)), mine: Object.assign({}, tune.mine) };
+        Object.keys(tune.mine).forEach(function (id) { tune.chords[id] = (tune.auto[id] || tune.chords[id]).slice(); });
+        tune.mine = {};
+      }
+      prepareGuitar(); buildChart(); drawShapes(); idleNow(); remember(); showReset();
     });
     $('choose-auto').addEventListener('click', function () {
       if (choosing) setChord(choosing.id, (tune.auto[choosing.id] || tune.chords[choosing.id]).slice(), true);
@@ -1266,7 +1325,19 @@
     VERSION: VERSION, TYPES: TYPES, PLAYABLE: PLAYABLE, swingNow: function () { return tune ? swingNow() : 0.5; }, MIX: MIX, fluteLength: fluteLength, concertinaLength: concertinaLength,
     tune: function () { return tune; },
     form: function () { return FORM; },
-    STARTER: STARTER, loadTune: loadTune, openText: openText, listText: listText, saveText: saveText, setChord: setChord,
+    STARTER: STARTER, loadTune: loadTune, openText: openText, listText: listText,
+    // The tune's notes bar n would hand over (count-in bars below 0), laid
+    // from time 0, without playing anything.
+    plan: function (n) {
+      var keep = { p: pending, s: shown, e: endAt };
+      pending = []; shown = [];
+      try {
+        layBar(n, 0);
+        return pending.filter(function (x) { return x.note; }).map(function (x) {
+          return { t: x.t, who: x.note.who, midi: x.note.midi, dur: x.note.dur, final: x.note.final };
+        }).sort(function (a, b) { return a.t - b.t; });
+      } finally { pending = keep.p; shown = keep.s; endAt = keep.e; }
+    }, saveText: saveText, setChord: setChord,
     playing: function () { return playing; },
     audio: function () { return { ctx: ctx, run: run, guitar: guitar, flute: fluteBus, concertina: concertina, concBus: concBus, drum: drum }; }
   };

@@ -57,6 +57,16 @@
              scale: scale, name: letter + acc + ' ' + MODE_NAMES[mode] };
   };
 
+  /* Is quoted text a chord symbol? A whole chord name only ("G", "Em7",
+   * "D/F#", "Bm7b5", "Asus4", "C (2nd time)"), not a part label ("A'"). Until Session Buddies 1.12.3
+   * any text starting A-G was: "Ending" became an E chord, "Chorus" a C,
+   * and with a setting's chords taken as given, The Star of Munster #19 was
+   * strummed on E major throughout. */
+  P.isChordName = function (txt) {
+    var t = String(txt || '').replace(/\s*\([^)]*\)\s*$/, '').trim();
+    return /^[A-G][#b]?(?:maj|M|min|m|dim|aug|\+|-|°|ø)?\d*(?:(?:sus|add|maj|[#b])\d*)*(?:\/[A-H][#b]?)?$/.test(t);   // H: B, as German players write it ("D/H")
+  };
+
   /* "6/8", "4/4", "C": ticks in a bar, and in a beat as the dance counts it;
    * and where a bar's second chord can come in. That is half way, except in
    * a bar of three beats (a slip jig's 9/8), where half way is mid-beat: the
@@ -165,7 +175,7 @@
       if (c === '"') {                                     // "G" chord symbol, or a note to the player
         var j = s.indexOf('"', i + 1); if (j < 0) j = n;
         var txt = s.slice(i + 1, j).trim();
-        if (/^[A-G][#b]?/.test(txt)) bar().chords.push({ tick: bar().len, name: txt });
+        if (P.isChordName(txt)) bar().chords.push({ tick: bar().len, name: txt });
         i = j + 1; continue;
       }
       if (c === '{') { var g = s.indexOf('}', i); i = g < 0 ? n : g + 1; continue; }   // grace notes: left out
@@ -180,7 +190,11 @@
         if (endRep && last) last.endRepeat = true;
         if (thick && last) last.sectionEnd = true;
         close();
-        if (endRep || thick) activeEnding = 0;
+        // A new repeat ends an ending too. Until Session Buddies 1.12.3 only an
+        // end-repeat or a thick line did, so a second ending closed by a plain
+        // bar line before |: marked the whole next part "ending 2", and it was
+        // never played (Off To California #17, The Swallowtail #23).
+        if (endRep || thick || startRep) activeEnding = 0;
         if (startRep) pend.start = true;
         if (thick) pend.section = true;
         if (m[4]) pend.ending = +m[4];

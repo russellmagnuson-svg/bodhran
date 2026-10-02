@@ -1,0 +1,102 @@
+[
+ {
+  "id": 30,
+  "name": "Off To California",
+  "type": "hornpipe",
+  "url": "https://thesession.org/tunes/30",
+  "settingNumber": 17,
+  "why": "second ending closed before |: (the B part was lost)",
+  "settings": [
+   {
+    "id": 56601,
+    "url": "https://thesession.org/tunes/30#setting56601",
+    "key": "Gmajor",
+    "abc": "|:(3DEF|\"G\"GFGB AGED|\"G/B\"GBdg \"C\"e2 (3def|\"G\"gfgd \"Em\"edBG|\"Am\"ABAG \"D\"E2 (3DEF|! \"G\"GFGB AGED|GBdg \"C\"e2 (3def|\"G\"gfgd \"Em\"edBG|1 \"Am\"AG \"D\"EF \"G\"G2:|2 \"Am\"AG \"D\"EF \"G\"G2! |:(3def|\"G\"gfeg \"D/F#\"fedf|\"Em\"edef \"G/B\"edBd|\"C\"gfgd \"G/B\"edBG|\"Am\"ABAG \"D\"E2 (3DEF|! \"G\"GFGB AGED|\"G/B\"GBdg \"C\"e2 (3def|\"G\"gfgd \"Em\"edBG| \"Am\"AG \"D\"EF \"G\"G2:|",
+    "date": "2026-02-17 09:05:01",
+    "member": {
+     "name": "Anthony Leibold "
+    }
+   }
+  ]
+ },
+ {
+  "id": 106,
+  "name": "The Swallowtail",
+  "type": "jig",
+  "url": "https://thesession.org/tunes/106",
+  "settingNumber": 23,
+  "why": "second ending closed before |: (the B part was lost)",
+  "settings": [
+   {
+    "id": 54335,
+    "url": "https://thesession.org/tunes/106#setting54335",
+    "key": "Edorian",
+    "abc": "z F |: \"Em\" GEE BEE | GEE BAG | \"D\" FDD ADD | dcd AGF | \"Em\" GEE BEE |! GEE B2 c| \"D\" dcd AGF |1 \"Em\" GEE E2 F :|2 \"Em\" GEE E3 |: \"Em\" Bcd e2 f | e2 f edB |! Bcd e2 f | edB \"D\"d3 | \"Em\" Bcd e2 f | e2 f edB | \"D\"dcd AGF | \"Em\"GEE E3 :|",
+    "date": "2025-06-16 23:48:02",
+    "member": {
+     "name": "R K"
+    }
+   }
+  ]
+ },
+ {
+  "id": 197,
+  "name": "The Star Of Munster",
+  "type": "reel",
+  "url": "https://thesession.org/tunes/197",
+  "settingNumber": 19,
+  "why": "only quoted text is \"Ending\" (was strummed on E throughout)",
+  "settings": [
+   {
+    "id": 39768,
+    "url": "https://thesession.org/tunes/197#setting39768",
+    "key": "Gdorian",
+    "abc": "A|BAGB AGFD|GFDE FDCF|DEFF GA=Bc|dggg fdcA|! BAGB AGFD|GFDE FDCF|DEFF GA=Bc|de^fd AG G A||! ABBA G3 F|(3GFD CF DFCF|DEFF GA=Bc|dggg ^fdcA|! dcAd cAGc|AGFD GF D2|G,A,=B,D GA=Bc|de^fd AG G2||! |:dgg^f gd ~d2|gdad gdde|effe fc ~c2|^fgag ^fdcA|! dgg^f gd ~d2|gdad gdde|1 effa g2 ga|baag ^fdcA:|! [2 fefa g2 ga|baag ^fdcA||\"Ending\"BA (3GAB AG (3FED|G4 z4||",
+    "date": "2020-12-05 01:45:58",
+    "member": {
+     "name": "GaryAMartin"
+    }
+   }
+  ]
+ },
+ {
+  "id": 182,
+  "name": "The Silver Spear",
+  "type": "reel",
+  "url": "https://thesession.org/tunes/182",
+  "settingNumber": 9,
+  "why": "one stray \"D\" on bar 1 (was D for all 32 bars)",
+  "settings": [
+   {
+    "id": 31499,
+    "url": "https://thesession.org/tunes/182#setting31499",
+    "key": "Dmajor",
+    "abc": "|:\"D\"FA ~A2 BAFA|dfed BddA|FA ~A2 BAFA|dfed ~B2 A2|! FA ~A2 BAFA|dfed Bdef|~g3 e ~f3 e|dfed ~B2 A2:|! |:fa ~a2 bfaf|gfed Bdde|fa ~a2 bfaf|gfed ~B2 A2|! fa ~a2 bfaf|gfed Bdef|~g3 e ~f3 e|1 dfed ~B2 A2:|2 dfed ~B2 AG||",
+    "date": "2017-12-12 12:19:57",
+    "member": {
+     "name": "Sergei Ejov"
+    }
+   }
+  ]
+ },
+ {
+  "id": 1,
+  "name": "Cooley's",
+  "type": "reel",
+  "url": "https://thesession.org/tunes/1",
+  "settingNumber": 7,
+  "why": "ends on a held E2 in the lead-in place (must not be cut)",
+  "settings": [
+   {
+    "id": 22061,
+    "url": "https://thesession.org/tunes/1#setting22061",
+    "key": "Edorian",
+    "abc": "|:ED|\"Em\"EBBA B2 EB|\"Em\"B2 AB dBAG|\"D\"F/E/D AD BDAD|\"D\"F/E/D AD BAGF|! \"Em\"EBBA B2 EB|\"Em\" B2 AB defg|\"D\" afec dBAF|\"D\"DEFD \"Em\"E3:|! |:gf|\"Em\"eBB2 eBgf|\"Em\"eBB2 gedB|\"D\"A/A/A FA DAFA|\"D\"A/A/A FA defg|! \"Em\"eBB2 eBgf|\"Em\"eBB2 defg|\"D\"afec dBAF|\"D\"DEFD \"Em\"E2:|",
+    "date": "2013-08-03 07:16:42",
+    "member": {
+     "name": "Tate"
+    }
+   }
+  ]
+ }
+]

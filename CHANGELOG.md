@@ -407,6 +407,43 @@ The page at `/buddies/` has its own version number, shown next to its title.
 It was called Session Players, at `/players/`, until 1.8.0; the entries
 before that keep the old name.
 
+### Session Buddies 1.12.3 — 2026-10-02
+
+Reading the Session's tunes right (from the audit; each fix tried on all
+1,249 settings of 56 popular tunes before and after):
+- **No more lost parts.** A second ending closed by a plain bar line before
+  the next part's `|:` marked that whole part "ending 2", so it was never
+  played. Off To California #17, The Swallowtail #23, The Lark in the Morning
+  #21 and The Musical Priest #19 played only their A part; nine settings in
+  all get their missing bars back.
+- **Only real chords count as chords.** Quoted text was taken as a chord if
+  it started with A–G, so "Ending" became an E chord and "Chorus" a C. Now
+  only a whole chord name counts ("Em7", "D/F#", German "D/H"), not a word
+  or a part label ("A'"). And a setting's own chords are used only when
+  they cover the tune (a chord in at least a quarter of its bars, and in
+  each part of four bars or more); otherwise the chords are chosen from the
+  melody. The Star of Munster #19 was strummed on E major throughout, and
+  The Silver Spear #9 on D for all 32 bars, from one stray "D". Bars before
+  a setting's first chord are now chosen from the melody too.
+- **The last time through ends on the tune's own last note.** Many settings
+  write a lead-in back to the top at the end of the last bar, and on the
+  last time it became the final note, held for a bar over the home chord:
+  The Silver Spear ended on a G over a D chord. Now that written lead-in is
+  left off: a quaver or two at the very end in the pickup's place, never a
+  held note, and not if the tune ends better with it. Over the popular
+  settings, the endings landing on the home chord go from 32 of 100 to 85,
+  and none is worse.
+- **Between times, a bar is played as written.** Its written lead-in was cut
+  and the pickup added on top, so The Silver Spear's "B2 AG" came out
+  "B2 A A". Now the pickup replaces it only when it is the same notes.
+
+Your chord changes kept:
+- **A chord you change is kept, played or not.** A tune went into "Played
+  lately" only when you pressed Play, so chords changed and then a search
+  were lost. Now changing a chord puts it there.
+- **"Back to the chosen chords" can be undone.** Afterwards the button reads
+  "Undo: put my chord changes back", until you change a chord or the tune.
+
 ### Session Buddies 1.12.2 — 2026-10-02
 
 Your work kept safe (found by the audit):

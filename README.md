@@ -125,7 +125,7 @@ against the real code:
   long, the concertina more than the flute; the concertina's notes carry over and a repeated note is struck again;
   the concertina sounds like a reed, plays in tune and sits with the
   flute, and ticking it plays the tune on it; the chosen tune and setting are
-  shown where you found it; a first visit opens with a tune ready to play; your tunes are a tap away; your work is kept when you search a tune you have; hornpipes, polkas,
+  shown where you found it; a first visit opens with a tune ready to play; your tunes are a tap away; your work is kept when you search a tune you have; settings the audit found misread read right; the last time through ends on the tune's own last note; a chord you change is kept, played or not, and a reset can be undone; hornpipes, polkas,
   slides and slip jigs play, each in its own time; the app and
   Session Buddies link to each other at the foot; chords follow the shape of a part; the matches fold away once one is picked; reopening keeps your chords and
   chooses the rest afresh; finding a tune asks the Session and offers only

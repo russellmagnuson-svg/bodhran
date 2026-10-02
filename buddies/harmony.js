@@ -85,11 +85,28 @@
   }
 
   /* Chords for each slot of a laid-out tune: { slotId: ['G'] or ['C', 'D'] }.
-   * From the setting's own chord symbols if it has any, else chosen. */
-  P.chords = function (lay) {
-    return lay.symbols.length ? fromSymbols(lay) : choose(lay);
-  };
-  P.chordSource = function (lay) { return lay.symbols.length ? 'setting' : 'auto'; };
+   * From the setting's own chord symbols if they cover the tune, else chosen.
+   *
+   * Covering it: a chord in at least a quarter of its bars, and in every
+   * part of four bars or more (a one-bar tail, "d8||", needs none). Until Session Buddies 1.12.3 any symbol at all decided: The Silver
+   * Spear #9, whose only symbol is a "D" on bar 1, was strummed on D for
+   * all 32 bars. */
+  function settingCovers(lay) {
+    if (!lay.symbols.length) return false;
+    var L = lay.meter.bar, marked = {}, parts = {}, partHas = {}, size = {};
+    lay.timeline.forEach(function (tb) {
+      var a = tb.k * L, b = a + L;
+      if (lay.symbols.some(function (sy) { return sy.tick >= a && sy.tick < b && P.chord(sy.name); })) marked[tb.slot] = true;
+    });
+    lay.slots.forEach(function (sl) {
+      parts[sl.part] = true; size[sl.part] = (size[sl.part] || 0) + 1;
+      if (marked[sl.id]) partHas[sl.part] = true;
+    });
+    return Object.keys(marked).length * 4 >= lay.slots.length &&
+           Object.keys(parts).every(function (p) { return partHas[p] || size[p] < 4; });
+  }
+  P.chords = function (lay) { return settingCovers(lay) ? fromSymbols(lay) : choose(lay); };
+  P.chordSource = function (lay) { return settingCovers(lay) ? 'setting' : 'auto'; };
 
   function choose(lay) {
     var key = lay.key, cands = P.candidates(key), L = lay.meter.bar, H = lay.meter.half, beat = lay.meter.beat;
@@ -157,19 +174,29 @@
     return out;
   }
 
+  // The bars before the setting's first chord are chosen from the melody
+  // (they used to take that first chord, so a setting whose chords start at
+  // bar 2 had bar 1 on bar 2's chord).
   function fromSymbols(lay) {
     var L = lay.meter.bar, H = lay.meter.half;
     var syms = lay.symbols.filter(function (s) { return P.chord(s.name); })
                           .sort(function (a, b) { return a.tick - b.tick; });
     if (!syms.length) return choose(lay);
-    var out = {}, curName = P.chord(syms[0].name).name;
+    var out = {}, chosen = null;
     function at(tick) {
-      for (var i = 0; i < syms.length; i++) if (syms[i].tick <= tick) curName = P.chord(syms[i].name).name;
-      return curName;
+      var name = null;
+      for (var i = 0; i < syms.length && syms[i].tick <= tick; i++) name = P.chord(syms[i].name).name;
+      return name;
     }
     lay.timeline.forEach(function (tb) {
       if (out[tb.slot]) return;
       var a = at(tb.k * L), b = at(tb.k * L + H);
+      if (a == null || b == null) {                    // before the first chord
+        chosen = chosen || choose(lay);
+        var c = chosen[tb.slot] || [];
+        a = a == null ? c[0] : a;
+        b = b == null ? (c[1] || c[0]) : b;
+      }
       out[tb.slot] = a === b ? [a] : [a, b];
     });
     return out;
