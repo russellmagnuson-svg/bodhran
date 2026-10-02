@@ -2563,7 +2563,7 @@
   /* The Session Buddies page in a frame, its saved state put back after. */
   function withBuddies(fn) {
     var keys = ['players.current', 'players.tuning', 'players.sympathy', 'players.volume', 'players.swing.hornpipe',
-                'buddies.favourites', 'buddies.recent', 'players.melody', 'players.yourturn'], saved = {};
+                'buddies.favourites', 'buddies.recent', 'players.melody', 'players.yourturn', 'players.backing'], saved = {};
     keys.forEach(function (k) { saved[k] = localStorage.getItem(k); localStorage.removeItem(k); });
     var frame = document.createElement('iframe');
     frame.src = '../buddies/';
@@ -3108,6 +3108,7 @@
         tunes.push(dotted);
         return withBuddies(function (win, doc) {
           var PP = win.BUDDIES_PAGE, B = win.BUDDIES, bad = [], strums = [], notes = [];
+          doc.querySelector('#backing-feel [data-backing="straight"]').click();   // where each type puts its strums, before any lilt
           var GP = win.GTR.Guitar.prototype, gs = GP.strum, FP = B.Flute.prototype, fn = FP.note;
           GP.strum = function (n, t, dir) { strums.push({ t: t, d: dir }); return gs.apply(this, arguments); };
           FP.note = function (t, d, m) { notes.push({ t: t, m: m }); return fn.apply(this, arguments); };
@@ -3538,6 +3539,59 @@
           return new Promise(function (ok) { win.frameElement.onload = ok; win.location.reload(); }).then(function () { return wait(300); }).then(function () {
             var d = win.document, mode = d.querySelector('#melody-mode [aria-checked="true"]'), lvl = d.querySelector('#your-turn-level [aria-checked="true"]');
             if (!mode || mode.dataset.melody !== 'turns' || !lvl || lvl.dataset.level !== 'silent') bad.push('after a reload the choice is ' + (mode && mode.dataset.melody) + ' / ' + (lvl && lvl.dataset.level));
+            expect(bad.length === 0, bad.join('\n'));
+          });
+        });
+      });
+    });
+
+  check('Session Buddies', 'The backing rides the tune’s lilt as you choose, and triplets stay even',
+    'The melody lilted over a dead-even backing, so in a reel at 100 its off-beats landed 30–42 ms after the guitar’s up-strum and the drum’s tak. With the tune (the start), the guitar and bodhrán ride the melody’s lilt: the concertina’s if it is ticked, else the flute’s; A little goes half way; Straight is as before. The beats stay put. And the lilt no longer bends triplets in reels and jigs: The Silver Spear’s “(3AAA” comes out even, as players keep it (hornpipes already did). The choice is kept.',
+    function () {
+      return Promise.all([json(FIX + 'the-silver-spear.json'), json(FIX + 'the-boys-of-bluehill.json')]).then(function (r) {
+        return withBuddies(function (win, doc) {
+          var PP = win.BUDDIES_PAGE, bad = [];
+          function feel(v) { doc.querySelector('#backing-feel [data-backing="' + v + '"]').click(); }
+          function conc(on) { var c = doc.getElementById('on-concertina'); if (c.checked !== on) c.click(); }
+          PP.loadTune(r[0], 0);                               // The Silver Spear, a reel
+          var q = 60 / +doc.getElementById('bpm').value / 2;
+          function at(n, who, slot) { var x = PP.plan(n).filter(function (y) { return y.who === who && y.slot === slot; })[0]; return x ? x.t / q : null; }
+          function noteAt(n, who, near) { var x = PP.plan(n).filter(function (y) { return y.who === who && Math.abs(y.t / q - near) < 0.3; })[0]; return x ? x.t / q : null; }
+          var starts = doc.querySelector('#backing-feel [aria-checked="true"]').dataset.backing;
+          if (starts !== 'tune') bad.push('the backing starts “' + starts + '”, not with the tune');
+          // Bar 2, "dfed BddA": the d on quaver 3, between beats 2 and 3.
+          conc(false); feel('tune');
+          var f3 = noteAt(1, 'flute', 3), g3 = at(1, 'guitar', 3), d3 = at(1, 'drum', 3);
+          if (Math.abs(g3 - f3) > 0.004 || Math.abs(d3 - f3) > 0.004) bad.push('with the tune (flute): the up-strum at ' + round(g3, 3) + ', the tak at ' + round(d3, 3) + ', the flute’s d at ' + round(f3, 3) + ' quavers');
+          if (Math.abs(at(1, 'guitar', 2) - 2) > 0.004 || Math.abs(at(1, 'guitar', 4) - 4) > 0.004) bad.push('with the tune, the strums on the beats moved');
+          conc(true);
+          var c3 = noteAt(1, 'concertina', 3), gc = at(1, 'guitar', 3);
+          if (Math.abs(gc - c3) > 0.004) bad.push('with the tune (concertina): the up-strum at ' + round(gc, 3) + ', the concertina’s d at ' + round(c3, 3));
+          conc(false); feel('little');
+          var gl = at(1, 'guitar', 3);
+          if (Math.abs(gl - (3 + f3) / 2) > 0.004) bad.push('a little: the up-strum at ' + round(gl, 3) + ', not half way to the flute’s ' + round(f3, 3));
+          feel('straight');
+          if (Math.abs(at(1, 'guitar', 3) - 3) > 0.004) bad.push('straight: the up-strum is not on quaver 3');
+          // Bar 1, "FA (3AAA BAFA": the triplet on beat 2 even, on 2, 2.67, 3.33.
+          feel('tune');
+          ['flute', 'concertina'].forEach(function (who) {
+            conc(who === 'concertina');
+            var trip = PP.plan(0).filter(function (y) { return y.who === who; }).map(function (y) { return y.t / q; }).filter(function (p) { return p > 1.9 && p < 3.9; });
+            var want = [2, 8 / 3, 10 / 3];
+            if (trip.length !== 3 || trip.some(function (p, i) { return Math.abs(p - want[i]) > 0.01; })) bad.push('the ' + who + '’s triplet “(3AAA” at ' + trip.map(function (p) { return round(p, 2); }).join(', ') + ', not 2, 2.67, 3.33');
+          });
+          // A hornpipe: with the concertina, the backing swings with it.
+          PP.loadTune(r[1], 0);
+          var qh = 60 / +doc.getElementById('bpm').value / 2;
+          var hc = PP.plan(0).filter(function (y) { return y.who === 'concertina' && Math.abs(y.t / qh - 1.3) < 0.2; })[0];
+          var hg = PP.plan(0).filter(function (y) { return y.who === 'guitar' && y.slot === 3; })[0];
+          if (!hc || !hg || Math.abs((hg.t - 2 * qh) - hc.t) > 0.004 * qh) bad.push('a hornpipe with the concertina: the backing does not swing with it');
+          conc(false);
+          // Kept for next time.
+          feel('little');
+          return new Promise(function (ok) { win.frameElement.onload = ok; win.location.reload(); }).then(function () { return wait(300); }).then(function () {
+            var kept = win.document.querySelector('#backing-feel [aria-checked="true"]').dataset.backing;
+            if (kept !== 'little') bad.push('after a reload the backing feel is ' + kept);
             expect(bad.length === 0, bad.join('\n'));
           });
         });

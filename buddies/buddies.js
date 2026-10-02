@@ -17,7 +17,7 @@
    * next to the title and at the foot. Bump it with every change pushed (the
    * last number for a fix, the middle for something new) and add it to the
    * "Session Buddies" sections of CHANGELOG.md and the release notes. */
-  var VERSION = '1.13.0';
+  var VERSION = '1.14.0';
 
   var $ = function (id) { return document.getElementById(id); };
   var P = window.BUDDIES, G = window.GTR, T = window.TRAD, TPQ = P.TPQ;
@@ -929,15 +929,17 @@
                   slide: [[0, 0], [1, 1.18], [2, 2.09], [3, 3]],
                   polka: [[0, 0], [1, 1.1], [1.5, 1.5], [2, 2]] }
   };
-  /* In a swung tune, the beats of a bar's notes that are not plain quavers
-   * and longer (a triplet, a dotted pair, semiquavers): { beat: true }, for
-   * the warp to leave as written. `at(n)` is a note's tick in the bar. */
+  /* The beats of a bar the warp leaves as written: { beat: true }. In a
+   * swung tune, any beat not in plain quavers and longer (a triplet, a dotted
+   * pair, semiquavers). In the others, a beat with a triplet in it (since
+   * 1.14.0: the lilt bent them, The Silver Spear's "(3AAA" coming out 0.73,
+   * 0.67 and 0.60 of a quaver, the last note rushed; players keep them even).
+   * Semiquavers and dotted pairs there still lilt. `at(n)`: a note's tick. */
   function asWritten(notes, at) {
-    var ty = type(), out = {}, B = ty.per * TPQ;
-    if (!ty.swing) return out;
+    var ty = type(), out = {}, B = ty.per * TPQ, grid = ty.swing ? TPQ : TPQ / 2;
     notes.forEach(function (n) {
       var t = at ? at(n) : n.tick;
-      if (t % TPQ || n.dur % TPQ) out[Math.floor(t / B)] = true;
+      if (t % grid || n.dur % grid) out[Math.floor(t / B)] = true;
     });
     return out;
   }
@@ -1002,6 +1004,32 @@
     return score(notes[notes.length - 1].midi) > score(kept[kept.length - 1].midi) ? notes : kept;
   }
 
+  /* Where the guitar and bodhrán play quaver s of the bar, in quavers: by
+   * the Backing feel. Until 1.14.0 the melody lilted over a backing of even
+   * quavers (a hornpipe's swung by its Swing control), so in a reel at 100
+   * the melody's off-beats landed 30-42 ms after the guitar's up-strum and
+   * the drum's tak, a flam the ear catches. With the tune: they ride the
+   * melody's own lilt (the concertina's if it is ticked, else the flute's;
+   * still so with both off, for you to play to). A little: half way. */
+  var BACKING = {
+    straight: 'The guitar and bodhrán play even quavers under the tune’s lilt (a hornpipe’s swung by its Swing control), as before 1.14.0.',
+    little: 'The guitar and bodhrán lilt half as much as the tune: a touch steadier than the melody.',
+    tune: 'The guitar and bodhrán lilt with the tune, so their off-beats land with the melody’s, as a backer rides the tune.'
+  };
+  var backingFeel = BACKING[stored('players.backing', '')] ? stored('players.backing') : 'tune';
+  function backingAt(s) {
+    var plain = swung(s);
+    if (backingFeel === 'straight') return plain;
+    var lilted = warp(s * TPQ, $('on-concertina').checked ? 'concertina' : 'flute');
+    return backingFeel === 'little' ? (plain + lilted) / 2 : lilted;
+  }
+  function drawBacking() {
+    Array.prototype.forEach.call($('backing-feel').children, function (b) {
+      b.setAttribute('aria-checked', String(b.dataset.backing === backingFeel));
+    });
+    $('backing-desc').textContent = BACKING[backingFeel];
+  }
+
   /* Where quaver s of the bar falls, in quavers: straight, or swung (a
    * hornpipe), the quaver between the beats coming late. */
   function swung(s) {
@@ -1064,8 +1092,9 @@
       slots.forEach(function (x) {
         var chord = chords.length > 1 && x.s >= ty.half ? chords[1] : chords[0];
         (function (at, notes, dir, v) {
-          pending.push({ t: at, fn: function (t) { guitar.strum(notes, t, dir, v, 4, open); } });
-        })(t0 + swung(x.s) * q, P.voicing(tuning, chord), x.d, x.v);
+          pending.push({ t: at, note: { who: 'guitar', slot: x.s },
+                         fn: function (t) { guitar.strum(notes, t, dir, v, 4, open); } });
+        })(t0 + backingAt(x.s) * q, P.voicing(tuning, chord), x.d, x.v);
       });
     }
     if ($('on-drum').checked) {
@@ -1079,12 +1108,13 @@
           var voice = T.VOICE[g[i]];
           if (!voice) continue;
           (function (at, vc, v) {
-            pending.push({ t: at, fn: function (t) { drum.hit(vc, t, v); } });
-          })(t0 + swung(i * step) * q, voice, T.VELOCITY[g[i]]);
+            pending.push({ t: at, note: { who: 'drum', slot: i * step },
+                           fn: function (t) { drum.hit(vc, t, v); } });
+          })(t0 + backingAt(i * step) * q, voice, T.VELOCITY[g[i]]);
         }
       }
     }
-    slots.forEach(function (x) { shown.push({ t: t0 + swung(x.s) * q, strum: x.s }); });
+    slots.forEach(function (x) { shown.push({ t: t0 + backingAt(x.s) * q, strum: x.s }); });
     if (last) { endAt = t0 + ty.final[ty.final.length - 1] * q + 3.2; showState(); }
     return L * q;
   }
@@ -1380,6 +1410,12 @@
       });
     });
     drawMelody();
+    Array.prototype.forEach.call($('backing-feel').children, function (b) {
+      b.addEventListener('click', function () {               // heard from the next bar
+        backingFeel = b.dataset.backing; store('players.backing', backingFeel); drawBacking();
+      });
+    });
+    drawBacking();
     document.addEventListener('keydown', function (e) {
       var typing = /^(INPUT|SELECT|TEXTAREA|BUTTON)$/.test(e.target.tagName) && !(e.target.type === 'range');
       if (typing || $('chooser').open || !tune || e.metaKey || e.ctrlKey || e.altKey) return;
@@ -1414,7 +1450,7 @@
       try {
         layBar(n, 0);
         return pending.filter(function (x) { return x.note; }).map(function (x) {
-          return { t: x.t, who: x.note.who, midi: x.note.midi, dur: x.note.dur, final: x.note.final, w: x.note.w };
+          return { t: x.t, who: x.note.who, midi: x.note.midi, dur: x.note.dur, final: x.note.final, w: x.note.w, slot: x.note.slot };
         }).sort(function (a, b) { return a.t - b.t; });
       } finally { pending = keep.p; shown = keep.s; endAt = keep.e; }
     }, saveText: saveText, setChord: setChord,

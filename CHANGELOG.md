@@ -429,6 +429,25 @@ The page at `/buddies/` has its own version number, shown next to its title.
 It was called Session Players, at `/players/`, until 1.8.0; the entries
 before that keep the old name.
 
+### Session Buddies 1.14.0 — 2026-10-02 — Backing feel
+
+- **Backing feel**, under the strums: Straight, A little, or With the tune
+  (where it starts). Since 1.6.0 the flute and concertina lilted over a
+  guitar and bodhrán playing dead-even quavers, so their off-beats did not
+  meet: in a reel at 100 the melody's landed 30–42 ms after the up-strum and
+  the tak, in a jig 12–16 ms (the audit; the jitter you heard in 1.7.2 was
+  27 ms). With the tune, the guitar and bodhrán ride the melody's own lilt
+  (the concertina's when it is ticked, else the flute's, and still so when
+  you untick both to play the tune yourself). A little goes half way, a touch
+  steadier than the tune; Straight is as before. The beats themselves stay
+  put. In a hornpipe the backing already swung with the Swing control; with
+  the tune it now also takes the concertina's slightly harder swing. The
+  choice is kept. Try them on the same tune and keep what sounds right.
+- **Even triplets in every tune.** The lilt bent triplets in reels and jigs:
+  The Silver Spear's "(3AAA" came out 0.73, 0.67 and 0.60 of a quaver, the
+  last note rushed. Now they play even, as players keep them, as hornpipes
+  already did. Ordinary quavers keep their lilt.
+
 ### Session Buddies 1.13.0 — 2026-10-02 — Finish, and your turn
 
 - **Finish** (the button under Play, or F). While a tune plays, one press
