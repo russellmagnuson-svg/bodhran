@@ -390,6 +390,22 @@ The page at `/buddies/` has its own version number, shown next to its title.
 It was called Session Players, at `/players/`, until 1.8.0; the entries
 before that keep the old name.
 
+### Session Buddies 1.12.0 — 2026-10-01
+
+- **My tunes**, in Find a tune, so the tunes you play are a tap away
+  instead of a search:
+  - **Favourites:** ☆ Favourite by a tune's name keeps it there, listed by
+    name; tap again (or ✕ in the list) to take it out.
+  - **Played lately:** each tune you press Play on goes to the top, the
+    last twelve kept, with when ("today", "yesterday", "3 days ago").
+  - A tap opens one with no search and no network: the setting you had,
+    with the chords you changed. A chord you change is kept in your copy
+    too. The list folds away once you pick, and opens by itself when you
+    come back to the page.
+  - They are kept in this browser. Safari can clear a site's storage if it
+    goes unvisited for a while, so **Save my tunes to a file** writes them
+    out, and **Open a saved tune** brings them back.
+
 ### Session Buddies 1.11.0 — 2026-10-01
 
 - A hornpipe has a Swing control (under the strums): from 50:50, straight, to

@@ -17,7 +17,7 @@
    * next to the title and at the foot. Bump it with every change pushed (the
    * last number for a fix, the middle for something new) and add it to the
    * "Session Buddies" sections of CHANGELOG.md and the release notes. */
-  var VERSION = '1.11.0';
+  var VERSION = '1.12.0';
 
   var $ = function (id) { return document.getElementById(id); };
   var P = window.BUDDIES, G = window.GTR, T = window.TRAD, TPQ = P.TPQ;
@@ -337,33 +337,169 @@
     $('file-status').textContent = 'Saved as “' + fileName() + '”, in your Downloads (on a phone, in Files).';
   }
 
-  /* A saved file's text, or the last tune left on this page (`restoring`).
-   * A file comes back exactly as saved. The last tune keeps only the chords
-   * you changed: the rest are chosen afresh, so a better way of choosing
-   * them reaches it. */
+  /* A saved file's text (a tune, or a list of your tunes), or the last tune
+   * left on this page (`restoring`). */
   function openText(text, restoring) {
-    var quiet = restoring;
     var d;
     try { d = JSON.parse(text); } catch (e) { d = null; }
-    if (!d || FORMATS.indexOf(d.format) === -1 || !d.tune || !d.setting || !d.setting.abc || !TYPES[d.tune.type]) {
-      if (!quiet) $('file-status').textContent = 'That file isn’t a tune saved from Session Buddies.';
+    if (!restoring && d && d.format === LIST_FORMAT) return openList(d);
+    return openData(d, restoring ? 'restore' : 'file');
+  }
+  function playable(d) {
+    return !!(d && FORMATS.indexOf(d.format) !== -1 && d.tune && d.setting && d.setting.abc && TYPES[d.tune.type]);
+  }
+  /* A tune as saved, how: 'file' comes back exactly as saved; 'restore' (the
+   * last tune left on the page) and 'list' (one of your tunes) keep only
+   * the chords you changed, the rest chosen afresh, so a better way of
+   * choosing them reaches it. */
+  function openData(d, how) {
+    if (!playable(d)) {
+      if (how === 'file') $('file-status').textContent = 'That file isn’t a tune saved from Session Buddies.';
       return false;
     }
     var s = d.setting, chords = d.chords || {}, mine = d.mine || [];
-    if (restoring) {
+    if (how !== 'file') {
       chords = {};
       mine.forEach(function (id) { if (d.chords && d.chords[id]) chords[id] = d.chords[id]; });
     }
     build(d.tune, [s], 0, { chords: chords, mine: mine, options: d.options || {} });
     tune.savedNumber = d.settingNumber;
-    tune.fromFile = !restoring;           // brought back by the page itself is not "from a file"
+    tune.fromFile = how === 'file';       // brought back by the page itself is not "from a file"
     showTune(d.options || {});
-    if (!quiet) { $('file-status').textContent = 'Opened “' + d.tune.name + '”, with its chords as saved.'; foldMatches(false); }
+    if (how === 'file') { $('file-status').textContent = 'Opened “' + d.tune.name + '”, with its chords as saved.'; foldMatches(false); }
+    if (how === 'list') { $('find-status').textContent = 'Opened “' + d.tune.name + '” from your tunes.'; foldMatches(false); }
     return true;
   }
 
-  // The tune on the page, kept so a reload brings it back.
-  function remember() { if (tune) store('players.current', saveText()); }
+  // The tune on the page, kept so a reload brings it back; and its copy in
+  // your tunes kept up with it, a chord you change included.
+  function remember() { if (tune) { store('players.current', saveText()); syncMine(); } }
+
+  /* ---------- my tunes: favourites, and those played lately ----------
+   * Asked for so the tunes you play are a tap away, not a search. Each is
+   * kept as it would be saved to a file, so it opens with no search and no
+   * network, on the setting you had, with the chords you changed. Kept in
+   * this browser's storage, which Safari can clear when a site goes
+   * unvisited for a while: Save my tunes writes them to a file, and Open a
+   * saved tune brings them back. */
+  var FAVS = 'buddies.favourites', RECENT = 'buddies.recent', RECENT_MAX = 12;
+  var LIST_FORMAT = 'session-buddies-list';
+  function listOf(key) {
+    try { var v = JSON.parse(stored(key, '[]')); return Array.isArray(v) ? v.filter(function (x) { return x && playable(x.data); }) : []; }
+    catch (e) { return []; }
+  }
+  function keepList(key, list) { store(key, JSON.stringify(list)); }
+  function currentKey() { var s = setting(); return tune.meta.id + '/' + (s.id != null ? s.id : settingNumber()); }
+  function entryNow(when) {
+    return { key: currentKey(), name: tune.meta.name, type: tune.meta.type, keyName: tune.lay.key.name,
+             number: settingNumber(), when: when, data: fileData() };
+  }
+  function byName(a, b) { return a.name.localeCompare(b.name); }
+  function isFav() { var k = currentKey(); return listOf(FAVS).some(function (x) { return x.key === k; }); }
+  function toggleFav() {
+    if (!tune) return;
+    var k = currentKey(), favs = listOf(FAVS), had = favs.some(function (x) { return x.key === k; });
+    favs = had ? favs.filter(function (x) { return x.key !== k; }) : favs.concat([entryNow(Date.now())]);
+    keepList(FAVS, favs.sort(byName));
+    renderMine();
+  }
+  function removeFav(k) { keepList(FAVS, listOf(FAVS).filter(function (x) { return x.key !== k; })); renderMine(); }
+  // Pressing Play puts the tune at the top of those played lately.
+  function addRecent() {
+    var k = currentKey();
+    var list = [entryNow(Date.now())].concat(listOf(RECENT).filter(function (x) { return x.key !== k; }));
+    keepList(RECENT, list.slice(0, RECENT_MAX));
+    renderMine();
+  }
+  function syncMine() {
+    var k = currentKey(), data = fileData();
+    [FAVS, RECENT].forEach(function (key) {
+      var list = listOf(key), hit = false;
+      list.forEach(function (x) { if (x.key === k) { x.data = data; x.name = tune.meta.name; hit = true; } });
+      if (hit) keepList(key, list);
+    });
+  }
+  function ago(when) {
+    var day = 864e5, d0 = new Date(); d0.setHours(0, 0, 0, 0);
+    var days = Math.ceil((d0 - when) / day);
+    if (when >= d0.getTime()) return 'today';
+    if (days <= 1) return 'yesterday';
+    if (days < 14) return days + ' days ago';
+    return new Date(when).toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
+  }
+  function renderMine() {
+    var favs = listOf(FAVS), recent = listOf(RECENT), k = tune ? currentKey() : '';
+    function rows(host, list, withWhen, removable) {
+      host.innerHTML = '';
+      list.forEach(function (x) {
+        var li = document.createElement('li'), b = document.createElement('button');
+        li.className = 'mine-row';
+        b.type = 'button'; b.className = 'open';
+        b.setAttribute('aria-pressed', String(x.key === k));
+        b.innerHTML = esc(x.name) + '<small>' + esc((TYPES[x.type] ? TYPES[x.type].name : x.type) + ' · ' + x.keyName +
+          ' · setting ' + x.number + (withWhen ? ' · ' + ago(x.when) : '')) + '</small>';
+        // Read afresh when tapped: a chord changed since the list was drawn is in it.
+        b.addEventListener('click', function () { openMine(x.key, list === favs ? FAVS : RECENT); });
+        li.appendChild(b);
+        if (removable) {
+          var r = document.createElement('button');
+          r.type = 'button'; r.className = 'remove'; r.textContent = '✕';
+          r.setAttribute('aria-label', 'Take ' + x.name + ' out of your favourites');
+          r.addEventListener('click', function () { removeFav(x.key); });
+          li.appendChild(r);
+        }
+        host.appendChild(li);
+      });
+    }
+    rows($('favs'), favs, false, true);
+    rows($('recent'), recent, true, false);
+    $('favs-empty').hidden = !!favs.length;
+    $('recent-empty').hidden = !!recent.length;
+    $('mine-sum').textContent = 'My tunes' + (favs.length || recent.length
+      ? ': ' + favs.length + ' favourite' + (favs.length === 1 ? '' : 's') + ', ' + recent.length + ' played lately' : '');
+    var fav = tune && isFav();
+    $('fav').setAttribute('aria-pressed', String(!!fav));
+    $('fav').textContent = (fav ? '★' : '☆') + ' Favourite';
+    $('fav').setAttribute('aria-label', fav ? 'Take this tune out of your favourites' : 'Add this tune to your favourites');
+  }
+  function openMine(k, key) {
+    var x = listOf(key).filter(function (y) { return y.key === k; })[0];
+    if (!x) return renderMine();
+    $('mine').open = false;
+    openData(x.data, 'list');
+  }
+  function listText() {
+    return JSON.stringify({ format: LIST_FORMAT, version: 1, app: VERSION, saved: new Date().toISOString(),
+                            favourites: listOf(FAVS), recent: listOf(RECENT) }, null, 1);
+  }
+  function saveList() {
+    var name = 'My tunes - Session Buddies.json';
+    var url = URL.createObjectURL(new Blob([listText()], { type: 'application/json' }));
+    var a = document.createElement('a');
+    a.href = url; a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 2000);
+    $('file-status').textContent = 'Saved your tunes as “' + name + '”, in your Downloads (on a phone, in Files).';
+  }
+  // A saved list: each tune added to yours, or brought up to date as saved.
+  function openList(d) {
+    var n = 0;
+    function merge(key, from, sort) {
+      var list = listOf(key);
+      (Array.isArray(from) ? from : []).forEach(function (x) {
+        if (!x || !x.key || !playable(x.data)) return;
+        list = list.filter(function (y) { return y.key !== x.key; }).concat([x]);
+        if (key === FAVS) n++;
+      });
+      keepList(key, sort(list));
+    }
+    merge(FAVS, d.favourites, function (l) { return l.sort(byName); });
+    merge(RECENT, d.recent, function (l) { return l.sort(function (a, b) { return b.when - a.when; }).slice(0, RECENT_MAX); });
+    renderMine();
+    $('mine').open = true;
+    $('file-status').textContent = 'Opened your tunes: ' + n + ' favourite' + (n === 1 ? '' : 's') + '.';
+    return true;
+  }
 
   /* ---------- showing the tune ---------- */
   function showTune(options) {
@@ -393,6 +529,7 @@
       (tune.settings.length > 1 ? ' of ' + tune.settings.length : tune.fromFile ? ', from a saved file' : '') +
       (s.member ? ' by ' + s.member : '');
     $('q').value = tune.meta.name;
+    renderMine();                         // its star, and where it is in your tunes
     var link = $('setting-link');
     link.href = (s.url || tune.meta.url) || API;
     link.textContent = 'on thesession.org';
@@ -811,6 +948,7 @@
 
   function start() {
     if (!tune) return;
+    addRecent();
     ensureAudio();
     run.gain.cancelScheduledValues(ctx.currentTime);
     run.gain.setTargetAtTime(1, ctx.currentTime, 0.01);
@@ -987,6 +1125,8 @@
     $('matches').addEventListener('toggle', summarise);
     $('setting').addEventListener('change', function () { build(tune.meta, tune.settings, +this.value); });
     $('save').addEventListener('click', save);
+    $('fav').addEventListener('click', toggleFav);
+    $('save-list').addEventListener('click', saveList);
     $('open').addEventListener('click', function () { $('file').click(); });
     $('file').addEventListener('change', function () {
       var f = this.files && this.files[0];
@@ -1069,6 +1209,8 @@
       loadTune(STARTER, 0);
       $('find-status').textContent = 'The Kesh is ready to play, to start you off. Search above for any other tune.';
     }
+    renderMine();
+    $('mine').open = !!(listOf(FAVS).length || listOf(RECENT).length);   // your tunes first, if you have any
   }
 
   // For the checks page.
@@ -1076,7 +1218,7 @@
     VERSION: VERSION, TYPES: TYPES, PLAYABLE: PLAYABLE, swingNow: function () { return tune ? swingNow() : 0.5; }, MIX: MIX, fluteLength: fluteLength, concertinaLength: concertinaLength,
     tune: function () { return tune; },
     form: function () { return FORM; },
-    STARTER: STARTER, loadTune: loadTune, openText: openText, saveText: saveText, setChord: setChord,
+    STARTER: STARTER, loadTune: loadTune, openText: openText, listText: listText, saveText: saveText, setChord: setChord,
     playing: function () { return playing; },
     audio: function () { return { ctx: ctx, run: run, guitar: guitar, flute: fluteBus, concertina: concertina, concBus: concBus, drum: drum }; }
   };

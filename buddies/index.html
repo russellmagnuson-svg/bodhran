@@ -44,7 +44,10 @@
     </details>
     <!-- The tune on the page, and which setting of it. -->
     <div id="chosen" class="chosen" hidden>
-      <div id="chosen-name" class="chosen-name"></div>
+      <div class="chosen-top">
+        <div id="chosen-name" class="chosen-name"></div>
+        <button id="fav" class="fav" type="button" aria-pressed="false">☆ Favourite</button>
+      </div>
       <div id="chosen-facts" class="chosen-facts"></div>
       <div class="row setting-row">
         <label class="inline">Setting
@@ -54,6 +57,21 @@
       </div>
       <p id="setting-warn" class="blurb warn" hidden></p>
     </div>
+    <!-- Your tunes, a tap away: favourites, and those played lately. -->
+    <details id="mine" class="matches mine">
+      <summary id="mine-sum">My tunes</summary>
+      <h3 class="sub-h">Favourites</h3>
+      <ul id="favs" class="results"></ul>
+      <p id="favs-empty" class="blurb">None yet. Tap ☆ Favourite by a tune’s name to keep it here.</p>
+      <h3 class="sub-h">Played lately</h3>
+      <ul id="recent" class="results"></ul>
+      <p id="recent-empty" class="blurb">The tunes you play will show here.</p>
+      <div class="file-row">
+        <button id="save-list" class="action ghost" type="button">Save my tunes to a file</button>
+      </div>
+      <p class="blurb">Kept in this browser. Safari can clear it if the page goes unvisited for a
+      while, so save them to a file now and then; Open a saved tune brings them back.</p>
+    </details>
     <div class="file-row">
       <button id="save" class="action ghost" type="button" disabled>Save to a file</button>
       <button id="open" class="action ghost" type="button">Open a saved tune</button>

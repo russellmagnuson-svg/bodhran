@@ -2335,7 +2335,8 @@
   function layOf(j, i) { return PL.layout(j.settings[i || 0].abc, { key: j.settings[i || 0].key, meter: j.type === 'jig' ? '6/8' : '4/4' }); }
   /* The Session Buddies page in a frame, its saved state put back after. */
   function withBuddies(fn) {
-    var keys = ['players.current', 'players.tuning', 'players.sympathy', 'players.volume', 'players.swing.hornpipe'], saved = {};
+    var keys = ['players.current', 'players.tuning', 'players.sympathy', 'players.volume', 'players.swing.hornpipe',
+                'buddies.favourites', 'buddies.recent'], saved = {};
     keys.forEach(function (k) { saved[k] = localStorage.getItem(k); localStorage.removeItem(k); });
     var frame = document.createElement('iframe');
     frame.src = '../buddies/';
@@ -2993,6 +2994,77 @@
               expect(bad.length === 0, bad.join('\n'));
             });
           });
+        });
+      });
+    });
+
+  check('Session Buddies', 'Your tunes are a tap away: favourites, and those played lately',
+    'Asked for so the tunes you play need no search each time. ☆ Favourite keeps a tune in your favourites (by name), Play puts it at the top of those played lately (twelve at most, no tune twice), and either opens with a tap: no search or network, its setting, the chords you changed, the list folded away. A chord you change is kept in your copy too, and Save my tunes writes them to a file that Open a saved tune brings back.',
+    function () {
+      var names = ['the-kesh', 'cooleys', 'the-swallowtail', 'the-silver-spear', 'out-on-the-ocean', 'banish-misfortune', 'the-butterfly', 'the-road-to-lisdoonvarna'];
+      return Promise.all(names.map(function (n) { return json(FIX + n + '.json'); })).then(function (T) {
+        var kesh = T[0], cooleys = T[1];
+        return withBuddies(function (win, doc) {
+          var PP = win.BUDDIES_PAGE, $ = function (id) { return doc.getElementById(id); };
+          function texts(id) { return Array.prototype.map.call(doc.querySelectorAll('#' + id + ' .open'), function (b) { return b.firstChild.textContent; }); }
+          function playBriefly() { $('play').click(); $('play').click(); }
+          function tapRow(id, re, what) {
+            var b = Array.prototype.filter.call(doc.querySelectorAll('#' + id + ' .open'), function (x) { return re.test(x.textContent); })[0];
+            if (!b) throw new Error(what + ' is not in ' + (id === 'favs' ? 'your favourites' : 'those played lately') + ': ' + texts(id).join(', '));
+            b.click();
+          }
+          var empty = !$('favs-empty').hidden && !$('recent-empty').hidden && !$('mine').open;
+          PP.loadTune(kesh, 0);
+          $('fav').click();
+          var starred = $('fav').getAttribute('aria-pressed') === 'true' && /★/.test($('fav').textContent);
+          PP.loadTune(cooleys, 0);
+          var otherUnstarred = $('fav').getAttribute('aria-pressed') === 'false';
+          $('fav').click();                                   // Cooley's a favourite too
+          playBriefly();
+          PP.loadTune(kesh, 0); playBriefly();
+          PP.loadTune(cooleys, 0); playBriefly();             // again: to the top, not twice
+          var favs = texts('favs'), recent = texts('recent');
+          // A chord you change goes into your copy.
+          var slot = PP.tune().lay.slots[1].id;
+          PP.setChord(slot, ['Em']);
+          // Open The Kesh from the favourites: no network.
+          var fetched = 0, f0 = win.fetch;
+          win.fetch = function () { fetched++; return f0.apply(this, arguments); };
+          $('mine').open = true;
+          doc.querySelector('#favs .open').click();             // "Cooley's" sorts first; take The Kesh
+          var first = PP.tune().meta.name;
+          tapRow('favs', /Kesh/, 'The Kesh');
+          var opened = PP.tune().meta.name, folded = !$('mine').open, said = $('find-status').textContent;
+          // And Cooley's from those played lately, with the changed chord.
+          tapRow('recent', /Cooley/, 'Cooley’s');
+          var kept = PP.tune().chords[slot] && PP.tune().chords[slot].join('/') === 'Em' && !!PP.tune().mine[slot];
+          win.fetch = f0;
+          // Twelve at most.
+          T.forEach(function (j) { j.settings.forEach(function (st, i) { PP.loadTune(j, i); playBriefly(); }); });
+          var many = texts('recent').length;
+          // Saved to a file and brought back.
+          var list = PP.listText();
+          win.localStorage.removeItem('buddies.favourites'); win.localStorage.removeItem('buddies.recent');
+          PP.loadTune(kesh, 0);
+          var cleared = texts('favs').length;
+          PP.openText(list);
+          var back = texts('favs');
+          // Unstarred from the tune, and with ✕ in the list.
+          $('fav').click();
+          var afterUnstar = texts('favs');
+          doc.querySelector('#favs .remove').click();
+          var afterRemove = texts('favs').length;
+          expect(empty, 'a first visit does not start with My tunes empty and folded');
+          expect(starred && otherUnstarred, 'the ☆ does not show which tune is a favourite');
+          expect(favs.join(',') === "Cooley's,The Kesh", 'the favourites are ' + favs.join(', ') + ', not both by name');
+          expect(recent.join(',') === "Cooley's,The Kesh", 'played lately: ' + recent.join(', ') + ' (want Cooley’s, then The Kesh, once each)');
+          expect(first === "Cooley's" && opened === 'The Kesh' && folded, 'opening from the favourites gave ' + first + ' then ' + opened + (folded ? '' : ', and the list stayed open'));
+          expect(fetched === 0, 'opening your tunes asked the network ' + fetched + ' times');
+          expect(/from your tunes/.test(said), 'the page did not say where it came from: ' + said);
+          expect(kept, 'the chord changed in Cooley’s was not kept in your copy');
+          expect(many === 12, 'played lately holds ' + many + ', not twelve');
+          expect(cleared === 0 && back.join(',') === "Cooley's,The Kesh", 'the saved list brought back ' + back.join(', '));
+          expect(afterUnstar.join(',') === "Cooley's" && afterRemove === 0, 'taking them out left ' + afterUnstar.join(', ') + ' then ' + afterRemove);
         });
       });
     });

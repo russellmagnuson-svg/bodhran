@@ -41,6 +41,18 @@
   background: var(--panel-2); border: 1px solid var(--accent-dim); border-radius: 10px;
 }
 .chosen-name { font-size: 22px; line-height: 1.2; font-weight: 600; color: var(--skin); }
+.chosen-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+.fav {
+  flex: 0 0 auto; background: transparent; color: var(--muted); cursor: pointer;
+  border: 1px solid var(--line); border-radius: 8px; padding: 4px 10px; font: inherit; font-size: 13px;
+}
+.fav:hover { border-color: var(--accent-dim); color: var(--text); }
+.fav[aria-pressed="true"] { color: var(--skin); border-color: var(--accent-dim); }
+.mine { margin-top: 12px; }
+.mine .sub-h { margin-top: 10px; }
+.results li.mine-row { display: flex; gap: 4px; }
+.results li.mine-row .open { flex: 1 1 auto; min-width: 0; }
+.results li.mine-row .remove { width: auto; flex: 0 0 auto; color: var(--muted); }
 .chosen-facts { margin-top: 3px; font-size: 13.5px; color: var(--text); }
 .chosen .setting-row { margin-top: 10px; }
 .setting-row { margin-top: 12px; }
