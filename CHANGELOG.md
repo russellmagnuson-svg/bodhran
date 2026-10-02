@@ -407,6 +407,24 @@ The page at `/buddies/` has its own version number, shown next to its title.
 It was called Session Players, at `/players/`, until 1.8.0; the entries
 before that keep the old name.
 
+### Session Buddies 1.12.2 — 2026-10-02
+
+Your work kept safe (found by the audit):
+- **Searching a tune you have opens your copy.** Before, it was fetched
+  fresh and stored over your copy in My tunes, so a favourite's chord
+  changes were lost. Now a match you have is marked "★ in your favourites"
+  (or "in played lately"), and opening it brings back your setting, your
+  chord changes and your tempo. "Back to the chosen chords" still starts
+  afresh. The same goes for choosing another setting you have a copy of.
+- **The setting number sticks.** A tune reopened on setting 3 (by a reload,
+  from My tunes or a file) was stored as setting 1, and after another reload
+  said "Setting 1"; the file name and credit followed it.
+- **Opening one of your tunes keeps your page settings.** It brought back the
+  guitar tuning, strum, count-in and "Play it" from when it was starred, so
+  an old favourite switched DADGAD back on without a word. Now only what
+  belongs to the tune comes back: its chords and tempo. A saved file still
+  comes back exactly as saved.
+
 ### Session Buddies 1.12.1 — 2026-10-02
 
 - The phone's screen stays on while a tune plays. Nothing held it before, so

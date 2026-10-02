@@ -125,7 +125,7 @@ against the real code:
   long, the concertina more than the flute; the concertina's notes carry over and a repeated note is struck again;
   the concertina sounds like a reed, plays in tune and sits with the
   flute, and ticking it plays the tune on it; the chosen tune and setting are
-  shown where you found it; a first visit opens with a tune ready to play; your tunes are a tap away; hornpipes, polkas,
+  shown where you found it; a first visit opens with a tune ready to play; your tunes are a tap away; your work is kept when you search a tune you have; hornpipes, polkas,
   slides and slip jigs play, each in its own time; the app and
   Session Buddies link to each other at the foot; chords follow the shape of a part; the matches fold away once one is picked; reopening keeps your chords and
   chooses the rest afresh; finding a tune asks the Session and offers only
@@ -455,6 +455,11 @@ twelve played lately (`buddies.recent`, added on Play), each kept as a saved
 file would be (`fileData()`), so it opens with no network, its own setting and
 the chords you changed (and changing one updates the copy). Save my tunes
 writes `format: "session-buddies-list"`, which Open a saved tune merges back.
+A tune fresh from the Session (a search, or another setting) uses your copy if
+you have one (`copyOf` in `build()`): your chords and tempo; search results
+mark it and open your setting. Opening one of your tunes brings back only the
+tune's own things (chords, tempo), never page settings such as the tuning; a
+file comes back exactly as saved.
 
 `/buddies/` is another page apart from the app: name a tune and it is found
 on thesession.org (its API answers any site, so the page asks it directly;

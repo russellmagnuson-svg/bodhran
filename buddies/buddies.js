@@ -17,7 +17,7 @@
    * next to the title and at the foot. Bump it with every change pushed (the
    * last number for a fix, the middle for something new) and add it to the
    * "Session Buddies" sections of CHANGELOG.md and the release notes. */
-  var VERSION = '1.12.1';
+  var VERSION = '1.12.2';
 
   var $ = function (id) { return document.getElementById(id); };
   var P = window.BUDDIES, G = window.GTR, T = window.TRAD, TPQ = P.TPQ;
@@ -188,9 +188,17 @@
 
   /* Build a tune: from the Session's JSON (meta, all settings) or a saved
    * file (meta, the one setting, its chords). */
+  /* saved: { chords, mine, options, number, fromFile } from a file, your
+   * tunes or the last visit. Without it (a tune fresh from the Session, or
+   * another of its settings), your own copy is used if you have one: the
+   * chords you changed and your tempo. Until 1.12.2 a fresh build was stored
+   * over that copy, so searching a tune you had worked on wiped its chords. */
   function build(meta, settings, index, saved) {
     if (playing) stop(false);
     var s = settings[index], ty = TYPES[meta.type];
+    var yours = !saved && copyOf(meta.id + '/' + (s.id != null ? s.id : index + 1));
+    if (yours) saved = { chords: yourChords(yours.data), mine: yours.data.mine || [],
+                         options: { bpm: yours.data.options && yours.data.options.bpm } };
     var lay = P.layout(s.abc, { key: s.key, meter: ty.meter });
     var auto = P.chords(lay), chords = {}, mine = {};
     var home = P.candidates(lay.key)[0].name;
@@ -201,10 +209,18 @@
     });
     tune = { meta: meta, settings: settings, index: index, lay: lay, auto: auto,
              chords: chords, mine: mine, source: P.chordSource(lay) };
+    // Before it is shown or stored: until 1.12.2 these were set after, so a
+    // tune reopened on setting 3 was stored as setting 1, and stayed so.
+    tune.savedNumber = saved && saved.number;
+    tune.fromFile = !!(saved && saved.fromFile);
     FORM = lay.timeline;
     prepareGuitar();
     showTune(saved && saved.options);
     remember();
+    if (yours && Object.keys(mine).length) {
+      $('find-status').textContent = 'Your copy from My tunes, with your chord changes. ' +
+        '“Back to the chosen chords” starts afresh.';
+    }
   }
 
   /* Every note any chord of this tune could need, in both tunings. */
@@ -267,21 +283,28 @@
       var li = document.createElement('li'), b = document.createElement('button');
       b.type = 'button';
       b.disabled = !TYPES[t.type];
-      b.innerHTML = esc(t.name) + '<small>' + esc(t.type) + (TYPES[t.type] ? '' : ' · not yet') + '</small>';
+      var have = TYPES[t.type] && yoursOf(t.id);
+      b.innerHTML = esc(t.name) + '<small>' + esc(t.type) + (TYPES[t.type] ? '' : ' · not yet') +
+        (have ? (have.fav ? ' · ★ in your favourites' : ' · in played lately') : '') + '</small>';
       b.addEventListener('click', function () {
         Array.prototype.forEach.call(host.querySelectorAll('button'), function (x) { x.setAttribute('aria-pressed', String(x === b)); });
         foldMatches(false);
-        fetchTune(t.id);
+        fetchTune(t.id, have && have.setting);
       });
       li.appendChild(b); host.appendChild(li);
     });
   }
 
-  function fetchTune(id) {
+  // A tune from the Session, on the setting you have a copy of, if any.
+  function fetchTune(id, settingId) {
     $('find-status').textContent = 'Fetching the tune…';
     fetch(API + '/tunes/' + encodeURIComponent(id) + '?format=json')
       .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
-      .then(function (j) { loadTune(j, 0); $('find-status').textContent = ''; })
+      .then(function (j) {
+        var at = settingId == null ? -1 : (j.settings || []).map(function (st) { return st.id; }).indexOf(settingId);
+        $('find-status').textContent = '';
+        loadTune(j, Math.max(0, at));
+      })
       .catch(function () {
         $('find-status').textContent = 'Couldn’t fetch that tune from thesession.org. Try again.';
         foldMatches(true);
@@ -357,15 +380,16 @@
       if (how === 'file') $('file-status').textContent = 'That file isn’t a tune saved from Session Buddies.';
       return false;
     }
-    var s = d.setting, chords = d.chords || {}, mine = d.mine || [];
-    if (how !== 'file') {
-      chords = {};
-      mine.forEach(function (id) { if (d.chords && d.chords[id]) chords[id] = d.chords[id]; });
-    }
-    build(d.tune, [s], 0, { chords: chords, mine: mine, options: d.options || {} });
-    tune.savedNumber = d.settingNumber;
-    tune.fromFile = how === 'file';       // brought back by the page itself is not "from a file"
-    showTune(d.options || {});
+    var o = d.options || {};
+    // A file comes back exactly as saved. One of your tunes brings back what
+    // belongs to the tune (its chords, its tempo), not page settings such as
+    // the guitar's tuning: until 1.12.2 opening an old favourite switched the
+    // tuning, strum and count-in back to what they were when it was starred.
+    build(d.tune, [d.setting], 0, {
+      chords: how === 'file' ? (d.chords || {}) : yourChords(d), mine: d.mine || [],
+      options: how === 'list' ? { bpm: o.bpm } : o,
+      number: d.settingNumber, fromFile: how === 'file'   // brought back by the page itself is not "from a file"
+    });
     if (how === 'file') { $('file-status').textContent = 'Opened “' + d.tune.name + '”, with its chords as saved.'; foldMatches(false); }
     if (how === 'list') { $('find-status').textContent = 'Opened “' + d.tune.name + '” from your tunes.'; foldMatches(false); }
     return true;
@@ -395,6 +419,28 @@
              number: settingNumber(), when: when, data: fileData() };
   }
   function byName(a, b) { return a.name.localeCompare(b.name); }
+  // Your copy of a tune's setting: a favourite first, else one played lately.
+  function copyOf(k) {
+    var hit = null;
+    [FAVS, RECENT].forEach(function (key) {
+      if (!hit) hit = listOf(key).filter(function (x) { return x.key === k; })[0] || null;
+    });
+    return hit;
+  }
+  // Of a saved tune's chords, only the ones you changed: the rest are chosen
+  // afresh, so a better way of choosing them reaches it.
+  function yourChords(d) {
+    var out = {};
+    (d.mine || []).forEach(function (id) { if (d.chords && d.chords[id]) out[id] = d.chords[id]; });
+    return out;
+  }
+  // Your copies of a tune, any setting: { fav, recent, settingId } for search results.
+  function yoursOf(id) {
+    var pre = id + '/', fav = listOf(FAVS).filter(function (x) { return x.key.indexOf(pre) === 0; })[0];
+    var rec = listOf(RECENT).filter(function (x) { return x.key.indexOf(pre) === 0; })[0];
+    var x = fav || rec;
+    return x ? { fav: !!fav, recent: !!rec, setting: x.data.setting && x.data.setting.id } : null;
+  }
   function isFav() { var k = currentKey(); return listOf(FAVS).some(function (x) { return x.key === k; }); }
   function toggleFav() {
     if (!tune) return;

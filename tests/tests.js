@@ -3160,6 +3160,65 @@
       });
     });
 
+  check('Session Buddies', 'Your work is kept: your copy opens when you search, its setting sticks, your tuning stays',
+    'Found by the audit. Searching a tune you had worked on fetched it fresh and stored that over your copy, chord changes and all. A tune reopened on setting 3 was stored as setting 1, and stayed so after a second reload. And opening an old favourite switched the guitar back to the tuning it had when starred. Now: the search marks the tune as yours and opens your copy (your setting, chords and tempo); the setting number sticks through reloads and My tunes; and only the tune’s own things come back with it.',
+    function () {
+      return Promise.all([json(FIX + 'the-kesh.json'), json(FIX + 'cooleys.json')]).then(function (r) {
+        var kesh = r[0], cooleys = r[1];
+        return withBuddies(function (win, doc) {
+          function $(id) { return win.document.getElementById(id); }
+          function PP() { return win.BUDDIES_PAGE; }
+          function reload() { return new Promise(function (ok) { win.frameElement.onload = ok; win.location.reload(); }).then(function () { return wait(300); }); }
+          function facts() { return $('chosen-facts').textContent; }
+          function stored(key) { try { return JSON.parse(win.localStorage.getItem(key)); } catch (e) { return null; } }
+          var bad = [];
+          // The Kesh, setting 3, a chord changed, at 80, starred.
+          PP().loadTune(kesh, 2);
+          var slot = PP().tune().lay.slots[1].id;
+          PP().setChord(slot, ['Em']);
+          $('bpm').value = 80; $('bpm').dispatchEvent(new win.Event('input')); $('bpm').dispatchEvent(new win.Event('change'));
+          $('fav').click();
+          return reload().then(reload).then(function () {
+            if (!/Setting 3\b/.test(facts())) bad.push('after two reloads it says “' + facts() + '”, not setting 3');
+            var cur = stored('players.current'), fav = (stored('buddies.favourites') || [])[0];
+            if (!cur || cur.settingNumber !== 3) bad.push('the page stored it as setting ' + (cur && cur.settingNumber));
+            if (!fav || fav.data.settingNumber !== 3) bad.push('the favourite now holds setting ' + (fav && fav.data.settingNumber));
+            // Away to Standard tuning and another tune; then the favourite.
+            PP().loadTune(cooleys, 0);
+            win.document.querySelector('#tunings [data-tuning="standard"]').click();
+            Array.prototype.filter.call(win.document.querySelectorAll('#favs .open'), function (b) { return /Kesh/.test(b.textContent); })[0].click();
+            var tuned = win.document.querySelector('#tunings [aria-checked="true"]').dataset.tuning;
+            if (tuned !== 'standard') bad.push('opening the favourite switched the tuning to ' + tuned);
+            if (!/Setting 3\b/.test(facts())) bad.push('the favourite opened as “' + facts() + '”');
+            // Away again, then The Kesh found by a search.
+            PP().loadTune(cooleys, 0);
+            var f0 = win.fetch;
+            win.fetch = function (url) {
+              var body = /search/.test(url) ? { tunes: [{ id: 55, name: 'The Kesh', type: 'jig' }] } : kesh;
+              return Promise.resolve({ ok: true, json: function () { return Promise.resolve(body); } });
+            };
+            $('q').value = 'kesh';
+            $('find-go').click();
+            return wait(100).then(function () {
+              var row = win.document.querySelector('#results button');
+              if (!row || !/in your favourites/.test(row.textContent)) bad.push('the search does not mark it as yours: ' + (row && row.textContent));
+              row.click();
+              return wait(150);
+            }).then(function () {
+              win.fetch = f0;
+              var t = PP().tune(), fav = (stored('buddies.favourites') || [])[0];
+              if (!t || t.meta.name !== 'The Kesh' || t.index !== 2) bad.push('the search opened ' + (t && t.meta.name) + ' setting ' + (t && t.index + 1) + ', not your setting 3');
+              if (!(t && t.chords[slot] && t.chords[slot][0] === 'Em' && t.mine[slot])) bad.push('the search opened it without your chord change');
+              if (+$('bpm').value !== 80) bad.push('the search opened it at ' + $('bpm').value + ', not your 80');
+              if (!fav || !fav.data.mine || fav.data.mine.indexOf(slot) === -1) bad.push('your favourite’s chord change was overwritten');
+              if (!/Your copy from My tunes/.test($('find-status').textContent)) bad.push('it does not say it opened your copy: ' + $('find-status').textContent);
+              expect(bad.length === 0, bad.join('\n'));
+            });
+          });
+        });
+      });
+    });
+
   check('Session Buddies', 'The page builds a tune and plays it',
     'From the Session’s JSON to a chart of the tune’s bars, a shape for each chord, and sound, with a count-in first.',
     function () {
