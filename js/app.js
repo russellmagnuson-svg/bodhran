@@ -8,7 +8,7 @@
    * Bump it with every change that gets pushed: the last number for a fix,
    * the middle one for a new feature. It is also the quickest way to tell
    * whether a phone is running the latest deploy or an older copy. */
-  var VERSION = '1.9.1';
+  var VERSION = '1.9.2';
   TRAD.VERSION = VERSION;
 
   TRAD.validatePatterns();
@@ -686,10 +686,14 @@
     updateMini();
 
     // Started up properly. The offline copy only refreshes itself after a
-    // clean start like this, so it never keeps a set of files that fails.
-    if (navigator.serviceWorker && navigator.serviceWorker.controller) {
-      navigator.serviceWorker.controller.postMessage({ type: 'started' });
-    }
+    // clean start like this, so it never keeps a set of files that fails;
+    // and only a while after it (TRAD.STARTED_AFTER seconds), since the first
+    // look straight after an update is when a deploy may still be serving old
+    // files beside new ones, and the copy would save the mix (sw.js).
+    setTimeout(function () {
+      var sw = navigator.serviceWorker && navigator.serviceWorker.controller;
+      if (sw) sw.postMessage({ type: 'started' });
+    }, (TRAD.STARTED_AFTER != null ? TRAD.STARTED_AFTER : 30) * 1000);
   }
 
   function restore() {

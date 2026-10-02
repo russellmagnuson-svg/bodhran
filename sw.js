@@ -18,6 +18,24 @@
  * again whenever a page has started up properly online, the whole set is
  * downloaded fresh in one go, and it only replaces the old copy if every file
  * arrived.
+ *
+ * Fixed in app 1.9.2, from the audit:
+ *   - A slow page that is not in the offline copy (Session Buddies, the guitar
+ *     demo) was still marked "offline", so it got its own files new and the
+ *     shared ones (patterns.js, wake.js...) old from the copy: the very mix
+ *     above, and a page that played nothing. Now a page counts as offline only
+ *     if it actually came from the offline copy.
+ *   - That slow page was then fetched a second time from scratch; now the
+ *     first request is simply waited for.
+ *   - Two refreshes at once could delete each other's copy, leaving none.
+ *     Now they take turns, and each deletes only copies older than its own.
+ *   - index.html is a redirect on the host, and a redirect cannot answer a
+ *     page load, so it is no longer saved: the app's page is saved as './'
+ *     (and found with or without a ?query).
+ *   - A new sw.js no longer refreshes the copy as it installs if a complete
+ *     one exists (that moment is mid-deploy, when old and new files can be
+ *     served side by side); the app asks for a refresh a while after it has
+ *     started up properly instead (js/app.js).
  */
 var PREFIX = 'bodhran-offline-';   // + timestamp: newest complete one is live
 var MARK = './__complete__';       // written last, so a half-filled copy is never used
@@ -25,7 +43,7 @@ var TIMEOUT = 2500;
 
 // Everything the page needs to start. These must always match each other.
 var APP_FILES = [
-  './', './index.html', './css/app.css',
+  './', './css/app.css',
   './js/patterns.js', './js/bodhran.js', './js/drone.js',
   './js/midiout.js', './js/transport.js', './js/wake.js', './js/app.js'
 ];
@@ -55,27 +73,54 @@ function findLive() {
   }).then(function (name) { liveName = name; return name; });
 }
 
-function fromOffline(req) {
+function fromOffline(req, opts) {
   return findLive().then(function (name) {
     if (!name) return undefined;
-    return caches.open(name).then(function (c) { return c.match(req); });
+    return caches.open(name).then(function (c) { return c.match(req, opts); });
   });
+}
+
+/* A redirected response cannot answer a page load: give its body afresh. */
+function plain(res) {
+  if (!res || !res.redirected) return res;
+  return res.blob().then(function (body) {
+    return new Response(body, { status: res.status, statusText: res.statusText, headers: res.headers });
+  });
+}
+
+/* A page from the offline copy, its ?query ignored; the app itself, however
+ * it is addressed (the site root or index.html), from its saved root. Any
+ * other page only as itself: they used to come up as the app, with every file
+ * they load missing, because those are named relative to the app. */
+function offlinePage(req) {
+  return fromOffline(req, { ignoreSearch: true }).then(function (hit) {
+    if (hit || !isAppPage(req.url)) return hit;
+    return fromOffline('./');
+  }).then(plain);
 }
 
 /* Download the complete set fresh — bypassing the browser's own HTTP cache,
  * which is how stale files got mixed in before — into a new copy. Only once
- * every file is in does it become the live copy and the old ones go. */
+ * every file is in does it become the live copy and the older ones go.
+ * One refresh at a time; and each deletes only copies older than its own,
+ * so it never deletes one still being filled (by another sw.js, say). */
+var refreshing = Promise.resolve();
 function refreshOfflineCopy() {
+  var run = refreshing.then(refreshOnce, refreshOnce);
+  refreshing = run.catch(function () {});
+  return run;
+}
+function refreshOnce() {
   var name = PREFIX + Date.now();
   return caches.open(name).then(function (c) {
     return c.addAll(APP_FILES.concat(EXTRAS).map(function (u) {
       return new Request(u, { cache: 'reload' });
     })).then(function () { return c.put(MARK, new Response('ok')); });
   }).then(function () {
-    liveName = name;
+    liveName = null;                      // findLive() takes the newest complete copy
     return caches.keys().then(function (keys) {
       return Promise.all(keys.filter(function (k) {
-        return k !== name && k.indexOf('bodhran-') === 0;   // incl. old 'bodhran-v1'
+        return k.indexOf(PREFIX) === 0 ? k < name : k.indexOf('bodhran-') === 0;   // incl. old 'bodhran-v1'
       }).map(function (k) { return caches.delete(k); }));
     });
   }, function () {
@@ -111,8 +156,12 @@ function withTimeout(promise, ms) {
 
 /* ---------- lifecycle ---------- */
 
+// A first install takes a copy at once. A new sw.js with a complete copy
+// already there keeps it: the app refreshes it once it has started properly.
 self.addEventListener('install', function (e) {
-  e.waitUntil(refreshOfflineCopy().then(function () { return self.skipWaiting(); }));
+  e.waitUntil(findLive().then(function (name) {
+    return name ? null : refreshOfflineCopy();
+  }).then(function () { return self.skipWaiting(); }));
 });
 
 self.addEventListener('activate', function (e) {
@@ -133,23 +182,22 @@ self.addEventListener('fetch', function (event) {
   if (new URL(req.url).origin !== self.location.origin) return;
 
   if (req.mode === 'navigate') {
+    var net = fetch(req);                 // one request, waited for even if slow
+    var mode = function (m) {
+      lastMode = m;
+      if (event.resultingClientId) pageMode[event.resultingClientId] = m;
+    };
     event.respondWith(
-      withTimeout(fetch(req), TIMEOUT).then(function (res) {
-        lastMode = 'network';
-        if (event.resultingClientId) pageMode[event.resultingClientId] = 'network';
+      withTimeout(net, TIMEOUT).then(function (res) {
+        mode('network');
         return res;
       }).catch(function () {
-        lastMode = 'offline';
-        if (event.resultingClientId) pageMode[event.resultingClientId] = 'offline';
-        // Each page from its own offline copy. Only the app itself falls back
-        // to index.html (its address can carry a query or name the file):
-        // any other page used to come up as the app, with every file it
-        // loads missing, because they are named relative to the app.
-        return fromOffline(req).then(function (hit) {
-          if (hit || !isAppPage(req.url)) return hit;
-          return fromOffline('./index.html');
-        }).then(function (hit) {
-          return hit || fetch(req);
+        return offlinePage(req).then(function (hit) {
+          if (hit) { mode('offline'); return hit; }
+          // Not in the offline copy: the page comes from the network after
+          // all, so every file it asks for must too.
+          mode('network');
+          return net;
         });
       })
     );

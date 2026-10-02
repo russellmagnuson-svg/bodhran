@@ -1685,7 +1685,8 @@
         var missing = used.filter(function (u) { return files.indexOf(u) === -1; });
         expect(used.length >= 7, 'only found ' + used.length + ' files in index.html');
         expect(missing.length === 0, 'not in the offline list: ' + missing.join(', '));
-        expect(files.indexOf('index.html') !== -1, 'index.html itself is not in the offline list');
+        // The app's page is saved as './': index.html is a redirect on the host, which cannot answer a page load (sw.js).
+        expect(files.indexOf('') !== -1 || files.indexOf('./') !== -1 || files.indexOf('.') !== -1, 'the app’s page itself is not in the offline list');
       });
     });
 
@@ -1701,6 +1702,141 @@
           expect(bad.length === 0, 'missing: ' + bad.join(', '));
         });
       });
+    });
+
+  /* sw.js itself, run against a stand-in network and cache store, its
+   * clock a hundred times faster (its 2.5 s wait for a page is 25 ms). */
+  var swClock = 1e12;                     // one clock for every sandbox: no two copies share a name
+  function swSandbox(src, shared) {
+    var base = new URL('../', location.href).href, on = {}, store = shared || {}, net = {}, fetched = [];
+    function abs(u) { return new URL(typeof u === 'string' ? u : u.url, base).href; }
+    function path(u) { var x = new URL(abs(u)); return x.pathname.slice(new URL(base).pathname.length - 1) + x.search; }
+    function fake(body, redirected) {
+      return { ok: true, status: 200, statusText: 'OK', headers: new Headers(), redirected: !!redirected, body: body,
+               text: function () { return Promise.resolve(body); }, blob: function () { return Promise.resolve(new Blob([body])); } };
+    }
+    function Cache() { this.m = {}; }
+    Cache.prototype.put = function (r, res) { this.m[abs(r)] = res; return Promise.resolve(); };
+    Cache.prototype.match = function (r, o) {
+      var k = abs(r); if (o && o.ignoreSearch) k = k.split('?')[0];
+      return Promise.resolve(this.m[k]);
+    };
+    Cache.prototype.addAll = function (reqs) {
+      var c = this;
+      return Promise.all(reqs.map(function (r) {
+        return fetchIt(r).then(function (res) { if (!res.ok) throw new Error('not ok'); return c.put(r, res); });
+      }));
+    };
+    var caches = {
+      open: function (n) { return Promise.resolve(store[n] || (store[n] = new Cache())); },
+      keys: function () { return Promise.resolve(Object.keys(store)); },
+      delete: function (n) { var had = n in store; delete store[n]; return Promise.resolve(had); }
+    };
+    function fetchIt(r) {
+      var p = path(r), rule = net[p] || net['*'] || { fail: true };
+      fetched.push(p);
+      return new Promise(function (ok, no) {
+        setTimeout(function () { if (rule.fail) no(new TypeError('offline')); else ok(fake(rule.body || ('new ' + p), rule.redirected)); }, (rule.delay || 1) / 100);
+      });
+    }
+    var self = { location: new URL(base + 'sw.js'), addEventListener: function (t, f) { on[t] = f; },
+                 skipWaiting: function () { return Promise.resolve(); }, clients: { claim: function () { return Promise.resolve(); } } };
+    function Req(u, o) { this.url = abs(u); this.cache = o && o.cache; }
+    new Function('self', 'caches', 'fetch', 'Request', 'Response', 'URL', 'setTimeout', 'clearTimeout', 'Date', src)(
+      self, caches, fetchIt, Req, Response, URL, function (f, ms) { return setTimeout(f, ms / 100); }, clearTimeout,
+      { now: function () { return (swClock += 7); } });
+    function wait(ev) { var w = Promise.resolve(); ev.waitUntil = function (p) { w = p; }; return function () { return w; }; }
+    return {
+      net: net, fetched: fetched, store: store,
+      install: function () { var ev = {}, w = wait(ev); on.install(ev); return w(); },
+      started: function (id) { var ev = { data: { type: 'started' }, source: { id: id } }, w = wait(ev); on.message(ev); return w(); },
+      open: function (u, id) {      // a page load; resolves with { text, redirected } or { error }
+        var res, ev = { request: { url: abs(u), method: 'GET', mode: 'navigate' }, resultingClientId: id, respondWith: function (p) { res = p; } };
+        on.fetch(ev);
+        return Promise.resolve(res).then(function (r) {
+          if (!r) return { error: 'nothing' };
+          return r.text().then(function (t) { return { text: t, redirected: !!r.redirected }; });
+        }, function (err) { return { error: String(err) }; });
+      },
+      get: function (u, id) {
+        var res, ev = { request: { url: abs(u), method: 'GET', mode: 'no-cors' }, clientId: id, respondWith: function (p) { res = p; } };
+        on.fetch(ev);
+        return Promise.resolve(res).then(function (r) { return r ? r.text() : 'nothing'; }, function () { return 'failed'; });
+      },
+      complete: function () {
+        return Promise.all(Object.keys(store).map(function (n) { return store[n].match('./__complete__').then(function (m) { return m ? n : null; }); }))
+          .then(function (l) { return l.filter(Boolean); });
+      }
+    };
+  }
+
+  check('Offline copy', 'A slow page never mixes old and new files, and the copy survives',
+    'The audit found: a slow page not in the offline copy (Session Buddies, the guitar demo) was marked offline and given the shared files (patterns.js, wake.js…) from the old copy beside its own new ones — the mix this is meant to prevent, and a page that played nothing — and was then fetched twice. Two refreshes at once could delete each other’s copy, leaving none for the pub. The saved index.html was the host’s redirect, which cannot answer a page load. And a new sw.js refreshed the copy mid-deploy. Run here against a stand-in network: none of these happen.',
+    function () {
+      return text('../sw.js').then(function (src) {
+        var bad = [], sb = swSandbox(src), N = sb.net;
+        N['*'] = { body: null };                                     // every file: 'new <path>'
+        N['/index.html'] = { redirected: true, body: 'the app' };    // as Cloudflare answers it
+        // First install, with an "old" set: the offline copy.
+        Object.keys({ '/': 1, '/css/app.css': 1, '/js/patterns.js': 1, '/js/app.js': 1 }).forEach(function (p) { N[p] = { body: 'old ' + p }; });
+        return sb.install().then(function () {
+          // Now the site has moved on, and Session Buddies is slow (3 s) on pub wifi.
+          Object.keys(N).forEach(function (p) { if (p !== '/index.html') delete N[p]; });
+          N['*'] = { body: null }; N['/buddies/'] = { delay: 3000 };
+          var before = sb.fetched.length;
+          return sb.open('/buddies/', 'b1').then(function (page) {
+            var times = sb.fetched.slice(before).filter(function (p) { return p === '/buddies/'; }).length;
+            if (page.text !== 'new /buddies/') bad.push('the slow page came as ' + (page.text || page.error));
+            if (times !== 1) bad.push('the slow page was fetched ' + times + ' times, not once');
+            return sb.get('/js/patterns.js', 'b1');
+          }).then(function (t) {
+            if (t !== 'new /js/patterns.js') bad.push('the slow page’s shared patterns.js came from the offline copy (' + t + '): old beside new');
+          });
+        }).then(function () {
+          // Offline: the app from its copy, as / or /index.html or with a ?query, never a redirect.
+          Object.keys(N).forEach(function (p) { delete N[p]; });     // everything fails now
+          return Promise.all(['/', '/index.html', '/?fbclid=1'].map(function (u, i) { return sb.open(u, 'o' + i); })).then(function (r) {
+            r.forEach(function (x, i) {
+              var u = ['/', '/index.html', '/?fbclid=1'][i];
+              if (x.error || !/\/$|the app/.test(x.text || '') || x.redirected) bad.push('offline, ' + u + ' gave ' + (x.error || (x.redirected ? 'a redirect' : x.text)));
+            });
+            return sb.get('/js/app.js', 'o0');
+          }).then(function (t) { if (t !== 'old /js/app.js') bad.push('offline, the app’s own files came as ' + t); });
+        }).then(function () {
+          // A new sw.js, with a complete copy there: it keeps it as it installs.
+          var sb2 = swSandbox(src, sb.store);
+          sb2.net['*'] = { body: null };
+          return sb2.install().then(function () {
+            if (sb2.fetched.length) bad.push('a new sw.js re-downloaded ' + sb2.fetched.length + ' files as it installed, mid-deploy');
+          });
+        }).then(function () {
+          // Two refreshes at once (two clean starts): a complete copy is left.
+          var sc = swSandbox(src);
+          sc.net['*'] = { body: null, delay: 400 };
+          return sc.install().then(function () { return sc.open('/', 'c1'); }).then(function () {
+            return Promise.all([sc.started('c1'), sc.started('c1')]);
+          }).then(function () { return sc.complete(); }).then(function (done) {
+            if (!done.length) bad.push('two refreshes at once left no offline copy at all');
+            Object.keys(sc.net).forEach(function (p) { delete sc.net[p]; });
+            return sc.open('/', 'c2');
+          }).then(function (x) { if (x.error) bad.push('after two refreshes at once, offline the app did not open: ' + x.error); });
+        }).then(function () { expect(bad.length === 0, bad.join('\n')); });
+      });
+    });
+
+  check('Offline copy', 'The app asks for a fresh copy a while after it starts, not at once',
+    'The first look straight after an update is when a deploy may still be serving some old files beside new ones, and a copy taken then would save the mix. So a clean start asks for a refresh after a while (30 s; here 1.5 s), not at once.',
+    function () {
+      var first = "window.TRAD = { STARTED_AFTER: 1.5 }; window.__posted = [];" +
+        "Object.defineProperty(navigator, 'serviceWorker', { configurable: true, value: { controller: { postMessage: function (m) { window.__posted.push(m.type); } }," +
+        " register: function () { return Promise.resolve(); } } });";
+      return withApp(function (win) {
+        var atOnce = win.__posted.slice();
+        return wait(1800).then(function () {
+          expect(atOnce.length === 0, 'it asked straight away: ' + atOnce.join(', '));
+          expect(win.__posted.join() === 'started', 'after a while it asked ' + JSON.stringify(win.__posted));
+        });
+      }, null, first);
     });
 
   /* ================================================================

@@ -4,6 +4,28 @@ What changed in each version of Bodhrán, newest first. The version shows next
 to the title in the app; bump it at the top of `js/app.js` with every change
 that gets pushed (the last number for a fix, the middle one for a feature).
 
+## 1.9.2 — 2026-10-02
+
+The offline copy made safe on bad wifi (from the audit):
+- **A slow page no longer mixes old and new files.** Session Buddies or the
+  guitar demo taking more than 2.5 s to load (pub wifi) was treated as
+  offline, so it got its own files new and the shared ones (the drum, the
+  patterns, the sound helpers) old from the app's offline copy: the very mix
+  the offline copy is built to prevent, and a page that showed Stop with no
+  sound. Now a page counts as offline only if it actually came from the
+  offline copy. It is no longer fetched twice either.
+- **The offline copy can't be lost to two refreshes at once.** Two quick
+  reloads could start two refreshes that deleted each other's copy, leaving
+  none for the pub. Now they take turns, and each deletes only older copies.
+- **Opening the app offline by an old link works.** The saved index.html was
+  the host's redirect, which can't answer a page load. Now the app's page is
+  found with or without "index.html" or a ?query on the end.
+- **No copy saved mid-deploy.** The copy used to refresh the moment the app
+  started, often seconds after an update, when the site can still serve old
+  and new files side by side. Now the app asks for it 30 seconds after a
+  clean start, and a new version of the offline code keeps the complete copy
+  it finds.
+
 ## 1.9.1 — 2026-10-02
 
 - Your sliders are remembered again: volume, tuning, tone, back hand, room,

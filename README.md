@@ -94,7 +94,9 @@ against the real code:
   when scrolled down, works, and never covers the page; without MIDI (an
   iPhone) the GarageBand panel is one line
 - **Offline copy** — its file list covers everything the page loads, and every
-  file on it exists
+  file on it exists; run against a stand-in network, a slow page never mixes
+  old and new files, the copy survives two refreshes at once and answers an
+  old link offline, and the app asks for a refresh a while after starting
 - **Guitar demo** — every bar of The Kesh is a full 6/8 bar; every chord has
   a shape and the drone rings through; the guitar is in tune and strums
   smoothly, near a real steel-string chord; the page builds;
@@ -352,8 +354,11 @@ npx wrangler pages deploy . --project-name=bodhran
   and uses it when the network is slow or absent — most pub basements. It
   never mixes old and new files in one page load: whether the page comes from
   the network (with a 2.5s limit) decides where *every* file for that load
-  comes from. And the offline copy is only ever replaced as a complete set,
-  downloaded fresh after a page has started up properly online. A newer
+  comes from; a page counts as offline only if it actually came from the
+  offline copy (a slow Session Buddies is from the network, files and all).
+  And the offline copy is only ever replaced as a complete set, downloaded
+  fresh 30 s after a page has started up properly online (not mid-deploy),
+  one refresh at a time, each deleting only older copies. A newer
   `app.js` running with an older drum file can fail on start-up, which is
   silence, so this matters more than it sounds.
 - **Safari on a Mac going silent.** After the Mac sleeps, a Safari tab can go
