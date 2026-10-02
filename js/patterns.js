@@ -89,7 +89,7 @@
     },
     {
       id: 'hornpipe', name: 'Hornpipe', meter: '4/4', beatsPerBar: 4,
-      beatUnit: 'crotchet', defaultBpm: 88, bpmRange: [60, 130], swing: 0.62,
+      beatUnit: 'crotchet', defaultBpm: 88, bpmRange: [60, 130], swing: 0.84,   // 64:36 (0.62, 60:40, until 1.9.0)
       blurb: 'Swung quavers and a bit of swagger. Slower than a reel.',
       grids: {
         pulse:  ['DdDd'],
@@ -280,11 +280,25 @@
     return moved - fractionOfBeat;
   }
 
+  /* Swing as a player says it: how the first of a pair of quavers is held
+   * against the second, its share of the beat (0.5 straight, 0.64 the
+   * hornpipe's "64:36", 2/3 a triplet feel), and back. The Swing controls
+   * of the app and Session Buddies run from 50:50 to 70:30. */
+  function swingShare(swing) { return 0.5 + (swing || 0) / 6; }
+  function swingFromShare(share) { return Math.max(0, (share - 0.5) * 6); }
+  function swingLabel(share) {
+    var a = Math.round(share * 100);
+    return a <= 50 ? 'straight' : a + ':' + (100 - a);
+  }
+
   TRAD.tunes = TUNES;
   TRAD.tuneById = byId;
   TRAD.pickGrid = pickGrid;
   TRAD.pulseGrid = pulseGrid;
   TRAD.swingShift = swingShift;
+  TRAD.swingShare = swingShare;
+  TRAD.swingFromShare = swingFromShare;
+  TRAD.swingLabel = swingLabel;
   TRAD.backHandShape = backHandShape;
   TRAD.VELOCITY = VELOCITY;
   TRAD.VOICE = VOICE;

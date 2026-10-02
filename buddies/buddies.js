@@ -17,7 +17,7 @@
    * next to the title and at the foot. Bump it with every change pushed (the
    * last number for a fix, the middle for something new) and add it to the
    * "Session Buddies" sections of CHANGELOG.md and the release notes. */
-  var VERSION = '1.10.1';
+  var VERSION = '1.11.0';
 
   var $ = function (id) { return document.getElementById(id); };
   var P = window.BUDDIES, G = window.GTR, T = window.TRAD, TPQ = P.TPQ;
@@ -35,12 +35,18 @@
    * app's plain pattern for the type (since 1.10.0, with the hornpipe,
    * polka, slide and slip jig).
    *
-   * A hornpipe swings, backing and all: 2:1, the triplet feel (swing 1 to
-   * the app's swingShift). 1.10.0 took the app's own 0.62, 60:40, and The
-   * Boys of Bluehill sounded "devoid of the swing a hornpipe normally has". */
+   * A hornpipe swings, backing and all, by the Swing control (since 1.11.0;
+   * swingNow()). 1.10.0 swung it 60:40 and The Boys of Bluehill sounded
+   * "devoid of the swing a hornpipe normally has"; 1.10.1's 2:1 "almost
+   * slightly too much". So it starts at the app's hornpipe swing, 64:36,
+   * and you set it by ear. */
   function grid(id, fallback) {
     var t = T.tuneById && T.tuneById(id);
     return t && t.id === id && t.grids && t.grids.simple ? t.grids.simple[0] : fallback;
+  }
+  function appSwing(id, fallback) {
+    var t = T.tuneById && T.tuneById(id);
+    return t && t.id === id && t.swing ? t.swing : fallback;
   }
   var TYPES = {
     jig: {
@@ -73,7 +79,7 @@
     },
     hornpipe: {
       name: 'Hornpipe', meter: '4/4', slots: 8, half: 4, per: 2, unit: 'per crotchet',
-      bpm: { start: 80, min: 50, max: 120 }, grid: grid('hornpipe', 'DtdtDtdt'), swing: 1,
+      bpm: { start: 80, min: 50, max: 120 }, grid: grid('hornpipe', 'DtdtDtdt'), swing: appSwing('hornpipe', 0.84),
       clicks: [[0, 0.9], [2, 0.55], [4, 0.7], [6, 0.55]], final: [0, 2, 4],
       strums: {
         lilt: { text: 'Down on every beat, and up after the second and the fourth, swung long-short: ' +
@@ -159,6 +165,15 @@
   var tuning = P.TUNINGS[stored('players.tuning', '')] ? stored('players.tuning') : 'dadgad';
   var sympathy = stored('players.sympathy', 'on') !== 'off';
   var strum = 'lilt';
+  /* The swing you have set for a type that swings, as the long quaver's
+   * share of the beat (0.5 straight to 0.7), kept for next time. */
+  function swingKey() { return 'players.swing.' + tune.meta.type; }
+  function swingNow() {
+    var ty = type();
+    if (!ty.swing) return 0.5;
+    var v = +stored(swingKey(), '');
+    return v >= 50 && v <= 70 ? v / 100 : T.swingShare(ty.swing);
+  }
 
   /* ---------- the tune ----------
    * tune: { meta: { id, name, type, url }, settings, index, lay, auto,
@@ -389,6 +404,9 @@
     $('credit').innerHTML = esc(tune.meta.name) + ': <a href="' + esc(link.href) + '" target="_blank" rel="noopener">setting ' +
       number + '</a> on thesession.org' + (s.member ? ', by ' + esc(s.member) : '') + '. Chords ' +
       (tune.source === 'setting' ? 'from the setting' : 'chosen for this page from the melody') + '.';
+    // swing, for a type that swings
+    $('swing-box').hidden = !ty.swing;
+    if (ty.swing) { $('swing').value = Math.round(swingNow() * 100); $('swing-out').textContent = T.swingLabel(swingNow()); }
     // tempo for the type
     ['bpm', 'bpm-num'].forEach(function (id) { $(id).min = ty.bpm.min; $(id).max = ty.bpm.max; });
     setBpm(options.bpm || ty.bpm.start);
@@ -629,8 +647,8 @@
    * through a dotted note's place unchanged, so a written "d>e" is not
    * dotted twice.
    *
-   * A hornpipe swings its quavers 2:1, as the guitar and drum do (1.10.0's
-   * 60:40 sounded unswung). A beat it writes otherwise is played as written
+   * A hornpipe swings its quavers as the guitar and drum do, by the Swing
+   * control (the concertina a shade harder). A beat it writes otherwise is played as written
    * (see asWritten): a triplet stays even, as players keep it (swung, its
    * notes went 0.8, 0.6 and 0.6 of a quaver), a dotted pair ("A>B", 3:1)
    * is not dotted twice, and semiquavers are not squashed. The swung
@@ -639,10 +657,10 @@
   var LILT = {
     flute:      { jig: JIG_F, reel: [[0, 0], [1, 1.10], [2, 2]], 'slip jig': JIG_F,
                   slide: [[0, 0], [1, 1.14], [2, 2.07], [3, 3]],
-                  hornpipe: [[0, 0], [1, 1.32], [2, 2]], polka: [[0, 0], [1, 1.06], [1.5, 1.5], [2, 2]] },
+                  polka: [[0, 0], [1, 1.06], [1.5, 1.5], [2, 2]] },
     concertina: { jig: JIG_C, reel: [[0, 0], [1, 1.14], [2, 2]], 'slip jig': JIG_C,
                   slide: [[0, 0], [1, 1.18], [2, 2.09], [3, 3]],
-                  hornpipe: [[0, 0], [1, 1.36], [2, 2]], polka: [[0, 0], [1, 1.1], [1.5, 1.5], [2, 2]] }
+                  polka: [[0, 0], [1, 1.1], [1.5, 1.5], [2, 2]] }
   };
   /* In a swung tune, the beats of a bar's notes that are not plain quavers
    * and longer (a triplet, a dotted pair, semiquavers): { beat: true }, for
@@ -658,6 +676,10 @@
   }
   function warp(tick, who, written) {         // ticks into the bar -> quavers, lilted for `who`
     var ty = type(), per = ty.per, pts = (LILT[who] || LILT.flute)[tune.meta.type] || [[0, 0], [per, per]];
+    if (ty.swing) {                           // the Swing control's, the concertina's 2% harder
+      var share = Math.min(0.75, swingNow() + (who === 'concertina' ? 0.02 : 0));
+      pts = [[0, 0], [per / 2, per * share], [per, per]];
+    }
     var q = tick / TPQ, beat = Math.floor(q / per), p = q - beat * per;
     if (written && written[beat]) return q;
     for (var i = 1; i < pts.length; i++) {
@@ -707,7 +729,7 @@
     var ty = type(), per = ty.per;
     if (!ty.swing) return s;
     var beat = Math.floor(s / per);
-    return s + T.swingShift((s - beat * per) / per, ty.swing) * per;
+    return s + T.swingShift((s - beat * per) / per, T.swingFromShare(swingNow())) * per;
   }
 
   function layBar(n, t0) {
@@ -984,6 +1006,11 @@
     });
     $('play').addEventListener('click', toggle);
     $('bpm').addEventListener('input', function () { setBpm(this.value); });
+    $('swing').addEventListener('input', function () {
+      if (!tune) return;
+      store(swingKey(), String(+this.value));
+      $('swing-out').textContent = T.swingLabel(+this.value / 100);   // heard from the next bar
+    });
     $('bpm-num').addEventListener('change', function () { setBpm(this.value); remember(); });
     $('bpm').addEventListener('change', remember);
     ['times', 'countin'].forEach(function (id) { $(id).addEventListener('change', remember); });
@@ -1046,7 +1073,7 @@
 
   // For the checks page.
   window.BUDDIES_PAGE = {
-    VERSION: VERSION, TYPES: TYPES, PLAYABLE: PLAYABLE, MIX: MIX, fluteLength: fluteLength, concertinaLength: concertinaLength,
+    VERSION: VERSION, TYPES: TYPES, PLAYABLE: PLAYABLE, swingNow: function () { return tune ? swingNow() : 0.5; }, MIX: MIX, fluteLength: fluteLength, concertinaLength: concertinaLength,
     tune: function () { return tune; },
     form: function () { return FORM; },
     STARTER: STARTER, loadTune: loadTune, openText: openText, saveText: saveText, setChord: setChord,

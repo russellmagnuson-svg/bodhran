@@ -1415,15 +1415,55 @@
         var fresh = drumHint.textContent + feelHint.textContent;
         viewTo(doc, 'advanced');
         var bh = doc.getElementById('backhand'); bh.value = 0.5; bh.dispatchEvent(new win.Event('input'));
-        var sw = doc.getElementById('swing'); sw.value = 0.3; sw.dispatchEvent(new win.Event('input'));
+        var sw = doc.getElementById('swing'); sw.value = 60; sw.dispatchEvent(new win.Event('input'));
         viewTo(doc, 'basic');
         var drum = drumHint.textContent, feel = feelHint.textContent;
-        doc.querySelector('.chip[data-id="jig"]').click();          // a new tune goes back to its own swing
+        doc.querySelector('.chip[data-id="jig"]').click();          // a new tune comes with its own swing
         var feelAfter = feelHint.textContent;
         expect(!/changed/.test(fresh), 'a first visit already flags changes: ' + fresh);
         expect(/changed: back hand \(moderate\)/.test(drum), 'the Drum panel says: ' + drum);
-        expect(/changed: swing \(30%\)/.test(feel), 'the Feel panel says: ' + feel);
+        expect(/changed: swing \(60:40\)/.test(feel), 'the Feel panel says: ' + feel);
         expect(!/changed/.test(feelAfter), 'still flags swing after a new tune reset it: ' + feelAfter);
+      });
+    });
+
+  check('Basic and Advanced', 'Swing is set as long : short, shows with a tune that swings, and is kept for each type',
+    'The Swing slider was a percentage of the engine’s own measure, kept in Advanced, and put back to the tune’s own at every change of tune. It now reads as a player says it, 50:50 (straight) to 70:30; a hornpipe starts at 64:36 (it was 60:40) and a barndance at 57:43; for a type that swings it shows in Basic; each type keeps the swing you set for it; and the drum plays it.',
+    function () {
+      return withApp(function (win, doc) {
+        var sw = doc.getElementById('swing'), out = doc.getElementById('swing-out'), label = sw.closest('label');
+        function visible() { return win.getComputedStyle(label).display !== 'none'; }
+        viewTo(doc, 'basic');
+        doc.querySelector('.chip[data-id="reel"]').click();
+        var reel = { shown: visible(), says: out.textContent };
+        doc.querySelector('.chip[data-id="hornpipe"]').click();
+        var horn = { shown: visible(), says: out.textContent };
+        doc.querySelector('.chip[data-id="barndance"]').click();
+        var barn = out.textContent;
+        doc.querySelector('.chip[data-id="hornpipe"]').click();
+        sw.value = 68; sw.dispatchEvent(new win.Event('input'));
+        var set = out.textContent;
+        doc.querySelector('.chip[data-id="reel"]').click();
+        var reelAfter = out.textContent;
+        doc.querySelector('.chip[data-id="hornpipe"]').click();
+        var back = sw.value + ' ' + out.textContent;
+        // The drum: the swing it is handed for the hornpipe's offbeats.
+        var heard = [], shift = win.TRAD.swingShift;
+        win.TRAD.swingShift = function (f, s) { heard.push(s); return shift(f, s); };
+        var ci = doc.getElementById('countin'); ci.value = '0'; ci.dispatchEvent(new win.Event('change'));
+        doc.getElementById('play').click();
+        return wait(700).then(function () {
+          doc.getElementById('play').click();
+          win.TRAD.swingShift = shift;
+          var most = heard.filter(function (s) { return s > 0; });
+          expect(!reel.shown && /straight/.test(reel.says), 'a reel in Basic: Swing ' + (reel.shown ? 'shown' : 'hidden') + ', says ' + reel.says);
+          expect(horn.shown && horn.says === 'tune default (64:36)', 'a hornpipe in Basic: Swing ' + (horn.shown ? 'shown' : 'hidden') + ', says ' + horn.says);
+          expect(barn === 'tune default (57:43)', 'a barndance says ' + barn);
+          expect(set === '68:32' && reelAfter === 'tune default (straight)', 'set to 68 it says ' + set + '; the reel then says ' + reelAfter);
+          expect(back === '68 68:32', 'back on the hornpipe: ' + back);
+          expect(most.length && most.every(function (s) { return Math.abs(s - win.TRAD.swingFromShare(0.68)) < 1e-9; }),
+                 'the drum swung by ' + most.slice(0, 4).join(', ') + ', not 68:32 (' + round(win.TRAD.swingFromShare(0.68), 2) + ')');
+        });
       });
     });
 
@@ -2295,7 +2335,7 @@
   function layOf(j, i) { return PL.layout(j.settings[i || 0].abc, { key: j.settings[i || 0].key, meter: j.type === 'jig' ? '6/8' : '4/4' }); }
   /* The Session Buddies page in a frame, its saved state put back after. */
   function withBuddies(fn) {
-    var keys = ['players.current', 'players.tuning', 'players.sympathy', 'players.volume'], saved = {};
+    var keys = ['players.current', 'players.tuning', 'players.sympathy', 'players.volume', 'players.swing.hornpipe'], saved = {};
     keys.forEach(function (k) { saved[k] = localStorage.getItem(k); localStorage.removeItem(k); });
     var frame = document.createElement('iframe');
     frame.src = '../buddies/';
@@ -2830,7 +2870,7 @@
     });
 
   check('Session Buddies', 'Hornpipes, polkas, slides and slip jigs play, each in its own time',
-    'Only jigs and reels could be played. Now a real tune of each of the four (The Boys of Bluehill, The Britches Full of Stitches, The Road to Lisdoonvarna, The Butterfly) reads in whole bars, every chord has a shape, and it plays: the strums of a bar where its type puts them, the hornpipe swung long-short and the others straight, the tune’s beats on time; a hornpipe swung 2:1, guitar and tune (1.10.0’s 60:40 sounded “devoid of the swing a hornpipe normally has”), its triplets kept even and a setting written dotted (B>A) played as written; a polka’s written dotted pair (d>e) not dotted twice; a slip jig’s second chord on its third beat, not mid-beat; a slide’s phrase four of its long bars.',
+    'Only jigs and reels could be played. Now a real tune of each of the four (The Boys of Bluehill, The Britches Full of Stitches, The Road to Lisdoonvarna, The Butterfly) reads in whole bars, every chord has a shape, and it plays: the strums of a bar where its type puts them, the hornpipe swung long-short and the others straight, the tune’s beats on time; a hornpipe swung by its Swing control (64:36 to start), guitar and tune together, its triplets kept even and a setting written dotted (B>A) played as written; a polka’s written dotted pair (d>e) not dotted twice; a slip jig’s second chord on its third beat, not mid-beat; a slide’s phrase four of its long bars.',
     function () {
       var names = ['the-boys-of-bluehill', 'britches-full-of-stitches', 'the-road-to-lisdoonvarna', 'the-butterfly'];
       // And a hornpipe written dotted, as many settings are.
@@ -2878,9 +2918,11 @@
                 var beats = tn.filter(function (p) { return Math.abs(p - Math.round(p / ty.per) * ty.per) < 0.03; });
                 if (!beats.length || Math.abs(tn[0]) > 0.03) bad.push(name + ': the tune’s first note of the bar is at ' + round(tn[0]) + ' quavers, not on the beat');
                 if (j.type === 'hornpipe' && !j.dotted) {   // "BA FA D2 FA": the A between the beats swung late
-                  if (!(tn[1] > 1.27 && tn[1] < 1.42)) bad.push(name + ': its straight quavers go ' + round(tn[1], 2) + ' : ' + round(2 - tn[1], 2) + ', not swung about 2:1');
+                  var share = PP.swingNow();
+                  if (Math.abs(share - 0.64) > 0.005) bad.push(name + ': its swing starts at ' + win.TRAD.swingLabel(share) + ', not 64:36');
+                  if (Math.abs(tn[1] - 2 * share) > 0.04) bad.push(name + ': its straight quavers go ' + round(tn[1], 2) + ' : ' + round(2 - tn[1], 2) + ', not swung ' + win.TRAD.swingLabel(share));
                   if (Math.abs(pos[1] - 2) > 0.03) bad.push(name + ': the guitar’s beat 2 is at ' + round(pos[1]) + ' quavers');
-                  if (!(pos[2] - 2 > 1.28)) bad.push(name + ': the guitar’s up between beats 2 and 3 is ' + round(pos[2] - 2, 2) + ' quavers after beat 2, not swung about 2:1');
+                  if (Math.abs(pos[2] - 2 - 2 * share) > 0.03) bad.push(name + ': the guitar’s up between beats 2 and 3 is ' + round(pos[2] - 2, 2) + ' quavers after beat 2, not swung ' + win.TRAD.swingLabel(share));
                   // Bar 2, "BA (3Bcd e2 de": the triplet even, on 2, 2.67, 3.33.
                   var t2 = notes.filter(function (x) { return x.t >= t0 + bar - 0.03 && x.t < t0 + 2 * bar - 0.03; }).map(function (x) { return (x.t - t0 - bar) / q; });
                   [2, 8 / 3, 10 / 3].forEach(function (want) {
@@ -2897,6 +2939,59 @@
           return chain.then(function () {
             GP.strum = gs; FP.note = fn;
             expect(bad.length === 0, bad.join('\n'));
+          });
+        });
+      });
+    });
+
+  check('Session Buddies', 'A hornpipe’s swing is set by ear, and kept',
+    'At 60:40 The Boys of Bluehill sounded “devoid of the swing a hornpipe normally has”, at 2:1 “almost slightly too much”. So a hornpipe has a Swing control, from 50:50 (straight) to 70:30, starting at 64:36: the guitar and the tune follow it, the triplets stay even, it is kept for next time, and it is not offered for a tune that does not swing.',
+    function () {
+      return Promise.all([json(FIX + 'the-boys-of-bluehill.json'), json(FIX + 'the-kesh.json')]).then(function (r) {
+        return withBuddies(function (win, doc) {
+          var PP = win.BUDDIES_PAGE, bad = [], strums = [], notes = [];
+          var GP = win.GTR.Guitar.prototype, gs = GP.strum, FP = win.BUDDIES.Flute.prototype, fn = FP.note;
+          GP.strum = function (n, t) { strums.push(t); return gs.apply(this, arguments); };
+          FP.note = function (t) { notes.push(t); return fn.apply(this, arguments); };
+          PP.loadTune(r[1], 0);
+          var jigHides = doc.getElementById('swing-box').hidden;
+          PP.loadTune(r[0], 0);
+          var box = doc.getElementById('swing-box'), sw = doc.getElementById('swing'), out = doc.getElementById('swing-out');
+          var shown = !box.hidden, startsAt = out.textContent;
+          // At 70:30, then straight: the up between beats 2 and 3, and the tune's A in "BA FA".
+          function playAt(v) {
+            sw.value = v; sw.dispatchEvent(new win.Event('input'));
+            strums = []; notes = [];
+            doc.getElementById('countin').value = '1';
+            doc.getElementById('bpm').value = 120; doc.getElementById('bpm').dispatchEvent(new win.Event('input'));
+            var q = 60 / 120 / 2, bar = 8 * q;
+            doc.getElementById('play').click();
+            return wait((3 * bar + 0.6) * 1000).then(function () {
+              doc.getElementById('play').click();
+              var t0 = strums[0], up = (strums[2] - t0) / q - 2;
+              var tn = notes.filter(function (t) { return t >= t0 - 0.03 && t < t0 + 2 * bar - 0.03; }).map(function (t) { return (t - t0) / q; });
+              var want = 2 * v / 100;
+              if (Math.abs(up - want) > 0.03) bad.push('at ' + win.TRAD.swingLabel(v / 100) + ' the guitar’s up is ' + round(up, 2) + ' quavers after the beat, not ' + round(want, 2));
+              if (Math.abs(tn[1] - want) > 0.03) bad.push('at ' + win.TRAD.swingLabel(v / 100) + ' the tune’s A in “BA” is at ' + round(tn[1], 2) + ', not ' + round(want, 2));
+              [10, 10 + 2 / 3, 10 + 4 / 3].forEach(function (p) {      // bar 2's triplet, "(3Bcd", from quaver 2 of bar 2
+                if (!tn.some(function (x) { return Math.abs(x - p) < 0.03; })) bad.push('at ' + win.TRAD.swingLabel(v / 100) + ' the triplet is not even');
+              });
+              return out.textContent;
+            });
+          }
+          return playAt(70).then(function (l70) {
+            return playAt(50).then(function (l50) {
+              sw.value = 66; sw.dispatchEvent(new win.Event('input'));
+              PP.loadTune(r[1], 0); PP.loadTune(r[0], 0);    // away to a jig and back
+              var kept = sw.value + ' ' + out.textContent;
+              GP.strum = gs; FP.note = fn;
+              expect(jigHides, 'a jig offers a Swing control');
+              expect(shown && startsAt === '64:36', 'a hornpipe’s Swing control ' + (shown ? 'starts at ' + startsAt : 'is not shown'));
+              expect(l70 === '70:30' && l50 === 'straight', 'the control says ' + l70 + ' and ' + l50);
+              expect(kept === '66 66:34', 'the swing set was not kept: ' + kept);
+              expect(win.localStorage.getItem('players.swing.hornpipe') === '66', 'the swing set is not kept for next time');
+              expect(bad.length === 0, bad.join('\n'));
+            });
           });
         });
       });

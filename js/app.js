@@ -8,7 +8,7 @@
    * Bump it with every change that gets pushed: the last number for a fix,
    * the middle one for a new feature. It is also the quickest way to tell
    * whether a phone is running the latest deploy or an older copy. */
-  var VERSION = '1.8.1';
+  var VERSION = '1.9.0';
   TRAD.VERSION = VERSION;
 
   TRAD.validatePatterns();
@@ -98,10 +98,18 @@
     drone.setLevel(+$('drone-level').value);
   }
 
-  // The swing slider sits at 0 by default, meaning "whatever the tune wants".
-  // Only once it's moved does it take over.
+  /* Swing, set as a player says it: the first of a pair of quavers against
+   * the second, 50:50 (straight) to 70:30. Until 1.9.0 it was a percentage
+   * of the engine's own measure, kept in Advanced and put back to the tune's
+   * own at every change of tune. Now each tune type keeps the swing you set
+   * for it, and a type that swings (the hornpipe, the barndance) shows it in
+   * Basic too. Until it is moved for a type, the tune's own swing plays. */
   var swingTouched = false;
-  function swingOverride() { return swingTouched ? +$('swing').value : null; }
+  function swingOverride() { return swingTouched ? TRAD.swingFromShare(+$('swing').value / 100) : null; }
+  function showSwing() {
+    var label = TRAD.swingLabel(+$('swing').value / 100);
+    $('swing-out').textContent = swingTouched ? label : 'tune default (' + label + ')';
+  }
 
   /* ---------- choosing with the arrow keys ----------
    * The tune types and the rhythms are each one choice, so they behave as one
@@ -173,14 +181,19 @@
     $('tune-len').value = len != null ? len : tune.tuneBars;
     if (transport) transport.tuneBars = +$('tune-len').value;
 
-    swingTouched = false;
-    $('swing').value = tune.swing;
-    $('swing-out').textContent = tune.swing
-      ? 'tune default (' + Math.round(tune.swing * 100) + '%)'
-      : 'tune default (straight)';
+    var sw = settings['swing_' + id];
+    swingTouched = sw != null;
+    $('swing').value = sw != null ? sw : Math.round(TRAD.swingShare(tune.swing) * 100);
+    showSwing();
+    var swingBox = $('swing').closest('label'), swings = tune.swing > 0;
+    swingBox.classList.toggle('adv', !swings);
+    if (swings) swingBox.removeAttribute('data-adv'); else swingBox.setAttribute('data-adv', 'swing');
 
-    if (transport) transport.setTune(tune);
-    renderHints();   // a new tune goes back to its own swing
+    if (transport) {
+      transport.setTune(tune);
+      if (swingTouched) transport.setSwing(swingOverride());   // this type's own, as you left it
+    }
+    renderHints();   // a new tune comes with its own swing
     // While playing, the bar display moves to the new tune with the drum, on
     // the next bar.
     if (!transport || !transport.running) renderGrid(idleGrid());
@@ -626,8 +639,9 @@
 
     $('swing').addEventListener('input', function () {
       swingTouched = true;
-      $('swing-out').textContent = +this.value === 0 ? 'straight' : pct(+this.value);
-      if (transport) transport.setSwing(+this.value);
+      remember('swing_' + tune.id, +this.value);
+      showSwing();
+      if (transport) transport.setSwing(swingOverride());
     });
 
     Array.prototype.forEach.call($('modes').children, function (b) {

@@ -265,8 +265,13 @@ is where a musician expects them to land. Stop drops any strokes already
 queued, so nothing sounds after it.
 
 Swing is a piecewise-linear remap of position-within-beat, so it works at any
-grid resolution: at 100% the quaver offbeat sits exactly on the triplet (0.667).
-Hornpipes default to 62%, barndances to 45%, everything else straight.
+grid resolution: at 1.0 the quaver offbeat sits exactly on the triplet (0.667).
+The Swing slider speaks a player's terms instead, the long quaver against the
+short, 50:50 to 70:30 (`TRAD.swingShare`, `swingFromShare` and `swingLabel` in
+patterns.js convert). Hornpipes start at 64:36 (0.84; it was 0.62, 60:40, until
+1.9.0), barndances at 57:43 (0.45), everything else straight. Each type keeps
+the swing you set for it (`swing_<type>` in the saved settings), and a type
+that swings shows the slider in Basic.
 
 ## Sending it to GarageBand
 
@@ -443,8 +448,9 @@ on thesession.org (its API answers any site, so the page asks it directly;
 there is no server of ours), fetched, and played with the guitar demo's
 guitar, flute and bodhrán, and a recorded concertina. Jigs, reels, hornpipes,
 polkas, slides and slip jigs for now (`TYPES` in buddies.js, keyed by the
-Session's names for them; a hornpipe swings 2:1, its triplets, dotted pairs
-and semiquavers played as written: `asWritten`). The foot
+Session's names for them; a hornpipe swings by its Swing control, 64:36 to
+start and kept in `players.swing.hornpipe`, guitar, drum and tune together; its
+triplets, dotted pairs and semiquavers play as written: `asWritten`). The foot
 of the app and of Session Buddies switches between the two.
 
 - `buddies/abc.js` — reads the Session's ABC (the body only: the meter comes

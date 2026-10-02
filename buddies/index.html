@@ -134,6 +134,19 @@
       <button class="mode" type="button" role="radio" data-strum="drive" aria-checked="false">Driving</button>
     </div>
     <p id="strum-desc" class="blurb"></p>
+    <!-- Only for a tune that swings (a hornpipe). -->
+    <div id="swing-box" hidden>
+      <h3 class="sub-h">Swing</h3>
+      <div class="voice">
+        <label for="swing">Long : short</label>
+        <input id="swing" type="range" min="50" max="70" step="1" value="64"
+               aria-label="Swing: how the first of a pair of quavers is held against the second">
+        <output id="swing-out" for="swing">64:36</output>
+      </div>
+      <p class="blurb">How the first of each pair of quavers is held against the second: 50:50 is
+      straight, 70:30 heavy. The guitar, bodhrán and tune all follow it, and it is kept for next time.
+      Triplets and notes written dotted play as written.</p>
+    </div>
     <h3 class="sub-h">Tuning</h3>
     <div id="tunings" class="modes" role="radiogroup" aria-label="Guitar tuning">
       <button class="mode" type="button" role="radio" data-tuning="standard" aria-checked="false">Standard</button>

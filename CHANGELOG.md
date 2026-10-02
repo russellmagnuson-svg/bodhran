@@ -4,6 +4,20 @@ What changed in each version of Bodhrán, newest first. The version shows next
 to the title in the app; bump it at the top of `js/app.js` with every change
 that gets pushed (the last number for a fix, the middle one for a feature).
 
+## 1.9.0 — 2026-10-01 — Swing you can set by ear
+
+- The Swing slider now reads as a player says it: the first of a pair of
+  quavers against the second, from 50:50 (straight) to 70:30. It used to show
+  a percentage of the engine's own measure ("62%").
+- Hornpipes now start at 64:36, a little more swing than the 60:40 they had.
+  In Session Buddies 60:40 sounded "devoid of the swing a hornpipe normally
+  has", and 2:1 "almost slightly too much". Barndances stay at 57:43.
+- Each tune type keeps the swing you set for it. Before, it went back to the
+  tune's own whenever you changed tune.
+- For a type that swings (the hornpipe and the barndance), the slider shows in
+  Basic too. For the others it stays in Advanced, so you can still swing a
+  reel if you want to.
+
 ## 1.8.1 — 2026-10-01
 
 - Session Players is now called Session Buddies, at `/buddies/`. The foot of
@@ -375,6 +389,15 @@ The page at `/guitar/` has its own version number, shown next to its title.
 The page at `/buddies/` has its own version number, shown next to its title.
 It was called Session Players, at `/players/`, until 1.8.0; the entries
 before that keep the old name.
+
+### Session Buddies 1.11.0 — 2026-10-01
+
+- A hornpipe has a Swing control (under the strums): from 50:50, straight, to
+  70:30, starting at 64:36. 1.10.1's 2:1 was "almost slightly too much". The
+  guitar, bodhrán and tune all follow it, the concertina a shade harder as it
+  leans in every tune; triplets and notes written dotted still play as
+  written. It is kept for next time. The Bodhrán app's Swing slider works the
+  same way (app 1.9.0).
 
 ### Session Buddies 1.10.1 — 2026-10-01
 
