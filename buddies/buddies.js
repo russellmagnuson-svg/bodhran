@@ -17,7 +17,7 @@
    * next to the title and at the foot. Bump it with every change pushed (the
    * last number for a fix, the middle for something new) and add it to the
    * "Session Buddies" sections of CHANGELOG.md and the release notes. */
-  var VERSION = '1.12.0';
+  var VERSION = '1.12.1';
 
   var $ = function (id) { return document.getElementById(id); };
   var P = window.BUDDIES, G = window.GTR, T = window.TRAD, TPQ = P.TPQ;
@@ -959,6 +959,7 @@
     pending = []; shown = []; endAt = null;
     tick();
     timer = setInterval(tick, 25);
+    T.keepAwake(true, ctx);               // the screen held on while it plays (js/wake.js)
     showState();
   }
 
@@ -966,6 +967,7 @@
     playing = false;
     clearInterval(timer); timer = null;
     pending = []; shown = []; endAt = null;
+    T.keepAwake(false);
     if (ctx) {
       var now = ctx.currentTime;
       if (!ended) run.gain.setTargetAtTime(0, now, 0.04);

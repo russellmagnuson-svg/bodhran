@@ -8,7 +8,7 @@
    * Bump it with every change that gets pushed: the last number for a fix,
    * the middle one for a new feature. It is also the quickest way to tell
    * whether a phone is running the latest deploy or an older copy. */
-  var VERSION = '1.9.0';
+  var VERSION = '1.9.1';
   TRAD.VERSION = VERSION;
 
   TRAD.validatePatterns();
@@ -32,17 +32,6 @@
   function remember(key, value) { settings[key] = value; save(); }
 
   /* ---------- audio graph, built on first interaction ---------- */
-
-  /* Get the audio running again if it has stopped. iOS parks it as
-   * 'interrupted' — not 'suspended' — after a phone call, Siri or an alarm,
-   * and it stays silent until something asks for it back. This used to check
-   * for 'suspended' only, so after an interruption Play could stay silent
-   * until the page was reloaded. */
-  function wakeAudio() {
-    if (ctx && ctx.state !== 'running' && ctx.state !== 'closed') {
-      ctx.resume().catch(function () { /* needs a tap; Play will do it */ });
-    }
-  }
 
   /* Called only from a press of Play or the drone: the moment Safari lets a
    * page start sound. The waking itself lives in js/wake.js, shared with the
@@ -345,30 +334,11 @@
     $('mini-play').setAttribute('aria-pressed', String(on));
   }
 
-  /* ---------- screen wake lock ---------- */
-  // A locked phone screen stops the audio, so hold the screen on while playing.
-  var wakeLock = null;
-  function holdScreen() {
-    if (wakeLock || !navigator.wakeLock) return;
-    navigator.wakeLock.request('screen').then(function (lock) {
-      wakeLock = lock;
-      lock.addEventListener('release', function () { wakeLock = null; });
-    }).catch(function () { /* refused or unsupported; nothing to do */ });
-  }
-  function releaseScreen() {
-    if (wakeLock) wakeLock.release();
-    wakeLock = null;
-  }
-  // The browser drops the lock whenever the page is hidden; take it back when
-  // the page comes back if the drum is still going.
-  // Coming back to the page is also when to wake audio an interruption parked.
-  document.addEventListener('visibilitychange', function () {
-    fitLookahead();
-    if (document.visibilityState === 'visible' && transport && transport.running) {
-      wakeAudio();
-      holdScreen();
-    }
-  });
+  /* ---------- the screen held on ----------
+   * While the drum or the drone sounds (js/wake.js, which also takes it back,
+   * and wakes the audio, when the page is shown again). */
+  function holdScreenIfSounding() { TRAD.keepAwake(sounding(), ctx); }
+  document.addEventListener('visibilitychange', fitLookahead);
 
   /* Hidden behind another tab, the browser slows this page's timers, so plan
    * the drum further ahead; back on screen, plan just ahead again (js/wake.js).
@@ -392,7 +362,8 @@
    * pressed or taken back, and when a Finish has played its last stroke. */
   function showState() {
     var on = !!(transport && transport.running);
-    if (on) holdScreen(); else { releaseScreen(); restIfQuiet(); }
+    holdScreenIfSounding();
+    if (!on) restIfQuiet();
     var b = $('play');
     b.classList.toggle('playing', on);
     b.setAttribute('aria-pressed', String(on));
@@ -569,15 +540,17 @@
   }
 
   /* ---------- wiring ---------- */
+  /* A slider is saved when you move it. Until 1.9.1 it was also saved as it
+   * was set up, at its starting value, just before restore() read the saved
+   * one back: every slider came back at its default on every visit. */
   function bindSlider(id, outId, format, onChange) {
     var el = $(id), out = $(outId);
-    function update() {
+    function show() {
       out.textContent = format(+el.value);
       if (onChange) onChange(+el.value);
-      remember(id, +el.value);
     }
-    el.addEventListener('input', update);
-    update();
+    el.addEventListener('input', function () { show(); remember(id, +el.value); });
+    show();
   }
 
   function pct(v) { return Math.round(v * 100) + '%'; }
@@ -678,6 +651,7 @@
       ensureAudio();
       if (this.checked) drone.start(+$('drone-root').value);
       else { drone.stop(); restIfQuiet(); }
+      holdScreenIfSounding();             // the drone alone holds the screen on too
       remember('droneOn', this.checked);
     });
     $('drone-root').addEventListener('change', function () {

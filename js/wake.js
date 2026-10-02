@@ -158,6 +158,43 @@
    * the Mac's log on 29 September turned out to be mostly an open YouTube
    * tab: Safari keeps the speaker open for any page with a player loaded.)
    * And each Play then starts the audio afresh. */
+  /* Holding the screen on while a page is sounding, for all three pages.
+   * On a phone a screen that locks itself (Auto-Lock: from 30 seconds) takes
+   * the sound with it, so while anything plays the page holds a screen wake
+   * lock. The browser lets go of it whenever the page is hidden; when the
+   * page is shown again it is taken back, and the sound woken with it, since
+   * iOS parks the audio ('interrupted') after a call, Siri or an alarm and
+   * keeps it silent until asked. Until app 1.9.1 and Session Buddies 1.12.1
+   * only the app held the screen, and only for the drum: not for the drone,
+   * and not at all in Session Buddies or the guitar demo.
+   * keepAwake(on, ctx): on while something sounds; ctx, the page's audio. */
+  var awake = { want: false, lock: null, asking: false, ctx: null };
+  function askAwake() {
+    if (!awake.want || awake.lock || awake.asking || document.hidden || !navigator.wakeLock) return;
+    awake.asking = true;
+    navigator.wakeLock.request('screen').then(function (lock) {
+      awake.asking = false;
+      if (!awake.want) { lock.release().catch(function () {}); return; }
+      awake.lock = lock;
+      lock.addEventListener('release', function () { if (awake.lock === lock) awake.lock = null; });
+    }, function () { awake.asking = false; /* refused or unsupported: nothing to do */ });
+  }
+  TRAD.keepAwake = function (on, ctx) {
+    awake.want = !!on;
+    if (ctx) awake.ctx = ctx;
+    if (awake.want) return askAwake();
+    var lock = awake.lock;
+    awake.lock = null;
+    if (lock) lock.release().catch(function () {});
+  };
+  TRAD.isAwake = function () { return !!awake.lock; };
+  document.addEventListener('visibilitychange', function () {
+    if (document.visibilityState !== 'visible' || !awake.want) return;
+    var c = awake.ctx;
+    if (c && c.state !== 'running' && c.state !== 'closed') TRAD.startSound(c);
+    askAwake();
+  });
+
   TRAD.REST_AFTER = 5;   // seconds: longer than any note, drone or room tail
   TRAD.restAudio = function (ctx, busy) {
     if (!ctx) return;

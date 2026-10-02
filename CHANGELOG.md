@@ -4,6 +4,18 @@ What changed in each version of Bodhrán, newest first. The version shows next
 to the title in the app; bump it at the top of `js/app.js` with every change
 that gets pushed (the last number for a fix, the middle one for a feature).
 
+## 1.9.1 — 2026-10-02
+
+- Your sliders are remembered again: volume, tuning, tone, back hand, room,
+  drone level, busyness, humanise and fills every. Each one was saved at its
+  starting value as the page set it up, just before your saved value was read
+  back, so every visit started from the defaults. Found by the audit.
+- The drone on its own now keeps the phone's screen on, as the drum does. A
+  screen that locked itself took the sound with it.
+- Keeping the screen on is now shared by all three pages (`TRAD.keepAwake` in
+  js/wake.js). Coming back to the page takes the screen back and wakes the
+  sound after a call or Siri, for the drone too.
+
 ## 1.9.0 — 2026-10-01 — Swing you can set by ear
 
 - The Swing slider now reads as a player says it: the first of a pair of
@@ -200,6 +212,11 @@ that gets pushed (the last number for a fix, the middle one for a feature).
 
 The page at `/guitar/` has its own version number, shown next to its title.
 
+### Guitar demo 1.11.1 — 2026-10-02
+
+- The phone's screen stays on while the demo plays (it could lock itself and
+  stop the sound), using the app's shared helper.
+
 ### Guitar demo 1.11.0 — 2026-10-01 — A smoother guitar
 
 - The strings no longer start from a burst of random noise, the source of
@@ -389,6 +406,13 @@ The page at `/guitar/` has its own version number, shown next to its title.
 The page at `/buddies/` has its own version number, shown next to its title.
 It was called Session Players, at `/players/`, until 1.8.0; the entries
 before that keep the old name.
+
+### Session Buddies 1.12.1 — 2026-10-02
+
+- The phone's screen stays on while a tune plays. Nothing held it before, so
+  with the phone put down to play along, Auto-Lock could dark the screen and
+  stop the backing. Coming back to the page takes the screen back and wakes
+  the sound after a call or Siri. (The app's shared helper, js/wake.js.)
 
 ### Session Buddies 1.12.0 — 2026-10-01
 

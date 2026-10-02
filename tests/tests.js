@@ -974,6 +974,97 @@
       });
     });
 
+  check('The app', 'Your settings come back after a reload',
+    'Every slider (volume, tuning, tone, back hand, room, drone level, busyness, humanise, fills every) came back at its default on every visit: each was saved at its starting value as the page set it up, just before the saved one was read back. Moved and reloaded, each must come back where it was left, its label with it.',
+    function () {
+      var moved = { level: 0.5, tuning: 100, tone: 0.3, backhand: 0.5, room: 0.6, 'drone-level': 0.3,
+                    complexity: 0.3, humanize: 0.7, phrase: 8 };
+      return withApp(function (win, doc) {
+        viewTo(doc, 'advanced');
+        var labels = {};
+        Object.keys(moved).forEach(function (id) {
+          var el = doc.getElementById(id);
+          el.value = moved[id]; el.dispatchEvent(new win.Event('input'));
+          labels[id] = el.closest('label').querySelector('output').textContent;
+        });
+        return new Promise(function (ok) { win.frameElement.onload = ok; win.location.reload(); })
+          .then(function () { return wait(300); })
+          .then(function () {
+            var d = win.document, bad = [];
+            Object.keys(moved).forEach(function (id) {
+              var el = d.getElementById(id), out = el.closest('label').querySelector('output').textContent;
+              if (Math.abs(+el.value - moved[id]) > 1e-9) bad.push(id + ' came back at ' + el.value + ', not ' + moved[id]);
+              else if (out !== labels[id]) bad.push(id + ' says ' + out + ', not ' + labels[id]);
+            });
+            expect(bad.length === 0, bad.join('\n'));
+          });
+      });
+    });
+
+  check('The app', 'The screen stays on while anything plays, on all three pages',
+    'A phone screen that locks itself takes the sound with it. Only the app held the screen on, and only for the drum: not for the drone alone, and not at all in Session Buddies or the guitar demo. Now each holds it while it plays (the drone included) and lets go when stopped; and since the browser lets go whenever the page is hidden, each takes it back when the page is shown again.',
+    function () {
+      // A stand-in for the browser's screen lock, and a page that counts as shown.
+      function fake(win) {
+        var log = { asked: 0, held: [] };
+        Object.defineProperty(win.navigator, 'wakeLock', { configurable: true, value: { request: function () {
+          log.asked++;
+          var lock = new win.EventTarget();
+          lock.released = false;
+          lock.release = function () {
+            if (!lock.released) { lock.released = true; lock.dispatchEvent(new win.Event('release')); }
+            return win.Promise.resolve();
+          };
+          log.held.push(lock);
+          return win.Promise.resolve(lock);
+        } } });
+        Object.defineProperty(win.document, 'hidden', { configurable: true, value: false });
+        Object.defineProperty(win.document, 'visibilityState', { configurable: true, value: 'visible' });
+        log.holding = function () { return log.held.filter(function (l) { return !l.released; }).length; };
+        log.hide = function () { log.held.forEach(function (l) { l.release(); }); };   // what the browser does
+        log.show = function () { win.document.dispatchEvent(new win.Event('visibilitychange')); };
+        return log;
+      }
+      function step(f) { f(); return wait(60); }
+      var bad = [];
+      function want(log, n, what) { if (log.holding() !== n) bad.push(what + ': ' + (log.holding() ? 'the screen is held' : 'the screen is not held')); }
+      var app = withApp(function (win, doc) {
+        var L = fake(win), play = doc.getElementById('play'), drone = doc.getElementById('drone-on');
+        return step(function () { play.click(); })
+          .then(function () { want(L, 1, 'the app, playing'); return step(function () { play.click(); }); })
+          .then(function () { want(L, 0, 'the app, stopped'); return step(function () { drone.click(); }); })
+          .then(function () { want(L, 1, 'the app, the drone alone'); return step(function () { drone.click(); }); })
+          .then(function () { want(L, 0, 'the app, the drone off'); return step(function () { play.click(); }); })
+          .then(function () { return step(L.hide); })
+          .then(function () { return step(L.show); })
+          .then(function () { want(L, 1, 'the app, shown again while playing'); return step(function () { play.click(); }); });
+      });
+      return app.then(function () {
+        return withBuddies(function (win, doc) {
+          var L = fake(win), play = doc.getElementById('play');
+          return step(function () { play.click(); })
+            .then(function () { want(L, 1, 'Session Buddies, playing'); return step(L.hide); })
+            .then(function () { return step(L.show); })
+            .then(function () { want(L, 1, 'Session Buddies, shown again while playing'); return step(function () { play.click(); }); })
+            .then(function () { want(L, 0, 'Session Buddies, stopped'); });
+        });
+      }).then(function () {
+        var frame = document.createElement('iframe');
+        frame.src = '../guitar/';
+        frame.style.cssText = 'position:absolute;left:-10000px;top:0;border:0;width:375px;height:812px';
+        document.body.appendChild(frame);
+        return new Promise(function (ok, no) {
+          var t = setTimeout(function () { no(new Error('the demo page did not load')); }, 10000);
+          frame.onload = function () { clearTimeout(t); setTimeout(ok, 200); };
+        }).then(function () {
+          var win = frame.contentWindow, L = fake(win), play = frame.contentDocument.getElementById('play');
+          return step(function () { play.click(); })
+            .then(function () { want(L, 1, 'the guitar demo, playing'); return step(function () { play.click(); }); })
+            .then(function () { want(L, 0, 'the guitar demo, stopped'); });
+        }).finally(function () { frame.remove(); });
+      }).then(function () { expect(bad.length === 0, bad.join('\n')); });
+    });
+
   check('The app', 'Space works after touching a slider',
     'Set the tempo, press Space: it used to do nothing until you clicked elsewhere. Checkboxes keep Space for themselves.',
     function () {

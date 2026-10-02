@@ -78,7 +78,8 @@ against the real code:
   the silent-switch setting is for phones only; every Play asks the sound to
   start; the count-in starts at two bars, goes to four, and is counted on
   screen; text and buttons stay easy to read in the green-and-gold colours; while playing it says whether it is making sound; stopped and
-  quiet, it lets go of the speaker; in Mac Safari the sound goes out through
+  quiet, it lets go of the speaker; your settings come back after a reload; the screen stays on while
+  anything plays, on all three pages; in Mac Safari the sound goes out through
   an audio element, and nowhere else; the fallback nudge is a second long and
   far below hearing; every drone root plays the
   note it names; a tempo outside the range says so;
@@ -375,6 +376,12 @@ npx wrangler pages deploy . --project-name=bodhran
   woke A. So since 1.6.6, in Mac Safari the output chain ends in a
   MediaStream played by an audio element (`TRAD.speaker`), started from each
   Play and paused at rest.
+- **Keeping the screen on.** While anything plays (in the app the drum or
+  the drone), each page holds a screen wake lock (`TRAD.keepAwake` in
+  `js/wake.js`): a phone that locks itself takes the sound with it. The
+  browser lets go of it whenever the page is hidden, so it is taken back, and
+  the sound woken (iOS parks it as 'interrupted' after a call or Siri), when
+  the page is shown again.
 - **Letting go of the speaker.** Stopped (and, in the app, with the drone
   off), each page suspends its audio a few seconds after the last note
   (`TRAD.restAudio` in `js/wake.js`), and the next Play resumes it. Left
@@ -540,7 +547,7 @@ patterns sound the way you want.
 | `js/transport.js` | the clock and pattern selection |
 | `js/drone.js`     | root-and-fifth drone pad |
 | `js/midiout.js`   | optional Web MIDI output |
-| `js/wake.js`      | getting the browser to make sound: the iPhone silent switch, and waking Mac Safari; shared with the guitar demo |
+| `js/wake.js`      | getting the browser to make sound: the iPhone silent switch, waking Mac Safari, keeping the screen on; shared by all three pages |
 | `js/app.js`       | UI wiring, and the version number at the top |
 | `sw.js`           | offline caching |
 | `_headers`        | Cloudflare cache rules |

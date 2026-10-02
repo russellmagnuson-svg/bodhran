@@ -13,7 +13,7 @@
    * with every change to the demo that gets pushed: the last number for a
    * fix, the middle one for something new. Add it to CHANGELOG.md and the
    * release notes in the same change (a check makes sure). */
-  var VERSION = '1.11.0';
+  var VERSION = '1.11.1';
 
   var $ = function (id) { return document.getElementById(id); };
   var K = window.KESH, G = window.GTR, T = window.TRAD;
@@ -288,6 +288,7 @@
     pending = []; shown = []; endAt = null;
     tick();
     timer = setInterval(tick, 25);
+    T.keepAwake(true, ctx);               // the screen held on while it plays (js/wake.js)
     showState();
   }
 
@@ -295,6 +296,7 @@
     playing = false;
     clearInterval(timer); timer = null;
     pending = []; shown = []; endAt = null;
+    T.keepAwake(false);
     if (ctx) {
       var now = ctx.currentTime;
       if (!ended) run.gain.setTargetAtTime(0, now, 0.04);   // a press of Stop: quickly quiet
