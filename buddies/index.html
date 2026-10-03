@@ -83,9 +83,19 @@
       <button id="save" class="action ghost" type="button" disabled>Save to a file</button>
       <button id="open" class="action ghost" type="button">Open a saved tune</button>
       <input id="file" type="file" accept=".json,application/json" hidden>
-      <!-- A tune from a PDF (or an .abc file): buddies/pdf.js. -->
-      <button id="open-pdf" class="action ghost" type="button">Open a PDF</button>
-      <input id="pdf-file" type="file" accept=".pdf,application/pdf,.abc,.txt,text/plain" hidden>
+      <button id="paste-open" class="action ghost" type="button" aria-expanded="false" aria-controls="paste-box">Paste ABC</button>
+    </div>
+    <!-- A tune pasted in ABC, played as if it came from the Session. -->
+    <div id="paste-box" class="paste-box" hidden>
+      <label for="paste-text" class="sub-h">Paste a tune in ABC</label>
+      <textarea id="paste-text" rows="9" spellcheck="false" autocapitalize="off" autocomplete="off"
+        placeholder="X:1&#10;T:The Kesh&#10;R:jig&#10;M:6/8&#10;L:1/8&#10;K:G&#10;|:G3 GAB|A3 ABd|edd gdd|edB dBA|..."></textarea>
+      <p class="blurb">With its header lines (T: the title, R: or M: for the rhythm, K: the key),
+      as thesession.org shows a tune’s ABC. Several tunes at once: you choose.</p>
+      <div class="file-row">
+        <button id="paste-go" class="action" type="button">Use this tune</button>
+        <button id="paste-cancel" class="action ghost" type="button">Cancel</button>
+      </div>
     </div>
     <p id="file-status" class="blurb" role="status"></p>
   </section>
@@ -322,9 +332,8 @@
 
     <h3>Getting going</h3>
     <ol>
-      <li>Find a tune by name, and pick a setting of it if you like. Or <b>Open a PDF</b>
-      of a tune: one written in ABC is read note for note; one with the notes drawn on
-      staves has its title looked up on the Session.</li>
+      <li>Find a tune by name, and pick a setting of it if you like. Or <b>Paste ABC</b>: a tune
+      written in ABC, from anywhere, played as if it came from the Session.</li>
       <li>Press <b>Play</b>. Set the tempo, and how many times through.</li>
       <li>Choose <b>what you hear</b>: who plays, how the melody comes and goes, the
       strum, the bodhr&aacute;n&rsquo;s style, the tuning. Once you are happy,
@@ -372,7 +381,6 @@
 <script src="shapes.js"></script>
 <script src="flute.js"></script>
 <script src="concertina.js"></script>
-<script src="pdf.js"></script>
 <script src="buddies.js"></script>
 </body>
 </html>

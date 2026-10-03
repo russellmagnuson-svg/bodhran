@@ -116,3 +116,15 @@ button.bar .ch, button.bar .abc { display: block; }
 .hear.folded .panel-head h2 { margin-bottom: 10px; }
 .hear-done { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 20px; padding-top: 14px; border-top: 1px solid var(--line); }
 .hear-done .blurb { margin: 0; }
+
+/* ---------- paste a tune in ABC ---------- */
+.paste-box { margin-top: 12px; }
+.paste-box .sub-h { display: block; margin-top: 4px; }
+.paste-box textarea {
+  width: 100%; box-sizing: border-box; resize: vertical;
+  background: var(--panel-2); border: 1px solid var(--line); color: var(--text);
+  border-radius: 8px; padding: 8px 10px;
+  font: 14px/1.45 ui-monospace, Menlo, Consolas, monospace;   /* 14px+: on iPhone, 16px avoids zoom */
+}
+.paste-box textarea:focus { outline: none; border-color: var(--accent-dim); }
+@media (max-width: 480px) { .paste-box textarea { font-size: 16px; } }

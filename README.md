@@ -539,15 +539,12 @@ open or folded kept in `players.hearopen`.
   tune on it. Since 1.1.0 it knows a part's shape: bar 4 of each eight leans
   to the cadence chord (V in major; bVII in dorian, mixolydian and minor),
   and bar 8 opens on it and goes home, a mid-bar change there costing little.
-- `buddies/pdf.js` — a tune from a PDF or an `.abc` file (Open a PDF, since
-  1.22.0): the PDF's text read with Mozilla's pdf.js (3.11.174, fetched from
-  cdnjs the first time, its worker started from a blob), its lines rebuilt
-  from where the text sits; every tune written in ABC in it read from its
-  header (T:, R:, M:, L:, K:) and body, the type from R: or else the meter;
-  with no ABC, the largest words on page 1 taken as the title and searched
-  for on the Session. `buildFromFile()` in buddies.js builds it as a setting
-  (`meta.from = 'pdf'`, no Session id, so no other settings are fetched).
-  The checks' PDFs are made by `tests/fixtures/make-pdfs.py`.
+- Paste ABC (since 1.23.0, in place of 1.22.0's Open a PDF): `P.abcTunes`
+  in `buddies/abc.js` reads tunes written in full ABC, from their header
+  (T:, R:, M:, L:, K:) and body, the type from R: or else the meter, a note
+  length other than a quaver kept as an inline `[L:]`; `buildPasted()` in
+  buddies.js builds one as a setting (`meta.from = 'paste'`, no Session id,
+  so no other settings are fetched).
 - `buddies/shapes.js` — shapes in both tunings: a hand-chosen table (the
   demo's DADGAD drone shapes among them) and a search for anything else
   (root in the bass, chord tones only, a four-fret stretch).

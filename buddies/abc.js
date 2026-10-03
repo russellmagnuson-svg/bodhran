@@ -388,4 +388,72 @@
              pickup: pickup, timeline: timeline, slots: slots, symbols: symbols,
              warnings: bars.warnings };
   };
+
+  /* ---------- tunes pasted in, written in full ABC (since 1.23.0) ----------
+   * The Session's own settings are a body only; a tune pasted in (Paste ABC)
+   * comes with its header: X:, T:, R:, M:, L:, K:. From 1.22.0 to 1.23.0 the
+   * same reading took the text of a PDF. */
+  var RHYTHMS = {
+    'reel': 'reel', 'jig': 'jig', 'double jig': 'jig', 'single jig': 'jig', 'slip jig': 'slip jig',
+    'hop jig': 'slip jig', 'hornpipe': 'hornpipe', 'polka': 'polka', 'slide': 'slide', 'waltz': 'waltz'
+  };
+  var BY_METER = { '6/8': 'jig', '9/8': 'slip jig', '12/8': 'slide', '2/4': 'polka', '3/4': 'waltz',
+                   '4/4': 'reel', 'C': 'reel', 'C|': 'reel', '2/2': 'reel' };
+  var METERS = { reel: ['4/4', 'C', 'C|', '2/2'], hornpipe: ['4/4', 'C', 'C|', '2/2'], jig: ['6/8'],
+                 'slip jig': ['9/8'], slide: ['12/8'], polka: ['2/4'], waltz: ['3/4'] };
+
+  /* Every tune written in ABC in these lines (one page after another). A tune
+   * starts at an X: or T: line, has its header fields, and its body after the
+   * K: line; a field in the body (a change of key or note length) is kept as
+   * an inline field; lyrics, parts and comments are left out. */
+  P.abcTunes = function (lines) {
+    var tunes = [], cur = null;
+    function done() {
+      if (cur && cur.body.length && /[A-Ga-g]/.test(cur.body.join(''))) tunes.push(cur);
+      cur = null;
+    }
+    lines.forEach(function (raw) {
+      var line = raw.replace(/^\s+/, '');
+      var f = /^([A-Za-z]):\s*(.*)$/.exec(line);
+      // A new tune: at X:, or at T: where no header is open (a file without X: lines).
+      if (f && (f[1] === 'X' || (f[1] === 'T' && (!cur || cur.inBody)) || (!cur && f[1] !== 'w' && f[1] !== 'W'))) { done(); cur = { fields: {}, body: [], inBody: false }; }
+      if (!cur) return;
+      if (f && !cur.inBody) {
+        var k = f[1].toUpperCase();
+        if (!(k in cur.fields)) cur.fields[k] = f[2].trim();
+        if (k === 'K') cur.inBody = true;
+        return;
+      }
+      if (!cur.inBody) return;
+      if (f) {                                                   // a field in the body
+        if (/^[KL]$/.test(f[1])) cur.body.push('[' + f[1] + ':' + f[2].trim() + ']');
+        else if (f[1] === 'M') cur.warn = 'it changes meter part way through';
+        return;                                                  // w:, W:, P:, N: and the like: not notes
+      }
+      if (!line || /^%/.test(line)) return;
+      if (!/[A-Ga-gz|]/.test(line)) return;                      // not a line of notes
+      cur.body.push(line.replace(/[\u201c\u201d]/g, '"'));     // curly quotes round a chord name, as a word processor makes them
+    });
+    done();
+    return tunes.map(function (t, i) { return shape(t, i); });
+  };
+
+  function shape(t, i) {
+    var F = t.fields, meterText = (F.M || '').replace(/\s+/g, '') || '4/4';
+    var rhythm = (F.R || '').toLowerCase().replace(/[^a-z ]/g, ' ').replace(/\s+/g, ' ').trim();
+    var type = RHYTHMS[rhythm], notes = [];
+    if (type && METERS[type].indexOf(meterText) === -1 && BY_METER[meterText]) type = null;   // the meter decides
+    if (!type) {
+      type = BY_METER[meterText] || null;
+      if (type && rhythm) notes.push('marked ' + (F.R || '').trim() + ', played as a ' + type);
+    }
+    var unit = (F.L || '1/8').replace(/\s+/g, ''), body = t.body.join(' ');
+    if (unit !== '1/8') body = '[L:' + unit + '] ' + body;      // the page's reading counts in quavers otherwise
+    var key = P.parseKey(F.K || 'C');
+    if (t.warn) notes.push(t.warn);
+    return {
+      number: i + 1, title: (F.T || 'Pasted tune' + (i ? ' ' + (i + 1) : '')).trim(), rhythm: F.R || '', meterText: meterText,
+      type: type, key: key.tonicName + key.mode, abc: body, notes: notes
+    };
+  }
 })(window.BUDDIES = window.BUDDIES || {});

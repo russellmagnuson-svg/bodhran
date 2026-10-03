@@ -480,6 +480,20 @@ The page at `/buddies/` has its own version number, shown next to its title.
 It was called Session Players, at `/players/`, until 1.8.0; the entries
 before that keep the old name.
 
+### Session Buddies 1.23.0 — 2026-10-03 — Paste ABC, in place of Open a PDF
+
+- **Paste ABC** (where Open a PDF was) opens a box to paste a tune in ABC
+  into, from thesession.org's ABC view, a tune book, anywhere. **Use this
+  tune** builds it as if it came from the Session: its title, rhythm, meter,
+  note length, key, notes and any chords it has are read from its header and
+  body (the type from R:, or else from the meter). Several tunes pasted at
+  once are offered to choose from; a tune without X: or T: still reads. It can
+  be favourited or saved like any other and comes back after a reload,
+  without asking the Session for other settings.
+- **Open a PDF is gone**, at the user's request: pasting is simpler and always
+  readable, where a PDF's notes usually could not be read. pdf.js is no longer
+  fetched. A tune opened from a PDF under 1.22.0 still opens.
+
 ### Session Buddies 1.22.0 — 2026-10-03 — Open a PDF
 
 - **Open a PDF** (next to Open a saved tune) plays a tune from a PDF as if it

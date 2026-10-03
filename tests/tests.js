@@ -3941,66 +3941,51 @@
       });
     });
 
-  check('Session Buddies', 'A PDF you open is played as if it came from the Session',
-    'Asked for in 1.22.0: open a PDF of a tune and play along with it. Tunes written in ABC in it are built as a setting from the Session would be (two in one file: you choose; a note length of a semiquaver read as written; its own chords kept), and come back after a reload without asking the Session for other settings. A PDF with the notes drawn on staves has its title looked up on the Session; a scan, with no text, says so. The PDFs are made by tests/fixtures/make-pdfs.py. (Reading a PDF fetches pdf.js from cdnjs, so this check needs the internet.)',
+  check('Session Buddies', 'A tune pasted in ABC is played as if it came from the Session',
+    'Asked for in 1.23.0 (in place of 1.22.0’s Open a PDF): paste a tune in ABC and play along with it. Tunes pasted with their header are built as a setting from the Session would be (two at once: you choose; a note length of a semiquaver read as written; its own chords kept), and come back after a reload without asking the Session for other settings. A tune without X: or T: still reads; text with no tune in it says what to paste.',
     function () {
+      var ABC = ['X:1', 'T:The Checker\'s Jig', 'R:jig', 'M:6/8', 'L:1/8', 'K:G',
+        '|:GAB c2d|e2d B2G|ABA G2E|D2E G3|', 'GAB c2d|e2d B2G|A2B cBA|1 G3 G2D:|2 G3 G2B||',
+        '|:d2e dBG|c2d cAF|d2e dBG|A3 A2B|', 'd2e dBG|c2d cAF|GAB cBA|1 G3 G2B:|2 G3 G3|]', '',
+        'X:2', 'T:A Check Reel', 'R:reel', 'M:4/4', 'L:1/16', 'K:D',
+        '|:“D”F2A2 A2F2 "G"G2B2 B2G2|"D"F2A2 A2F2 "A"E2F2 G2E2|',
+        '"D"F2A2 A2F2 "G"G2B2 B2d2|"A"c2B2 A2G2 "D"F2D2 D4:|',
+        '|:"D"d4 f2d2 "A"c2e2 e2c2|"G"B2d2 d2B2 "D"A2F2 F2A2|',
+        '"D"d4 f2d2 "A"c2e2 e2c2|"G"B2A2 G2E2 "D"D4 D4:|'].join('\n');
       return withBuddies(function (win, doc) {
-        var fr = win.frameElement, bad = [], asked = [];
+        var fr = win.frameElement, bad = [];
         function W() { return fr.contentWindow; }
         function $(id) { return fr.contentDocument.getElementById(id); }
-        function stub() {
-          var real = W().fetch;
-          W().fetch = function (url) {
-            if (/thesession\.org/.test(String(url))) {
-              asked.push(String(url));
-              var Res = W().Response;
-              return Promise.resolve(new Res(JSON.stringify({ tunes: [{ id: 55, name: 'The Kesh', type: 'jig' }] }), { status: 200 }));
-            }
-            return real.apply(W(), arguments);
-          };
-        }
-        function open(name) {
-          return fetch(FIX.replace('thesession-', '') + name).then(function (r) { return r.blob(); }).then(function (b) {
-            W().BUDDIES_PAGE.openPdf(new (W().File)([b], name, { type: 'application/pdf' }));
-            var until = Date.now() + 20000;
-            return new Promise(function (ok) {
-              (function poll() { if (!/^Reading/.test($('file-status').textContent) || Date.now() > until) ok(); else setTimeout(poll, 100); })();
-            });
-          }).then(function () { return wait(200); });
-        }
-        stub();
-        return open('pdf-abc.pdf').then(function () {
-          var offered = Array.prototype.map.call($('results').querySelectorAll('button'), function (b) { return b.textContent; });
-          if (offered.length !== 2 || !/Checker/.test(offered[0]) || !/Check Reel/.test(offered[1])) bad.push('the two tunes were offered as ' + JSON.stringify(offered) + ' (' + $('file-status').textContent + ')');
-          var b = $('results').querySelectorAll('button')[1];
-          if (!b) { expect(false, bad.join('\n')); }
-          b.click();
-          var PP = W().BUDDIES_PAGE, t = PP.tune();
-          if (!t || t.meta.name !== 'A Check Reel' || t.meta.type !== 'reel') bad.push('the reel did not open: ' + (t && t.meta.name));
-          if (!/Reel · 4\/4 · D major · from your file “pdf-abc\.pdf”/.test($('chosen-facts').textContent)) bad.push('it says “' + $('chosen-facts').textContent + '”');
-          if ($('chord-source').textContent !== 'from the setting') bad.push('its own chords were not kept: ' + $('chord-source').textContent);
-          var bars = fr.contentDocument.querySelectorAll('#chart .bar').length;
-          if (bars !== 8) bad.push(bars + ' bars in the chart, not 8');
-          var notes = PP.plan(0).filter(function (x) { return x.who === 'flute'; }).map(function (x) { return x.midi; });
-          if (notes.join(',') !== '66,69,69,66,67,71,71,67') bad.push('bar 1 plays ' + notes.join(',') + ' (L:1/16 misread?)');
-          if (!$('setting-link').hidden) bad.push('it links to thesession.org');
-          asked = [];
-          return new Promise(function (ok) { fr.onload = function () { setTimeout(ok, 500); }; W().location.reload(); });
-        }).then(function () {
-          stub();
-          return wait(300);
-        }).then(function () {
+        function paste(text) { $('paste-text').value = text; $('paste-go').click(); }
+        $('paste-open').click();
+        if ($('paste-box').hidden) bad.push('Paste ABC did not open the box');
+        paste(ABC);
+        if (!$('paste-box').hidden) bad.push('the box stayed open once the tunes were read');
+        var offered = Array.prototype.map.call($('results').querySelectorAll('button'), function (b) { return b.textContent; });
+        if (offered.length !== 2 || !/Checker/.test(offered[0]) || !/Check Reel/.test(offered[1])) bad.push('the two tunes were offered as ' + JSON.stringify(offered) + ' (' + $('file-status').textContent + ')');
+        var b = $('results').querySelectorAll('button')[1];
+        expect(!!b, bad.concat('no reel to choose').join('\n'));
+        b.click();
+        var PP = W().BUDDIES_PAGE, t = PP.tune();
+        if (!t || t.meta.name !== 'A Check Reel' || t.meta.type !== 'reel') bad.push('the reel did not open: ' + (t && t.meta.name));
+        if (!/^Reel · 4\/4 · D major · pasted in ABC$/.test($('chosen-facts').textContent)) bad.push('it says “' + $('chosen-facts').textContent + '”');
+        if ($('chord-source').textContent !== 'from the setting') bad.push('its own chords were not kept: ' + $('chord-source').textContent);
+        var bars = fr.contentDocument.querySelectorAll('#chart .bar').length;
+        if (bars !== 8) bad.push(bars + ' bars in the chart, not 8');
+        var notes = PP.plan(0).filter(function (x) { return x.who === 'flute'; }).map(function (x) { return x.midi; });
+        if (notes.join(',') !== '66,69,69,66,67,71,71,67') bad.push('bar 1 plays ' + notes.join(',') + ' (L:1/16 misread?)');
+        if (!$('setting-link').hidden) bad.push('it links to thesession.org');
+        return new Promise(function (ok) { fr.onload = function () { setTimeout(ok, 500); }; W().location.reload(); }).then(function () {
           var t = W().BUDDIES_PAGE.tune();
           if (!t || t.meta.name !== 'A Check Reel') bad.push('after a reload the tune is ' + (t && t.meta.name));
-          var early = W().performance.getEntriesByType('resource').map(function (e) { return e.name; }).filter(function (u) { return /thesession\.org\/tunes\//.test(u); });
-          if (asked.length || early.length) bad.push('after a reload it asked the Session for ' + asked.concat(early).join(', '));
-          return open('pdf-staff.pdf');
-        }).then(function () {
-          if (!asked.some(function (u) { return /search\?q=The%20Kesh/.test(u); })) bad.push('the staff PDF’s title was not looked up: ' + asked.join(', '));
-          if (!/drawn on staves/.test($('find-status').textContent) || $('q').value !== 'The Kesh') bad.push('for the staff PDF it says “' + $('find-status').textContent + '”, the box “' + $('q').value + '”');
-          return open('pdf-scan.pdf');
-        }).then(function () {
-          if (!/scan or photo/.test($('file-status').textContent)) bad.push('for the scan it says “' + $('file-status').textContent + '”');
+          var asked = W().performance.getEntriesByType('resource').map(function (e) { return e.name; }).filter(function (u) { return /thesession\.org\/tunes\//.test(u); });
+          if (asked.length) bad.push('after a reload it asked the Session for ' + asked.join(', '));
+          // No X: or T:: still a tune.
+          paste('M:6/8\nK:Ador\n|:EAA EAA|BAB GED:|');
+          var u = W().BUDDIES_PAGE.tune();
+          if (!u || u.meta.type !== 'jig' || !/A dorian/.test($('chosen-facts').textContent)) bad.push('a tune without X: or T: gave ' + (u && u.meta.name) + ' “' + $('chosen-facts').textContent + '”');
+          paste('just some words');
+          if (!/header lines/.test($('file-status').textContent)) bad.push('for text with no tune it says “' + $('file-status').textContent + '”');
           expect(bad.length === 0, bad.join('\n'));
         });
       });

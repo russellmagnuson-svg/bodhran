@@ -17,7 +17,7 @@
    * next to the title and at the foot. Bump it with every change pushed (the
    * last number for a fix, the middle for something new) and add it to the
    * "Session Buddies" sections of CHANGELOG.md and the release notes. */
-  var VERSION = '1.22.0';
+  var VERSION = '1.23.0';
 
   var $ = function (id) { return document.getElementById(id); };
   var P = window.BUDDIES, G = window.GTR, T = window.TRAD, TPQ = P.TPQ;
@@ -279,18 +279,14 @@
   }
 
   /* ---------- finding a tune on the Session ---------- */
-  // note: said before what was found (a PDF's title being looked up).
-  function find(q, note) {
+  function find(q) {
     q = q.trim();
     if (!q) return;
-    $('find-status').textContent = (note ? note + ' ' : '') + 'Looking on thesession.org…';
+    $('find-status').textContent = 'Looking on thesession.org…';
     $('results').innerHTML = '';
     fetch(API + '/tunes/search?q=' + encodeURIComponent(q) + '&format=json&perpage=20')
       .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
-      .then(function (d) {
-        showResults(d.tunes || [], q);
-        if (note) $('find-status').textContent = note + ' ' + $('find-status').textContent;
-      })
+      .then(function (d) { showResults(d.tunes || [], q); })
       .catch(function () {
         $('find-status').textContent = 'Couldn’t reach thesession.org. Check the connection and try again.';
       });
@@ -610,8 +606,8 @@
     sel.disabled = tune.settings.length < 2;
     $('chosen').hidden = false;
     $('chosen-name').textContent = tune.meta.name;
-    $('chosen-facts').textContent = ty.name + ' · ' + ty.meter + ' · ' + tune.lay.key.name + (tune.meta.from === 'pdf' ?
-      ' · from your file “' + (tune.meta.file || '') + '”' : ' · Setting ' + number +
+    $('chosen-facts').textContent = ty.name + ' · ' + ty.meter + ' · ' + tune.lay.key.name + (pasted(tune.meta) ?
+      ' · pasted in ABC' : ' · Setting ' + number +
       (tune.settings.length > 1 ? ' of ' + tune.settings.length : tune.fromFile ? ', from a saved file' : '') +
       (s.member ? ' by ' + s.member : ''));
   }
@@ -625,7 +621,7 @@
    * was. (A tune opened from a file keeps to the file.) */
   function fillSettings() {
     var t = tune;
-    if (!t || t.settings.length > 1 || t.fromFile || t.meta.id == null || t.meta.from === 'pdf') return;
+    if (!t || t.settings.length > 1 || t.fromFile || t.meta.id == null || pasted(t.meta)) return;
     var s = t.settings[t.index];
     fetch(API + '/tunes/' + encodeURIComponent(t.meta.id) + '?format=json')
       .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
@@ -657,7 +653,7 @@
     drawSettings();
     $('q').value = tune.meta.name;
     renderMine();                         // its star, and where it is in your tunes
-    var link = $('setting-link'), mineFile = tune.meta.from === 'pdf';
+    var link = $('setting-link'), mineFile = pasted(tune.meta);
     link.href = (s.url || tune.meta.url) || API;
     link.textContent = 'on thesession.org';
     link.hidden = mineFile;
@@ -666,7 +662,7 @@
     $('setting-warn').textContent = uneven ?
       'Some bars of this setting don’t add up to a full bar, so the backing may sit oddly against it. ' +
       (tune.settings.length > 1 ? 'Another setting may be cleaner.' : '') : '';
-    $('credit').innerHTML = esc(tune.meta.name) + ': ' + (mineFile ? 'from your file “' + esc(tune.meta.file || '') + '”' :
+    $('credit').innerHTML = esc(tune.meta.name) + ': ' + (mineFile ? 'pasted in ABC' :
       '<a href="' + esc(link.href) + '" target="_blank" rel="noopener">setting ' +
       number + '</a> on thesession.org' + (s.member ? ', by ' + esc(s.member) : '')) + '. Chords ' +
       (tune.source === 'setting' ? 'from the setting' : 'chosen for this page from the melody') + '.';
@@ -1677,12 +1673,9 @@
     $('fav').addEventListener('click', toggleFav);
     $('save-list').addEventListener('click', saveList);
     $('open').addEventListener('click', function () { $('file').click(); });
-    $('open-pdf').addEventListener('click', function () { $('pdf-file').click(); });
-    $('pdf-file').addEventListener('change', function () {
-      var f = this.files && this.files[0];
-      if (f) openPdf(f);
-      this.value = '';
-    });
+    $('paste-open').addEventListener('click', function () { showPaste($('paste-box').hidden); });
+    $('paste-cancel').addEventListener('click', function () { showPaste(false); });
+    $('paste-go').addEventListener('click', function () { usePasted($('paste-text').value); });
     $('file').addEventListener('change', function () {
       var f = this.files && this.files[0];
       if (!f) return;
@@ -1832,57 +1825,54 @@
     wireHear();
   }
 
-  /* ---------- a tune from a PDF (since 1.22.0) ----------
-   * Asked for: open a PDF of a tune, and play along with it as with a tune
-   * from the Session. buddies/pdf.js reads it. Tunes written in ABC in it
-   * are built as a setting from the Session would be (several: you choose);
-   * a PDF with the tune drawn on staves has its title looked up on the
-   * Session; a scan has nothing to read. */
-  function openPdf(file) {
-    $('file-status').textContent = 'Reading “' + file.name + '”…';
-    P.readFile(file).then(function (got) {
-      if (got.kind === 'abc') {
-        var ok = got.tunes.filter(function (t) { return TYPES[t.type]; });
-        if (!ok.length) {
-          $('file-status').textContent = 'In “' + file.name + '”: ' + got.tunes.map(function (t) { return t.title + ' (' + (t.rhythm || t.meterText) + ')'; }).join(', ') +
-            '. Only ' + PLAYABLE.toLowerCase() + ' can be played for now.';
-          return;
-        }
-        if (got.tunes.length === 1) return buildFromFile(got.tunes[0], file.name);
-        showFileTunes(got.tunes, file.name);
-        $('file-status').textContent = got.tunes.length + ' tunes in “' + file.name + '”: choose one above.';
-        return;
-      }
-      if (got.kind === 'title') {
-        $('file-status').textContent = '';
-        $('q').value = got.title;
-        find(got.title, '“' + file.name + '” has its notes drawn on staves, which the page can’t read, so it looked up its title, “' + got.title + '”, instead.');
-        return;
-      }
-      $('file-status').textContent = got.text
-        ? 'Couldn’t find a tune in “' + file.name + '”. Search for it by name above.'
-        : '“' + file.name + '” is a picture of the page (a scan or photo), with no text to read. Search for the tune by name above.';
-    }).catch(function () {
-      $('file-status').textContent = 'Couldn’t read “' + file.name + '”. ' +
-        (navigator.onLine === false ? 'Reading a PDF needs the internet the first time.' : 'Is it a PDF?');
-    });
+  /* ---------- a tune pasted in ABC (since 1.23.0) ----------
+   * Asked for: paste a tune in ABC and play along with it as with a tune
+   * from the Session. Read by P.abcTunes (abc.js) from its header and body,
+   * and built as a setting from the Session would be; several pasted at
+   * once are offered to choose from. (1.22.0 read the text of a PDF the same
+   * way; replaced by pasting, which is simpler and always readable.) A
+   * pasted tune has no Session number, so no other settings are fetched. */
+  function pasted(meta) { return !!meta && (meta.from === 'paste' || meta.from === 'pdf'); }
+  function showPaste(open) {
+    $('paste-box').hidden = !open;
+    $('paste-open').setAttribute('aria-expanded', String(open));
+    if (open) $('paste-text').focus();
   }
-  // A tune read from a file, as a setting from the Session.
-  function buildFromFile(t, fileName) {
+  function usePasted(text) {
+    var tunes = P.abcTunes(String(text || '').split(/\r?\n/));
+    if (!tunes.length) {
+      $('file-status').textContent = /\S/.test(text || '')
+        ? 'Couldn’t find a tune in that. Paste it with its header lines (T:, M: or R:, and K:) above the notes.'
+        : 'Paste a tune in ABC into the box first.';
+      return;
+    }
+    var ok = tunes.filter(function (t) { return TYPES[t.type]; });
+    if (!ok.length) {
+      $('file-status').textContent = tunes.map(function (t) { return t.title + ' (' + (t.rhythm || t.meterText) + ')'; }).join(', ') +
+        ': only ' + PLAYABLE.toLowerCase() + ' can be played for now.';
+      return;
+    }
+    showPaste(false);
+    if (tunes.length === 1) return buildPasted(tunes[0]);
+    showPastedTunes(tunes);
+    $('file-status').textContent = tunes.length + ' tunes pasted: choose one above.';
+  }
+  // A pasted tune, as a setting from the Session.
+  function buildPasted(t) {
     if (!TYPES[t.type]) return;
-    var slug = (fileName + '/' + t.title).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-    var meta = { id: 'pdf:' + slug, name: t.title, type: t.type, url: null, from: 'pdf', file: fileName };
+    var slug = t.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    var meta = { id: 'abc:' + slug, name: t.title, type: t.type, url: null, from: 'paste' };
     var setting = { id: 1, key: t.key, abc: t.abc, member: '', date: new Date().toISOString().slice(0, 10) };
     build(meta, [setting], 0);
     foldMatches(false);
-    $('file-status').textContent = 'Opened “' + t.title + '” from “' + fileName + '”.' +
+    $('file-status').textContent = 'Using “' + t.title + '”, pasted in ABC.' +
       (t.notes.length ? ' (' + t.notes.join('; ') + '.)' : '') + ' Favourite it or save it to keep it.';
   }
-  // Several tunes in one file: offered as the Session's matches are.
-  function showFileTunes(tunes, fileName) {
+  // Several pasted at once: offered as the Session's matches are.
+  function showPastedTunes(tunes) {
     var host = $('results');
     host.innerHTML = '';
-    lastQuery = fileName; matchCount = tunes.length;
+    lastQuery = 'your ABC'; matchCount = tunes.length;
     foldMatches(true);
     tunes.forEach(function (t) {
       var li = document.createElement('li'), b = document.createElement('button');
@@ -1891,7 +1881,7 @@
       b.innerHTML = esc(t.title) + '<small>' + esc(t.type || t.rhythm || t.meterText) + (TYPES[t.type] ? '' : ' · not yet') + '</small>';
       b.addEventListener('click', function () {
         Array.prototype.forEach.call(host.querySelectorAll('button'), function (x) { x.setAttribute('aria-pressed', String(x === b)); });
-        buildFromFile(t, fileName);
+        buildPasted(t);
       });
       li.appendChild(b); host.appendChild(li);
     });
@@ -2011,7 +2001,7 @@
     }, saveText: saveText, setChord: setChord,
     playing: function () { return playing; },
     drumGrid: function () { return drumPlayed; },     // the pattern the last bar laid used
-    hearRows: hearRows, openPdf: openPdf,
+    hearRows: hearRows, usePasted: usePasted,
     audio: function () { return { ctx: ctx, run: run, guitar: guitar, flute: fluteBus, concertina: concertina, concBus: concBus, drum: drum }; }
   };
 
