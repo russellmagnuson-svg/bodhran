@@ -458,6 +458,33 @@ The page at `/buddies/` has its own version number, shown next to its title.
 It was called Session Players, at `/players/`, until 1.8.0; the entries
 before that keep the old name.
 
+### Session Buddies 1.17.0 — 2026-10-03 — A flute player, not a keyboard
+
+The flute sounded "a bit like it's coming from a keyboard". Three reasons,
+each changed, with every note still starting exactly when it did (the
+timing, the lilt and playing together with the concertina are untouched):
+- **Slurred, not every note tongued.** Every note was tongued and let go at
+  82% of its length: in a reel, about 50 ms of silence between every two
+  notes, as a keyboard player lifts each key. Now, as an Irish flute player
+  mostly does, it tongues the note on each beat (and a repeated note, or one
+  after a rest) and slurs the rest into it under one breath: a jig's
+  DUM-da-da, a reel's pairs. A slurred change keeps the breath going (the
+  level dips 3–5 dB as the fingers change the note) and the new note is
+  heard on its time; a tongued note stops the air for a moment.
+- **A wooden flute's tone.** It was nearly a pure tone, the same on every
+  note. Now the low octave has a reedy edge (the second harmonic about
+  7 dB under the note at low D) and the second octave is near pure, as on a
+  wooden flute; and the breath is part of the sound, a fluff of air around
+  the note and a little hiss, under every note (about 30 dB under it, more in
+  the low octave), not only a puff at the start.
+- **A note that lives.** A tongued note scoops up into pitch from just
+  under, its overtones blooming in over a few hundredths of a second; the
+  breath wanders a little in level; a long note swells and eases. The pitch
+  stays put, so it stays in tune with the concertina; the light, late
+  vibrato is as before.
+- Trimmed so it plays as loud as before in the mix (measured on The Kesh).
+  The guitar demo's own flute is unchanged.
+
 ### Session Buddies 1.16.0 — 2026-10-03 — Waltzes
 
 - **Waltzes can be played.** Search for one as for any tune; it counts three

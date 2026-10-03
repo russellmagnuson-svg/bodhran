@@ -17,7 +17,7 @@
    * next to the title and at the foot. Bump it with every change pushed (the
    * last number for a fix, the middle for something new) and add it to the
    * "Session Buddies" sections of CHANGELOG.md and the release notes. */
-  var VERSION = '1.16.0';
+  var VERSION = '1.17.0';
 
   var $ = function (id) { return document.getElementById(id); };
   var P = window.BUDDIES, G = window.GTR, T = window.TRAD, TPQ = P.TPQ;
@@ -878,8 +878,15 @@
    * start, the bellows keeping the air up, and re-strikes a repeated note
    * with a little gap ("edd": two Ds, not one long one). */
   // How long each holds a note of len seconds (lenQ quavers), before the next.
-  // (A quaver, lilted, is 0.92 to 1.16 of one.)
-  function fluteLength(len, lenQ) { return len * (Math.abs(lenQ - 1) < 0.15 ? 0.82 : lenQ < 1 ? 0.9 : 0.94); }
+  // (A quaver, lilted, is 0.92 to 1.16 of one.) Since 1.17.0 the flute
+  // slurs into most notes (articulate()): it holds such a note into the next,
+  // just past its start (flute.js), and lets go of one before a tongued note
+  // a moment early, the tongue's stop, at most 35 ms. Until then it let go of
+  // every quaver at 82%: about 50 ms of silence between every two notes in a
+  // reel, as a keyboard player lifts each key.
+  function fluteLength(len, lenQ, into) {
+    return into ? len + P.Flute.prototype.OVERLAP : len - Math.min(0.035, len * 0.15);
+  }
   // Since 1.7.1 the concertina's note ends as the next begins, and
   // its recorded reed stops quickly when let go (concertina.js): with 30 ms
   // and a slow fade, carried over for the synthesised one, its old note sat
@@ -888,7 +895,7 @@
   function concertinaLength(len, lenQ, nextSame) { return nextSame ? Math.max(len * 0.5, len - 0.06) : len; }
   /* One note of the tune, `tick` into the bar starting at tBar, `dur` ticks
    * long, weight w: placed by each instrument's own lilt. */
-  function melody(tBar, tick, dur, midi, w, finalNote, nextSame, written, yours) {
+  function melody(tBar, tick, dur, midi, w, finalNote, nextSame, written, yours, art) {
     if (yours) {
       if (yourTurnLevel !== 'quiet') return;
       w *= QUIET;
@@ -899,10 +906,11 @@
     var both = $('on-tune').checked && $('on-concertina').checked, fw = both ? 'concertina' : 'flute';
     if ($('on-tune').checked) {
       var fa = warp(tick, fw, written), fq = warp(tick + dur, fw, written) - fa, fl = fq * q;
-      var fd = finalNote ? fl + ring : fluteLength(fl, fq);
+      var fart = { slur: !!(art && art.slur), into: !!(art && art.into) && !finalNote };
+      var fd = finalNote ? fl + ring : fluteLength(fl, fq, fart.into);
       // No vibrato with the concertina: against its steady reed it beat (flute.js).
-      pending.push({ t: tBar + fa * q, note: { who: 'flute', midi: midi, dur: fd, final: !!finalNote, w: w },
-                     fn: function (t) { flutePlayer.note(t, fd, midi, w, both ? 0 : 1); } });
+      pending.push({ t: tBar + fa * q, note: { who: 'flute', midi: midi, dur: fd, final: !!finalNote, w: w, slur: fart.slur },
+                     fn: function (t) { flutePlayer.note(t, fd, midi, w, both ? 0 : 1, fart); } });
     }
     if ($('on-concertina').checked) {
       var ca = warp(tick, 'concertina', written), cq = warp(tick + dur, 'concertina', written) - ca, cl = cq * q;
@@ -1006,10 +1014,25 @@
     var pk = tune.lay.pickup, first = FORM[0] && FORM[0].notes[0];
     var L = type().slots * TPQ, tBar = tNext - type().slots * q;
     var written = asWritten(pk, function (p) { return L + p.tick; });
+    var art = articulate(pk.map(function (p) { return { tick: L + p.tick, dur: p.dur, midi: p.midi }; }));
     pk.forEach(function (p, i) {
       var nx = pk[i + 1] || first, at = L + p.tick;
-      melody(tBar, at, p.dur, p.midi, weight(at, 1) * 0.9, false, nx && nx.midi === p.midi, written, yours);
+      melody(tBar, at, p.dur, p.midi, weight(at, 1) * 0.9, false, nx && nx.midi === p.midi, written, yours, art[i]);
     });
+  }
+
+  /* How the flute takes each of a run of notes (one bar's, or the pickup):
+   * as an Irish flute player mostly does, tongued on the beat and slurred
+   * between, one breath carrying the notes of a beat (a jig's DUM-da-da,
+   * a reel's pairs), the first note of the run tongued too; a repeated
+   * note, or one after a rest, tongued as it must be. [{ slur, into }]. */
+  function articulate(notes) {
+    var beat = type().per * TPQ;
+    var slur = notes.map(function (n, i) {
+      var p = notes[i - 1];
+      return !!p && p.tick + p.dur === n.tick && p.midi !== n.midi && n.tick % beat !== 0;
+    });
+    return notes.map(function (n, i) { return { slur: slur[i], into: !!slur[i + 1] }; });
   }
 
   // The last bar's notes on the last time, its written lead-in left off (see layBar).
@@ -1096,12 +1119,12 @@
     var again = atEnd && !last && (!tail.length || asPickup);
     var kept = again ? tb.notes.filter(function (nt) { return nt.tick < cutAt; }) : tb.notes;
     if (atEnd && last && tail.length) kept = endWithout(tb.notes, cutAt, asPickup);
-    var written = asWritten(tb.notes), mine = yourTurn(n);
+    var written = asWritten(tb.notes), mine = yourTurn(n), art = articulate(kept);
     kept.forEach(function (note, i) {
       var dur = again ? Math.min(note.dur, cutAt - note.tick) : note.dur;
       var nx = kept[i + 1] || (again ? pk[0] : FORM[(k + 1) % FORM.length].notes[0]);
       melody(t0, note.tick, dur, note.midi, weight(note.tick, k),
-             last && i === kept.length - 1, nx && nx.midi === note.midi, written, mine);
+             last && i === kept.length - 1, nx && nx.midi === note.midi, written, mine, art[i]);
     });
     if (again) pickupInto(t0 + L * q, q, mine);
 
@@ -1489,7 +1512,7 @@
       try {
         layBar(n, 0);
         return pending.filter(function (x) { return x.note; }).map(function (x) {
-          return { t: x.t, who: x.note.who, midi: x.note.midi, dur: x.note.dur, final: x.note.final, w: x.note.w, slot: x.note.slot };
+          return { t: x.t, who: x.note.who, midi: x.note.midi, dur: x.note.dur, final: x.note.final, w: x.note.w, slot: x.note.slot, slur: x.note.slur };
         }).sort(function (a, b) { return a.t - b.t; });
       } finally { pending = keep.p; shown = keep.s; endAt = keep.e; }
     }, saveText: saveText, setChord: setChord,

@@ -2871,7 +2871,12 @@
   function playKeshA(lay, Instrument, level, length, SRG) {
     var q = 60 / 100 / 3, bars = lay.timeline.slice(0, 8), notes = [], t0 = 0.05;
     bars.forEach(function (tb) {
-      tb.notes.forEach(function (n) { notes.push({ t: t0 + n.tick / PL.TPQ * q, lenQ: n.dur / PL.TPQ, midi: n.midi, vel: n.tick % 72 === 0 ? 0.9 : 0.7 }); });
+      tb.notes.forEach(function (n, i) {
+        // The flute tongued on the beat and slurred between, as the page plays it (articulate()).
+        var p = tb.notes[i - 1], slur = !!p && p.tick + p.dur === n.tick && p.midi !== n.midi && n.tick % 72 !== 0;
+        if (slur) notes[notes.length - 1].into = true;
+        notes.push({ t: t0 + n.tick / PL.TPQ * q, lenQ: n.dur / PL.TPQ, midi: n.midi, vel: n.tick % 72 === 0 ? 0.9 : 0.7, slur: slur });
+      });
       t0 += 6 * q;
     });
     var o = new OfflineAudioContext(1, Math.ceil(SRG * (8 * 6 * q + 1)), SRG), bus = o.createGain();
@@ -2881,7 +2886,8 @@
       if (inst.ready && !loaded) throw new Error('the concertina recordings did not load');
       notes.forEach(function (n, i) {
         var nx = notes[i + 1];
-        inst.note(n.t, length(n.lenQ * q, n.lenQ, !!nx && nx.midi === n.midi), n.midi, n.vel);
+        if (Instrument === PL.Flute) inst.note(n.t, length(n.lenQ * q, n.lenQ, !!n.into), n.midi, n.vel, 1, { slur: n.slur, into: !!n.into });
+        else inst.note(n.t, length(n.lenQ * q, n.lenQ, !!nx && nx.midi === n.midi), n.midi, n.vel);
       });
       return o.startRendering();
     }).then(function (b) { return { data: b.getChannelData(0), notes: notes }; });
@@ -2969,12 +2975,16 @@
     });
 
   check('Session Buddies', 'The flute’s vibrato is light, late, and left out with the concertina',
-    'Every flute note over 0.4 s wavered ±9 cents, in full within a third of a second. Against the recorded concertina, which holds its pitch to a cent or two, that beat and sounded warbly; and an Irish flute player uses little vibrato. A held note is now steady at first, with a light vibrato coming in late; playing with the concertina, none at all.',
+    'Every flute note over 0.4 s wavered ±9 cents, in full within a third of a second. Against the recorded concertina, which holds its pitch to a cent or two, that beat and sounded warbly; and an Irish flute player uses little vibrato. A held note is now steady at first, with a light vibrato coming in late; playing with the concertina, none at all. (Since 1.17.0 the pitch is read from the note’s fundamental alone: the wooden flute’s overtones and breath crossed zero too; the breath still moves the reading by about a cent, a vibrato by four.)',
     function () {
       var SRG = 48000;
-      // A held A4, 1.2 s: its pitch in cents, every 20 ms, from zero crossings over 40 ms.
+      // A held A4, 1.2 s: its pitch in cents, every 20 ms, from zero crossings
+      // over 40 ms of its fundamental (overtones and breath filtered off).
       function held(vib) {
-        var o = new OfflineAudioContext(1, SRG * 1.5, SRG), fl = new PL.Flute(o, o.destination);
+        var o = new OfflineAudioContext(1, SRG * 1.5, SRG), lp1 = o.createBiquadFilter(), lp2 = o.createBiquadFilter();
+        lp1.type = lp2.type = 'lowpass'; lp1.frequency.value = lp2.frequency.value = 440 * 1.4;
+        lp1.connect(lp2); lp2.connect(o.destination);
+        var fl = new PL.Flute(o, lp1);
         fl.note(0.1, 1.2, 69, 0.85, vib);
         return o.startRendering().then(function (b) {
           var d = b.getChannelData(0), ups = [];
@@ -2994,9 +3004,9 @@
       }
       return Promise.all([held(), held(0)]).then(function (r) {
         var early = spread(r[0], 0.05, 0.25), late = spread(r[0], 0.6, 1.05), none = spread(r[1], 0.05, 1.05);
-        expect(early < 1, 'the flute alone wavers ±' + round(early) + ' cents in the first quarter second of a held note: the vibrato comes in early');
-        expect(late > 1.5 && late < 5, 'later in the note it wavers ±' + round(late) + ' cents (want a light vibrato, ±1.5 to 5)');
-        expect(none < 1, 'asked for no vibrato it still wavers ±' + round(none) + ' cents');
+        expect(early < 1.5, 'the flute alone wavers ±' + round(early) + ' cents in the first quarter second of a held note: the vibrato comes in early');
+        expect(late > 2.5 && late < 5, 'later in the note it wavers ±' + round(late) + ' cents (want a light vibrato, ±2.5 to 5)');
+        expect(none < 1.5, 'asked for no vibrato it still wavers ±' + round(none) + ' cents');
         return json(FIX + 'the-kesh.json');
       }).then(function (j) {
         return withBuddies(function (win, doc) {
@@ -3018,6 +3028,73 @@
             function all(a, v) { return a.length > 3 && a.every(function (x) { return x === v; }); }
             expect(all(vibs.alone, 1), 'the flute alone was asked for vibrato ' + JSON.stringify(vibs.alone.slice(0, 6)));
             expect(all(vibs.both, 0), 'with the concertina the flute was asked for vibrato ' + JSON.stringify(vibs.both.slice(0, 6)));
+          });
+        });
+      });
+    });
+
+  check('Session Buddies', 'The flute plays like a player: slurred between the beats, tongued on them, a wooden tone and breath',
+    'It sounded “a bit like it’s coming from a keyboard”: every note tongued and let go at 82% of its length (in a reel, about 50 ms of silence between every two notes), the same near-pure tone on every note, no breath once a note had started. Now, in The Kesh as the page plays it, a note on the beat, a repeated note and one after a rest are tongued and the rest slurred, each held into the next; a slurred change keeps the breath (the level dips under 8 dB) and the new note is heard on its time, while a tongued one stops the air; the breath sounds under a held note; and the low octave has a reedy edge the high octave lacks.',
+    function () {
+      var SRG = 48000;
+      function hzOf(m) { return 440 * Math.pow(2, (m - 69) / 12); }
+      function g(d, f, a, b) {
+        var s = Math.floor(a * SRG), e = Math.floor(b * SRG), k = 2 * Math.cos(2 * Math.PI * f / SRG), q1 = 0, q2 = 0;
+        for (var i = s; i < e; i++) { var q0 = k * q1 - q2 + d[i]; q2 = q1; q1 = q0; }
+        return Math.sqrt(Math.max(0, q1 * q1 + q2 * q2 - k * q1 * q2));
+      }
+      function frame(d, a) { var x = 0, n = 0; for (var i = Math.floor(a * SRG); i < Math.floor((a + 0.005) * SRG); i++) { x += d[i] * d[i]; n++; } return 10 * Math.log10(x / n + 1e-12); }
+      // Two notes, A4 then B4 at 0.5 s, slurred or tongued as the page would hold them.
+      function change(slur) {
+        var o = new OfflineAudioContext(1, SRG * 1.2, SRG), fl = new PL.Flute(o, o.destination);
+        fl.note(0.2, slur ? 0.3 + (PL.Flute.prototype.OVERLAP || 0.012) : 0.3 - 0.035, 69, 0.8, 0, { into: slur });
+        fl.note(0.5, 0.4, 71, 0.8, 0, { slur: slur });
+        return o.startRendering().then(function (b) {
+          var d = b.getChannelData(0), f = hzOf(71), st = g(d, f, 0.65, 0.67), heard = 999, around = frame(d, 0.42), dip = 0;
+          for (var a = 0.45; a < 0.55; a += 0.001) if (g(d, f, a - 0.01, a + 0.01) > st / 2) { heard = (a - 0.5) * 1000; break; }
+          for (a = 0.44; a < 0.53; a += 0.0025) dip = Math.min(dip, frame(d, a) - around);
+          return { heard: heard, dip: dip };
+        });
+      }
+      // A held note: its 2nd harmonic against the note, and the breath (the rest, harmonics notched out).
+      function held(m) {
+        var o = new OfflineAudioContext(1, SRG * 1.2, SRG), f = hzOf(m), dest = o.destination;
+        var o2 = new OfflineAudioContext(1, SRG * 1.2, SRG), n = o2.destination;
+        for (var k = 8; k >= 1; k--) { var nf = o2.createBiquadFilter(); nf.type = 'notch'; nf.frequency.value = f * k; nf.Q.value = 3; nf.connect(n); n = nf; }
+        new PL.Flute(o, dest).note(0.1, 0.8, m, 0.85, 0);
+        new PL.Flute(o2, n).note(0.1, 0.8, m, 0.85, 0);
+        return Promise.all([o.startRendering(), o2.startRendering()]).then(function (r) {
+          var d = r[0].getChannelData(0), e = r[1].getChannelData(0);
+          function rms(x) { var s = 0, c = 0; for (var i = Math.floor(0.3 * SRG); i < Math.floor(0.7 * SRG); i++) { s += x[i] * x[i]; c++; } return 10 * Math.log10(s / c); }
+          return { second: 20 * Math.log10(g(d, 2 * f, 0.3, 0.7) / g(d, f, 0.3, 0.7)), breath: rms(e) - rms(d) };
+        });
+      }
+      return json(FIX + 'the-kesh.json').then(function (j) {
+        return withBuddies(function (win) {
+          var PP = win.BUDDIES_PAGE, bad = [], fl = [], beat = 60 / +win.document.getElementById('bpm').value;
+          PP.loadTune(j, 0);
+          [0, 1, 2, 3, 4, 5, 6, 7].forEach(function (n) {
+            PP.plan(n).forEach(function (x) { if (x.who === 'flute') fl.push({ bar: n, t: x.t, d: x.dur, m: x.midi, slur: x.slur }); });
+          });
+          var slurred = 0;
+          fl.forEach(function (x, i) {
+            var p = fl[i - 1], onBeat = Math.abs(x.t / beat - Math.round(x.t / beat)) < 1e-6;
+            if (x.slur) slurred++;
+            if (x.slur && onBeat) bad.push('bar ' + (x.bar + 1) + ': a note on the beat is slurred');
+            if (x.slur && p && p.bar === x.bar && p.m === x.m) bad.push('bar ' + (x.bar + 1) + ': a repeated note is slurred');
+            if (p && p.bar === x.bar) {
+              if (x.slur && p.t + p.d <= x.t) bad.push('bar ' + (x.bar + 1) + ': the note before a slur stops before it');
+              if (!x.slur && p.t + p.d >= x.t) bad.push('bar ' + (x.bar + 1) + ': the note before a tongued one runs into it');
+            }
+          });
+          if (slurred < fl.length * 0.3 || slurred > fl.length * 0.7) bad.push(slurred + ' of ' + fl.length + ' notes slurred');
+          return Promise.all([change(true), change(false), held(62), held(86)]).then(function (r) {
+            if (Math.abs(r[0].heard) > 8) bad.push('a slurred note is heard at ' + round(r[0].heard) + ' ms');
+            if (r[0].dip < -8) bad.push('a slurred change dips ' + round(-r[0].dip) + ' dB: the breath stops');
+            if (r[1].dip > -20) bad.push('a tongued change dips only ' + round(-r[1].dip) + ' dB: the tongue does not stop the air');
+            if (r[2].breath < -40) bad.push('no breath under a held low D (' + round(r[2].breath) + ' dB)');
+            if (!(r[2].second > -10 && r[3].second < -10)) bad.push('the second harmonic is ' + round(r[2].second) + ' dB at low D and ' + round(r[3].second) + ' at high D: no reedy low octave');
+            expect(bad.length === 0, bad.join('\n'));
           });
         });
       });
@@ -3135,7 +3212,7 @@
     });
 
   check('Session Buddies', 'The concertina sounds like a reed, plays in tune, and sits with the flute',
-    'A free reed is rich in overtones where the flute is nearly pure; each recorded note retuned to within a few cents of true (the instrument sits up to 28 cents sharp); and at their starting levels, each playing the Kesh’s A part as the page plays it, the concertina sits just under the flute, not swamping it or lost.',
+    'A free reed is rich in overtones where the flute’s fall away (since 1.17.0 the wooden flute has a reedy edge in its low octave, but still well under the reed’s); each recorded note retuned to within a few cents of true (the instrument sits up to 28 cents sharp); and at their starting levels, each playing the Kesh’s A part as the page plays it, the concertina sits just under the flute, not swamping it or lost.',
     function () {
       return Promise.all([json(FIX + 'the-kesh.json')]).then(function (r) {
         return withBuddies(function (win) { return win.BUDDIES_PAGE; }).then(function (PP) {
@@ -3156,12 +3233,15 @@
             for (var x = f0 * 0.98; x <= f0 * 1.02; x += f0 / 4000) { var v = g(c, x, 0.15, 0.45); if (v > best) { best = v; bf = x; } }
             function over(d, p, k) { return 20 * Math.log10(g(d, p * k, 0.15, 0.45) / g(d, p, 0.15, 0.45)); }
             var reed = [2, 3, 4, 5, 6].map(function (k) { return over(c, bf, k); }), pure = [4, 5].map(function (k) { return over(f, f0, k); });
+            var flutes = [2, 3, 4, 5, 6].map(function (k) { return over(f, f0, k); });
             // A real reed is uneven, its 3rd overtone stronger than the note, its 2nd weak:
             // what counts is how much is in the overtones altogether.
             var together = 10 * Math.log10(reed.reduce(function (p, v) { return p + Math.pow(10, v / 10); }, 0));
             var cents = 1200 * Math.log2(bf / f0), gap = db(c) - db(f);
             expect(together > -6, 'the concertina’s 2nd to 6th overtones (' + reed.map(round).join(', ') + ' dB) come to ' + round(together) + ' dB: too pure for a reed');
-            expect(pure.every(function (v) { return v < -40; }), 'the flute’s 4th and 5th overtones are ' + pure.map(round).join(', ') + ' dB: no longer the pure flute');
+            var fTogether = 10 * Math.log10(flutes.reduce(function (p, v) { return p + Math.pow(10, v / 10); }, 0));
+            expect(pure.every(function (v) { return v < -15; }) && fTogether < together - 3,
+                   'the flute’s overtones (' + flutes.map(round).join(', ') + ' dB, ' + round(fTogether) + ' together) are as strong as a reed’s (' + round(together) + ')');
             expect(Math.abs(cents) < 5, 'the concertina’s first note is ' + round(cents) + ' cents out');
             expect(gap > -3 && gap < 1, 'the concertina is ' + round(gap) + ' dB against the flute, not just under it');
           });

@@ -531,10 +531,17 @@ of the app and of Session Buddies switches between the two.
   drives the line under the mixer.
 - `buddies/flute.js`, `buddies/concertina.js` — the two melody instruments,
   each `new X(ctx, dest)` with `.note(t, dur, midi, vel)` and `.cancelFrom(t)`.
-  The flute is the demo's, with a lighter vibrato (`VIBRATO`: ±4 cents on
-  notes of 0.6 s or more, from 0.25 s in; note()'s fifth argument scales it,
-  and buddies.js passes 0 when the concertina plays too, as against its steady
-  reed the vibrato beat); the concertina a free reed (a narrow-pulse
+  The flute (since 1.17.0 its own, no longer the demo's) is a wooden one:
+  a reedy low octave and a near-pure second (`wave()`, LOW/HIGH harmonic
+  tables), breath under every note (`BREATH`: a fluff at the note and a
+  hiss above it), a tongued note scooping up from 18 cents flat as its
+  overtones bloom in, a breath level that wanders ±0.5 dB and swells and
+  eases on long notes; note()'s sixth argument `art` {slur, into}: buddies.js
+  (`articulate()`) tongues the note on each beat, a repeated note and one
+  after a rest, and slurs the rest, the note before a slur held OVERLAP into
+  it; with a lighter vibrato (`VIBRATO`: ±4 cents on notes of 0.6 s or more,
+  from 0.25 s in; note()'s fifth argument scales it, and buddies.js passes 0
+  when the concertina plays too, as against its steady reed the vibrato beat); the concertina a free reed (a narrow-pulse
   spectrum, odd harmonics a shade stronger, one dry reed a few cents off at
   random, overtones building over 35 ms and brighter pushed harder, a scoop
   up into pitch, a slow random wander in pitch and level from the bellows,
