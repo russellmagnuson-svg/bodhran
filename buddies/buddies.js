@@ -17,7 +17,7 @@
    * next to the title and at the foot. Bump it with every change pushed (the
    * last number for a fix, the middle for something new) and add it to the
    * "Session Buddies" sections of CHANGELOG.md and the release notes. */
-  var VERSION = '1.18.4';
+  var VERSION = '1.19.0';
 
   var $ = function (id) { return document.getElementById(id); };
   var P = window.BUDDIES, G = window.GTR, T = window.TRAD, TPQ = P.TPQ;
@@ -667,6 +667,7 @@
     buildChart();
     drawStrum();
     drawShapes();
+    drawOrnaments();
     idleNow();
   }
 
@@ -934,7 +935,7 @@
   function concertinaLength(len, lenQ, nextSame) { return nextSame ? Math.max(len * 0.5, len - 0.06) : len; }
   /* One note of the tune, `tick` into the bar starting at tBar, `dur` ticks
    * long, weight w: placed by each instrument's own lilt. */
-  function melody(tBar, tick, dur, midi, w, finalNote, nextSame, written, yours, art) {
+  function melody(tBar, tick, dur, midi, w, finalNote, nextSame, written, yours, art, orn) {
     if (yours) {
       if (yourTurnLevel !== 'quiet') return;
       w *= QUIET;
@@ -948,8 +949,14 @@
       var fart = { slur: !!(art && art.slur), into: !!(art && art.into) && !finalNote };
       var fd = finalNote ? fl + ring : fluteLength(fl, fq, fart.into);
       // No vibrato with the concertina: against its steady reed it beat (flute.js).
-      pending.push({ t: tBar + fa * q, note: { who: 'flute', midi: midi, dur: fd, final: !!finalNote, w: w, slur: fart.slur },
-                     fn: function (t) { flutePlayer.note(t, fd, midi, w, both ? 0 : 1, fart); } });
+      var parts = ornaments === 'written' && orn ? ornament(orn, tick, dur, midi, w, fd, fart, fw, written) : null;
+      if (parts) parts.forEach(function (x, i) {
+        pending.push({ t: tBar + x.at * q + x.off, note: { who: 'flute', midi: x.midi, dur: x.dur, final: !!finalNote && i === parts.length - 1,
+                                                          w: x.w, slur: x.art.slur, grace: !!x.grace, of: midi },
+                       fn: function (t) { flutePlayer.note(t, x.dur, x.midi, x.w, both ? 0 : 1, x.art); } });
+      });
+      else pending.push({ t: tBar + fa * q, note: { who: 'flute', midi: midi, dur: fd, final: !!finalNote, w: w, slur: fart.slur },
+                          fn: function (t) { flutePlayer.note(t, fd, midi, w, both ? 0 : 1, fart); } });
     }
     if ($('on-concertina').checked) {
       var ca = warp(tick, 'concertina', written), cq = warp(tick + dur, 'concertina', written) - ca, cl = cq * q;
@@ -958,6 +965,81 @@
       pending.push({ t: tBar + ca * q, note: { who: 'concertina', midi: midi, dur: cd, final: !!finalNote, w: cw },
                      fn: function (t) { concertina.note(t, cd, midi, cw); } });
     }
+  }
+
+  /* ---------- ornaments, on the flute ----------
+   * Where a setting writes them: a roll (~) and grace notes ({g}, a cut),
+   * played the way an Irish flute player plays them, all under one breath
+   * (slurred, flute.js) and in the tune's lilt. Since 1.19.0; until then
+   * they were read past and the plain note played. Ornaments: As written
+   * (the start) or Off, kept. The concertina plays the plain notes, as two
+   * players seldom ornament alike.
+   *   A grace note is a flick of GRACE seconds on the note's time, taking
+   *     its time from the start of the note (a cut is on the beat).
+   *   A roll on a dotted crotchet (a long roll, mostly jigs): the note, then
+   *     on each of its second and third quavers a cut (a flick to the note
+   *     two steps above in the key) and a tap (a dip to the step below,
+   *     softer), each followed by the note again. On a crotchet (a short
+   *     roll, mostly reels): the cut on its first quaver and the tap on its
+   *     second. On a quaver: a cut.
+   * Too short to fit (a fast tune, a short note), it is left plain. */
+  var ORNAMENTS = {
+    written: 'Rolls and cuts where the setting writes them, played on the flute; the concertina keeps to the plain notes.',
+    off: 'The plain tune, no ornaments.'
+  };
+  var ornaments = ORNAMENTS[stored('players.ornaments', '')] ? stored('players.ornaments') : 'written';
+  var GRACE = 0.026, TAP = 0.032;
+  function drawOrnaments() {
+    Array.prototype.forEach.call($('ornaments').children, function (b) {
+      b.setAttribute('aria-checked', String(b.dataset.orn === ornaments));
+    });
+    var rolls = 0, cuts = 0;
+    if (tune) tune.lay.slots.forEach(function (sl) {
+      (tune.lay.timeline.filter(function (tb) { return tb.slot === sl.id; })[0] || { notes: [] }).notes.forEach(function (nt) {
+        if (nt.orn === 'roll') rolls++;
+        if (nt.grace) cuts++;
+      });
+    });
+    function n(k, one) { return k + ' ' + one + (k === 1 ? '' : 's'); }
+    var has = rolls || cuts ? 'This setting writes ' + [rolls ? n(rolls, 'roll') : '', cuts ? n(cuts, 'grace note') : ''].filter(Boolean).join(' and ') + '.'
+                            : 'This setting writes none.';
+    $('ornaments-desc').textContent = ORNAMENTS[ornaments] + ' ' + has;
+  }
+  // The note n steps up (or down) the scale of the tune's key.
+  function stepFrom(midi, n) {
+    var pcs = tune.lay.key.scale.map(function (x) { return x.pc; }), m = midi, d = n > 0 ? 1 : -1;
+    for (var k = 0; k < Math.abs(n); k++) {
+      do { m += d; } while (pcs.indexOf(((m % 12) + 12) % 12) === -1 && Math.abs(m - midi) < 24);
+    }
+    return m;
+  }
+  /* The flute's parts for one ornamented note: [{ at (lilted quavers into
+   * the bar), off (seconds after that), dur (seconds), midi, w, art, grace }],
+   * or null to play it plain. fd: how long the plain note would be held. */
+  function ornament(orn, tick, dur, midi, w, fd, fart, who, written) {
+    var q = quaver(), at0 = warp(tick, who, written), out = [];
+    // flicks at a point: the first takes the note's own tongue or slur
+    function flick(at, off, m, len, wk) { out.push({ at: at, off: off, dur: len + P.Flute.prototype.OVERLAP, midi: m, w: w * wk, art: { slur: out.length ? true : fart.slur, into: true }, grace: true }); }
+    function main(at, off) { out.push({ at: at, off: off, midi: midi, w: w, art: { slur: out.length ? true : fart.slur, into: true } }); }
+    if (orn.grace) {
+      orn.grace.forEach(function (m, i) { flick(at0, i * GRACE, m, GRACE, 0.85); });
+      main(at0, orn.grace.length * GRACE);
+    } else if (orn.orn === 'roll') {
+      var pulses = Math.round(dur / TPQ), up = stepFrom(midi, 2), down = stepFrom(midi, -1);
+      var p1 = warp(tick + TPQ, who, written), p2 = warp(tick + 2 * TPQ, who, written);
+      if (pulses >= 3) { main(at0, 0); flick(p1, 0, up, GRACE, 0.85); main(p1, GRACE); flick(p2, 0, down, TAP, 0.6); main(p2, TAP); }
+      else if (pulses === 2) { flick(at0, 0, up, GRACE, 0.85); main(at0, GRACE); flick(p1, 0, down, TAP, 0.6); main(p1, TAP); }
+      else { flick(at0, 0, up, GRACE, 0.85); main(at0, GRACE); }
+    } else return null;
+    // Each part held to the next one's start (just past it, under one breath); the last as the plain note would be.
+    var end = at0 * q + fd;
+    for (var i = 0; i < out.length; i++) {
+      var x = out[i], start = x.at * q + x.off;
+      if (i < out.length - 1) { var nx = out[i + 1]; if (x.dur == null) x.dur = nx.at * q + nx.off - start + P.Flute.prototype.OVERLAP; }
+      else { x.dur = end - start; x.art = { slur: x.art.slur, into: fart.into }; }
+      if (!(x.dur > (x.grace ? 0.015 : 0.05))) return null;            // too short to fit
+    }
+    return out;
   }
 
   /* ---------- the lilt: how a player phrases the tune ----------
@@ -1056,7 +1138,7 @@
     var art = articulate(pk.map(function (p) { return { tick: L + p.tick, dur: p.dur, midi: p.midi }; }));
     pk.forEach(function (p, i) {
       var nx = pk[i + 1] || first, at = L + p.tick;
-      melody(tBar, at, p.dur, p.midi, weight(at, 1) * 0.9, false, nx && nx.midi === p.midi, written, yours, art[i]);
+      melody(tBar, at, p.dur, p.midi, weight(at, 1) * 0.9, false, nx && nx.midi === p.midi, written, yours, art[i], { orn: p.orn, grace: p.grace, tick: at });
     });
   }
 
@@ -1205,7 +1287,7 @@
       var dur = again ? Math.min(note.dur, cutAt - note.tick) : note.dur;
       var nx = kept[i + 1] || (again ? pk[0] : FORM[(k + 1) % FORM.length].notes[0]);
       melody(t0, note.tick, dur, note.midi, weight(note.tick, k),
-             last && i === kept.length - 1, nx && nx.midi === note.midi, written, mine, art[i]);
+             last && i === kept.length - 1, nx && nx.midi === note.midi, written, mine, art[i], note);
     });
     if (again) pickupInto(t0 + L * q, q, mine);
 
@@ -1627,6 +1709,12 @@
       });
     });
     drawBacking();
+    Array.prototype.forEach.call($('ornaments').children, function (b) {
+      b.addEventListener('click', function () {               // heard from the next bar
+        ornaments = b.dataset.orn; store('players.ornaments', ornaments); drawOrnaments();
+      });
+    });
+    drawOrnaments();
     Array.prototype.forEach.call($('drum-style').children, function (b) {
       b.addEventListener('click', function () {               // heard from the next bar
         drumStyle = b.dataset.drum; store('players.drumstyle', drumStyle); drawDrum();
@@ -1676,7 +1764,7 @@
       try {
         layBar(n, 0);
         return pending.filter(function (x) { return x.note; }).map(function (x) {
-          return { t: x.t, who: x.note.who, midi: x.note.midi, dur: x.note.dur, final: x.note.final, w: x.note.w, slot: x.note.slot, slur: x.note.slur };
+          return { t: x.t, who: x.note.who, midi: x.note.midi, dur: x.note.dur, final: x.note.final, w: x.note.w, slot: x.note.slot, slur: x.note.slur, grace: x.note.grace };
         }).sort(function (a, b) { return a.t - b.t; });
       } finally { pending = keep.p; shown = keep.s; endAt = keep.e; }
     }, saveText: saveText, setChord: setChord,

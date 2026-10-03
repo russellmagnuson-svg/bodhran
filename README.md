@@ -492,7 +492,9 @@ file comes back exactly as saved.
 on thesession.org (its API answers any site, so the page asks it directly;
 there is no server of ours), fetched, and played with the guitar demo's
 guitar, flute and bodhrán, and a recorded concertina. Jigs, reels, hornpipes,
-polkas, slides, slip jigs and waltzes for now (every choice kept under 'players.'
+polkas, slides, slip jigs and waltzes for now (rolls ~ and grace notes {g} read onto
+their notes, `orn`/`grace`, and played on the flute by `ornament()` unless Ornaments
+is Off; every choice kept under 'players.'
 in this browser, the ticks in `players.voices`; Reset settings clears them all and
 reloads, with Undo from sessionStorage; the bodhrán Full, Simple or Pulse
 as in the app: `drumGrid()`, Full's fills at the tune's own phrase ends; `TYPES` in buddies.js, keyed by the

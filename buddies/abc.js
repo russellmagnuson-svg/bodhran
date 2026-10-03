@@ -87,6 +87,7 @@
   function clean(abc) {
     return String(abc || '')
       .replace(/%[^\n]*/g, ' ')                       // comments
+      .replace(/!roll!/g, '~')                          // a roll written long-hand: as ~
       .replace(/![A-Za-z0-9<>().+\-]+!/g, ' ')         // !trill! style decorations
       .replace(/\+[A-Za-z0-9<>().]+\+/g, ' ')          // old +trill+ style
       .replace(/!/g, ' ')                              // the Session's line breaks
@@ -104,6 +105,9 @@
     var bars = [], cur = null, barAcc = {};
     var pend = { start: false, section: true, ending: 0 }, activeEnding = 0;
     var tuplet = null, broken = 1, tie = false, lastNote = null, warnings = [];
+    // Ornaments waiting for the note they are written on: a roll (~), and
+    // grace notes ({g}, the way a cut is written; {GAG} a roll written out).
+    var orn = null, grace = null;
 
     function bar() {
       if (!cur) {
@@ -163,6 +167,9 @@
       }
       tie = false;
       var note = { tick: b.len, dur: dur, midi: midi };
+      if (orn) note.orn = orn;
+      if (grace) note.grace = grace;
+      orn = null; grace = null;
       b.notes.push(note); b.len += dur; lastNote = note;
       return note;
     }
@@ -178,7 +185,19 @@
         if (P.isChordName(txt)) bar().chords.push({ tick: bar().len, name: txt });
         i = j + 1; continue;
       }
-      if (c === '{') { var g = s.indexOf('}', i); i = g < 0 ? n : g + 1; continue; }   // grace notes: left out
+      // Grace notes, kept for the note that follows (since Session Buddies
+      // 1.19.0; until then left out): their pitches, in the key and the
+      // bar's accidentals, without changing what follows them.
+      if (c === '{') {
+        var g = s.indexOf('}', i); if (g < 0) g = n;
+        bar();                     // a new bar first, as for a note: its accidentals start afresh
+        var gre = /([\^=_]{0,2})([A-Ga-g])([',]*)/g, gm, gs = [], keep = {};
+        for (var kk in barAcc) keep[kk] = barAcc[kk];
+        while ((gm = gre.exec(s.slice(i + 1, g)))) gs.push(pitch(gm[1], gm[2], gm[3]));
+        barAcc = keep;
+        if (gs.length) grace = gs;
+        i = g + 1; continue;
+      }
 
       // Bar lines: | || |] [| |: :| :: and endings |1 :|2 [1
       m = /^(:*)(\[\||\|\]|\|\||\|)(:*)\s*(?:\[?([1-9])(?:[,\-][1-9])*)?/.exec(rest) ||
@@ -243,7 +262,7 @@
         if (m[2] === 'Z') { var bz = bar(); bz.len += P.meter(opts.meter).bar * (m[4] ? +m[4] : 1); continue; }
         var dur = length(m[4], m[5], m[6]);
         if (m[2] === 'z' || m[2] === 'x') {
-          var br = bar(); br.text += m[0]; br.len += dur; lastNote = null; tie = false;
+          var br = bar(); br.text += m[0]; br.len += dur; lastNote = null; tie = false; orn = null; grace = null;
           continue;
         }
         var note = addNote(pitch(m[1], m[2], m[3]), dur, m[0]);
@@ -251,8 +270,10 @@
         if (note) brokenAfter(note);
         continue;
       }
-      // Decorations (~ roll, . staccato, letters like T for trill) and slurs: left out.
-      if ('~.()HLMOPSTuv-'.indexOf(c) !== -1) { if (cur && c === '~') cur.text += c; i++; continue; }
+      // A roll (~), kept for the note that follows. Other decorations (.
+      // staccato, letters like T for trill) and slurs: left out.
+      if (c === '~') { if (cur) cur.text += c; orn = 'roll'; i++; continue; }
+      if ('.()HLMOPSTuv-'.indexOf(c) !== -1) { i++; continue; }
       i++;                                                 // anything else: skip it
     }
     close();
@@ -316,7 +337,7 @@
     var notes = [], downs = [];
     order.forEach(function (idx) {
       var b = bars[idx];
-      b.notes.forEach(function (nt) { notes.push({ tick: t + nt.tick, dur: nt.dur, midi: nt.midi, written: idx }); });
+      b.notes.forEach(function (nt) { notes.push({ tick: t + nt.tick, dur: nt.dur, midi: nt.midi, written: idx, orn: nt.orn, grace: nt.grace }); });
       b.chords.forEach(function (ch) { downs.push({ chordAt: t + ch.tick, name: ch.name }); });
       for (var k = Math.ceil(t / L); k * L < t + b.len; k++) {
         if (k >= 0) downs.push({ k: k, slot: idx + '@' + (k * L - t), written: idx });
@@ -335,9 +356,9 @@
     });
     var pickup = [];
     notes.forEach(function (nt) {
-      if (nt.tick < 0) { pickup.push({ tick: nt.tick, dur: nt.dur, midi: nt.midi }); return; }
+      if (nt.tick < 0) { pickup.push({ tick: nt.tick, dur: nt.dur, midi: nt.midi, orn: nt.orn, grace: nt.grace }); return; }
       var k = Math.floor(nt.tick / L);
-      if (timeline[k]) timeline[k].notes.push({ tick: nt.tick - k * L, dur: nt.dur, midi: nt.midi });
+      if (timeline[k]) timeline[k].notes.push({ tick: nt.tick - k * L, dur: nt.dur, midi: nt.midi, orn: nt.orn, grace: nt.grace });
     });
     // Chord symbols in the setting, if it has any: where each one starts.
     var symbols = downs.filter(function (d) { return d.chordAt != null; })

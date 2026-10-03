@@ -471,6 +471,26 @@ The page at `/buddies/` has its own version number, shown next to its title.
 It was called Session Players, at `/players/`, until 1.8.0; the entries
 before that keep the old name.
 
+### Session Buddies 1.19.0 — 2026-10-03 — Ornaments on the flute
+
+- **The flute plays the rolls and cuts a setting writes.** The tune reader
+  used to read past them (about one popular setting in five writes rolls,
+  one in twenty grace notes) and play the plain note. Now, under one breath
+  and in the tune's lilt:
+  - a **long roll** (~ on a dotted crotchet, mostly jigs): the note, a cut
+    (a flick to two steps above) on its second quaver and a tap (a softer
+    dip to the step below) on its third, the note again after each;
+  - a **short roll** (~ on a crotchet, mostly reels): the cut on its first
+    quaver and the tap on its second;
+  - a **grace note** ({g}, the way a cut is written): a 26 ms flick on the
+    note's time, taking its time from the start of the note.
+  Every note still starts where it did. A roll too short to fit at a fast
+  tempo is played plain.
+- **Ornaments: As written or Off**, under Melody, kept with your settings;
+  the line under it says what the setting writes ("This setting writes 4
+  rolls"). The concertina keeps to the plain notes, as two players seldom
+  ornament alike.
+
 ### Session Buddies 1.18.4 — 2026-10-03
 
 - The **Sound check** line under Play is hidden. It was there to find out

@@ -2734,6 +2734,71 @@
       });
     });
 
+  check('Session Buddies', 'The flute plays the rolls and cuts a setting writes, and they can be turned off',
+    'A roll (~) and grace notes ({g}, a cut) were read past: about one popular setting in five writes rolls. Now the reader keeps them on their notes, every note where it was; the flute plays a long roll (a dotted crotchet: the note, a cut on its second quaver to two steps above, a tap on its third to the step below), a short roll (a crotchet: the cut on its first quaver, the tap on its second) and a grace note as a flick on the note’s time, all under one breath, the flick heard; the concertina keeps to the plain notes; and Ornaments: Off plays the plain tune, the choice kept.',
+    function () {
+      // The reader: ornaments on their notes, nothing moved.
+      var plain = PL.layout('|:A3 B2c|d2B A3:|', { key: 'Dmajor', meter: '6/8' }), fancy = PL.layout('|:~A3 B2{e}c|d2B !roll!A3:|', { key: 'Dmajor', meter: '6/8' });
+      function seq(l) { return [].concat.apply([], l.timeline.map(function (tb) { return tb.notes.map(function (n) { return n.tick + ':' + n.dur + ':' + n.midi; }); })).join(' '); }
+      expect(seq(plain) === seq(fancy), 'ornaments moved the notes: ' + seq(fancy));
+      var n0 = fancy.timeline[0].notes;
+      expect(n0[0].orn === 'roll' && n0[2].grace && n0[2].grace[0] === 76 && fancy.timeline[1].notes[2].orn === 'roll', 'the roll, the cut on c (an e) and the !roll! are not on their notes');
+      return Promise.all([json(FIX + 'the-kesh.json'), json(FIX + 'cooleys.json')]).then(function (r) {
+        return withBuddies(function (win, doc) {
+          var PP = win.BUDDIES_PAGE, bad = [];
+          function q() { return 60 / +doc.getElementById('bpm').value / PP.TYPES[PP.tune().meta.type].per; }
+          function flute(n) { return PP.plan(n).filter(function (x) { return x.who === 'flute'; }); }
+          function at(x) { return x.t / q(); }
+          // A long roll: The Kesh, setting 3, bar 19, ~B3 (B4 in G).
+          PP.loadTune(r[0], 2);
+          var b = flute(18), plainNext = b.filter(function (x) { return !x.grace; });
+          var cut = b[1], tap = b[3];
+          if (!(b[0].midi === 71 && !b[0].grace && Math.abs(at(b[0])) < 0.01)) bad.push('long roll: it does not start on the B, on the beat');
+          if (!(cut && cut.grace && cut.midi === 74 && Math.abs(at(cut) - 1) < 0.25)) bad.push('long roll: no cut to D on the second quaver: ' + JSON.stringify(cut));
+          if (!(tap && tap.grace && tap.midi === 69 && Math.abs(at(tap) - 2) < 0.25)) bad.push('long roll: no tap to A on the third quaver: ' + JSON.stringify(tap));
+          if (!b.slice(1, 5).every(function (x) { return x.slur; })) bad.push('long roll: tongued inside the roll');
+          if (!(cut && cut.dur < 0.06 && tap && tap.dur < 0.06)) bad.push('long roll: the cut and tap are not flicks: ' + (cut && Math.round(cut.dur * 1000)) + ', ' + (tap && Math.round(tap.dur * 1000)) + ' ms');
+          // A short roll: Cooley's, setting 2, bar 17, ~G2 on beat 2 (G4 in E minor).
+          PP.loadTune(r[1], 1);
+          var c = flute(16), i = c.findIndex(function (x) { return x.grace; });
+          if (!(i >= 0 && c[i].midi === 71 && Math.abs(at(c[i]) - 2) < 0.01 && c[i + 1].midi === 67 && c[i + 2].grace && c[i + 2].midi === 66 && Math.abs(at(c[i + 2]) - 3) < 0.25))
+            bad.push('short roll: not a cut to B on the beat and a tap to F♯ on the next quaver: ' + c.map(function (x) { return x.midi + '@' + round(at(x), 2); }).join(' '));
+          // The concertina keeps to the plain notes; Off plays them on the flute too.
+          doc.getElementById('on-concertina').click();
+          var conc = PP.plan(16).filter(function (x) { return x.who === 'concertina'; }).length;
+          doc.getElementById('on-concertina').click();
+          doc.querySelector('#ornaments [data-orn="off"]').click();
+          var off = flute(16);
+          if (off.some(function (x) { return x.grace; }) || off.length !== conc) bad.push('Off: the flute plays ' + off.length + ' notes with ' + off.filter(function (x) { return x.grace; }).length + ' flicks; the concertina ' + conc);
+          if (win.localStorage.getItem('players.ornaments') !== 'off') bad.push('the choice is not kept');
+          doc.querySelector('#ornaments [data-orn="written"]').click();
+          // A cut: The Kesh, setting 2, bar 1, {g}A: a G5 flick on the beat, then the A.
+          PP.loadTune(r[0], 1);
+          var k = flute(0);
+          if (!(k[0].grace && k[0].midi === 79 && Math.abs(at(k[0])) < 0.01 && k[1].midi === 69 && !k[1].grace)) bad.push('the cut {g}A is not a G flick on the beat, then the A');
+          // And the flick is heard: a long roll on the flute, the cut's pitch over its 26 ms against the plain note there.
+          var SRG = 48000;
+          function roll(withIt) {
+            var o = new OfflineAudioContext(1, SRG, SRG), fl = new PL.Flute(o, o.destination), qs = 0.2, t = 0.1;
+            if (withIt) {
+              fl.note(t, qs + 0.012, 71, 0.8, 0, { into: true });
+              fl.note(t + qs, 0.038, 74, 0.7, 0, { slur: true, into: true });
+              fl.note(t + qs + 0.026, qs - 0.026 + 0.012, 71, 0.8, 0, { slur: true, into: true });
+              fl.note(t + 2 * qs, 0.044, 69, 0.5, 0, { slur: true, into: true });
+              fl.note(t + 2 * qs + 0.032, qs - 0.032, 71, 0.8, 0, { slur: true });
+            } else fl.note(t, 3 * qs, 71, 0.8, 0);
+            return o.startRendering().then(function (b) { return b.getChannelData(0); });
+          }
+          function g(d, f, a, z) { var s0 = Math.floor(a * SRG), e = Math.floor(z * SRG), kk = 2 * Math.cos(2 * Math.PI * f / SRG), q1 = 0, q2 = 0; for (var j = s0; j < e; j++) { var q0 = kk * q1 - q2 + d[j]; q2 = q1; q1 = q0; } return Math.sqrt(Math.max(0, q1 * q1 + q2 * q2 - kk * q1 * q2)); }
+          return Promise.all([roll(true), roll(false)]).then(function (rr) {
+            var fD = 440 * Math.pow(2, (74 - 69) / 12), lift = 20 * Math.log10(g(rr[0], fD, 0.3, 0.326) / g(rr[1], fD, 0.3, 0.326));
+            if (!(lift > 10)) bad.push('the cut is not heard: its D only ' + round(lift) + ' dB over the plain B there');
+            expect(bad.length === 0, bad.join('\n'));
+          });
+        });
+      });
+    });
+
   check('Session Buddies', 'Together, the flute and concertina start each note as one and don’t clash at the changes',
     'In The Sunny Banks the concertina’s old note sat against the flute’s new one for about 130 ms at most changes, seconds and thirds apart, and their notes between the beats started up to 12 ms apart (each with its own lilt). Playing together they now take one lilt, and the concertina’s note stops as quickly as a real reed does.',
     function () {
