@@ -1289,7 +1289,7 @@
     });
 
   check('The app', 'While it plays, it says whether it is making sound',
-    'Twice a Safari tab went silent while the Mac played its stream, and nothing could tell whether the page sent silence or Safari lost the sound. The line under Play measures what leaves the page for the speaker.',
+    'Twice a Safari tab went silent while the Mac played its stream, and nothing could tell whether the page sent silence or Safari lost the sound. The line under Play measures what leaves the page for the speaker. Since 1.10.1 the line is hidden unless the address asks for it (?soundcheck); it still measures.',
     function () {
       function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
       return withApp(function (win, doc) {
@@ -1305,6 +1305,7 @@
           expect(n.before === '', 'it shows "' + n.before + '" before anything plays');
           expect(/making sound \(-?\d+ dB\)/.test(n.playing), 'while playing it says "' + n.playing + '"');
           expect(n.stopped === '', 'stopped, it still says "' + n.stopped + '"');
+          expect(el.hidden, 'the line shows without ?soundcheck');
         });
       });
     });

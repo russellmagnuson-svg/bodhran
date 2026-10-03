@@ -379,8 +379,9 @@ npx wrangler pages deploy . --project-name=bodhran
   the sound page's plain one-second file (B) woke it. If it happens again,
   open `/tests/sound.html` in the stuck tab and press A; if A is silent,
   press F (the nudge alone), then A again. That shows whether the nudge
-  wakes it. First, though, read the **Sound check** line under Play (in Session
-  Buddies, open it with `?soundcheck` in the address to show the line)
+  wakes it. First, though, read the **Sound check** line under Play (hidden
+  since app 1.10.1 and Session Buddies 1.18.4: open the page with `?soundcheck`
+  in the address to show it)
   (`TRAD.soundCheck`, an analyser on the limiter and trim at the end of
   `TRAD.makeOutput`): "making sound" while nothing is heard means Safari is
   losing it; "no sound" or "broken" means the fault is in the page. On 29

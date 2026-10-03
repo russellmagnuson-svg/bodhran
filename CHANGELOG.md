@@ -4,6 +4,12 @@ What changed in each version of Bodhrán, newest first. The version shows next
 to the title in the app; bump it at the top of `js/app.js` with every change
 that gets pushed (the last number for a fix, the middle one for a feature).
 
+## 1.10.1 — 2026-10-03
+
+- The **Sound check** line under Play is hidden, as in Session Buddies. It was
+  there to find out why Safari once went silent, not for every day. It still
+  measures, and `?soundcheck` at the end of the app's address shows it again.
+
 ## 1.10.0 — 2026-10-02 — A less electronic drum
 
 - **The dum no longer swoops.** Each down stroke used to drop almost an

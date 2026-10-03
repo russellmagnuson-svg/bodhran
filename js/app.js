@@ -8,7 +8,7 @@
    * Bump it with every change that gets pushed: the last number for a fix,
    * the middle one for a new feature. It is also the quickest way to tell
    * whether a phone is running the latest deploy or an older copy. */
-  var VERSION = '1.10.0';
+  var VERSION = '1.10.1';
   TRAD.VERSION = VERSION;
 
   TRAD.validatePatterns();
@@ -556,6 +556,10 @@
   function pct(v) { return Math.round(v * 100) + '%'; }
 
   function init() {
+    // The sound check (js/wake.js) still measures, but its line under Play
+    // is shown only when asked for, with ?soundcheck in the address: since
+    // 1.10.1, as it was there to find why Safari once went silent.
+    if ($('sound-check')) $('sound-check').hidden = !/soundcheck/i.test(location.search + location.hash);
     // Only ever decoration: an old cached page with this newer script has no
     // version slots, and that must not stop the rest of init — Play included.
     if ($('version')) $('version').textContent = 'v' + VERSION;
