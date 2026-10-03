@@ -2683,7 +2683,7 @@
   function withBuddies(fn) {
     var keys = ['players.current', 'players.tuning', 'players.sympathy', 'players.volume', 'players.swing.hornpipe',
                 'buddies.favourites', 'buddies.recent', 'players.melody', 'players.yourturn', 'players.backing',
-                'players.drumstyle', 'players.drumbusy'], saved = {};
+                'players.drumstyle', 'players.drumbusy', 'players.voices'], saved = {};
     keys.forEach(function (k) { saved[k] = localStorage.getItem(k); localStorage.removeItem(k); });
     var frame = document.createElement('iframe');
     frame.src = '../buddies/';
@@ -3767,6 +3767,61 @@
           return new Promise(function (ok) { win.frameElement.onload = ok; win.location.reload(); }).then(function () { return wait(300); }).then(function () {
             var d = win.document, mode = d.querySelector('#melody-mode [aria-checked="true"]'), lvl = d.querySelector('#your-turn-level [aria-checked="true"]');
             if (!mode || mode.dataset.melody !== 'turns' || !lvl || lvl.dataset.level !== 'silent') bad.push('after a reload the choice is ' + (mode && mode.dataset.melody) + ' / ' + (lvl && lvl.dataset.level));
+            expect(bad.length === 0, bad.join('\n'));
+          });
+        });
+      });
+    });
+
+  check('Session Buddies', 'Your choices survive a reload, and Reset settings puts them back to how they start',
+    'Reloading put some choices back to their starting values (which instruments were ticked), and another setting of the same tune put the tempo back. Now every choice on the page comes back after a reload; another setting keeps your tempo; and Reset settings puts every choice back to how it starts, keeping the tune, your tunes and your chord changes, with Undo bringing them all back.',
+    function () {
+      return json(FIX + 'the-kesh.json').then(function (j) {
+        return withBuddies(function (win, doc) {
+          var fr = win.frameElement, bad = [];
+          function D() { return fr.contentDocument; }
+          function $(id) { return D().getElementById(id); }
+          function set(id, v) { var e = $(id); e.value = v; e.dispatchEvent(new fr.contentWindow.Event('input')); e.dispatchEvent(new fr.contentWindow.Event('change')); }
+          function click(sel) { D().querySelector(sel).click(); }
+          function on(sel) { var e = D().querySelector(sel + ' [aria-checked="true"]'); return e ? e.textContent.trim() : null; }
+          function snap() {
+            return { tune: fr.contentWindow.BUDDIES_PAGE.tune().meta.name, bpm: $('bpm').value, times: $('times').value, countin: $('countin').value,
+                     vols: ['guitar', 'tune', 'concertina', 'drum'].map(function (k) { return $('vol-' + k).value; }).join(','),
+                     ticks: ['guitar', 'tune', 'concertina', 'drum'].map(function (k) { return $('on-' + k).checked; }).join(','),
+                     melody: on('#melody-mode'), turn: on('#your-turn-level'), strum: on('#strums'), backing: on('#backing-feel'),
+                     drum: on('#drum-style'), busy: $('drum-busy').value, tuning: on('#tunings'), sympathy: on('#sympathy') };
+          }
+          function reloaded(go) {
+            return new Promise(function (ok) { fr.onload = function () { setTimeout(ok, 400); }; go(); });
+          }
+          function differ(a, b) { return Object.keys(a).filter(function (k) { return a[k] !== b[k]; }).map(function (k) { return k + ' ' + a[k] + ' → ' + b[k]; }); }
+          win.BUDDIES_PAGE.loadTune(j, 0);
+          var start = snap();
+          // Another setting of the same tune keeps the tempo.
+          set('bpm-num', 83);
+          var sel = $('setting'); sel.value = '1'; sel.dispatchEvent(new win.Event('change'));
+          if ($('bpm').value !== '83') bad.push('another setting put the tempo back to ' + $('bpm').value);
+          // Everything off its start.
+          set('times', 3); set('countin', 1);
+          ['guitar', 'tune', 'concertina', 'drum'].forEach(function (k) { set('vol-' + k, 1.3); });
+          $('on-guitar').click(); $('on-concertina').click();
+          click('#melody-mode [data-melody="turns"]'); click('#your-turn-level [data-level="quiet"]');
+          click('#strums [data-strum="drive"]'); click('#backing-feel [data-backing="little"]');
+          click('#drum-style [data-drum="pulse"]'); set('drum-busy', 0.8);
+          click('#tunings [data-tuning="standard"]'); click('#sympathy [data-sympathy="off"]');
+          var mine = snap();
+          return reloaded(function () { fr.contentWindow.location.reload(); }).then(function () {
+            differ(mine, snap()).forEach(function (d) { bad.push('after a reload: ' + d); });
+            if (!$('reset-settings')) { bad.push('there is no Reset settings'); expect(false, bad.join('\n')); }
+            return reloaded(function () { $('reset-settings').click(); });
+          }).then(function () {
+            var now = snap();
+            differ(start, now).forEach(function (k) { if (!/^tune /.test(k)) bad.push('after Reset settings: ' + k); });
+            if (now.tune !== start.tune) bad.push('Reset settings changed the tune to ' + now.tune);
+            if ($('reset-done').hidden) bad.push('Reset settings offers no Undo');
+            return reloaded(function () { $('reset-undo').click(); });
+          }).then(function () {
+            differ(mine, snap()).forEach(function (d) { bad.push('after Undo: ' + d); });
             expect(bad.length === 0, bad.join('\n'));
           });
         });

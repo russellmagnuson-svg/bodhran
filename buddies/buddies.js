@@ -17,7 +17,7 @@
    * next to the title and at the foot. Bump it with every change pushed (the
    * last number for a fix, the middle for something new) and add it to the
    * "Session Buddies" sections of CHANGELOG.md and the release notes. */
-  var VERSION = '1.18.1';
+  var VERSION = '1.18.2';
 
   var $ = function (id) { return document.getElementById(id); };
   var P = window.BUDDIES, G = window.GTR, T = window.TRAD, TPQ = P.TPQ;
@@ -220,7 +220,7 @@
    * another of its settings), your own copy is used if you have one: the
    * chords you changed and your tempo. Until 1.12.2 a fresh build was stored
    * over that copy, so searching a tune you had worked on wiped its chords. */
-  function build(meta, settings, index, saved) {
+  function build(meta, settings, index, saved, keepBpm) {
     if (playing) stop(false);
     var s = settings[index], ty = TYPES[meta.type];
     var yours = !saved && copyOf(meta.id + '/' + (s.id != null ? s.id : index + 1));
@@ -242,7 +242,9 @@
     tune.fromFile = !!(saved && saved.fromFile);
     FORM = lay.timeline;
     prepareGuitar();
-    showTune(saved && saved.options);
+    var options = (saved && saved.options) || {};
+    if (keepBpm && !options.bpm) options = Object.assign({}, options, { bpm: keepBpm });
+    showTune(options);
     remember();
     if (yours && Object.keys(mine).length) {
       $('find-status').textContent = 'Your copy from My tunes, with your chord changes. ' +
@@ -1418,6 +1420,50 @@
     el.textContent = CONCERTINA_SAYS[st] || '';
   }
 
+  /* ---------- Reset settings ----------
+   * Every choice back to how it starts: all that is kept under 'players.'
+   * (the instruments and their volumes, melody, strum, backing feel, the
+   * bodhrán, swing, tuning, sympathy) and the tempo, "Play it" and count-in
+   * kept with the tune on the page; then the page starts afresh, as on a
+   * first visit but on the same tune. Your tunes (favourites, played lately)
+   * and the tune's chords are not touched. Undo, until the next reload,
+   * puts it all back. */
+  var UNDO_RESET = 'buddies.undoReset', resetting = false;
+  function settingKeys() {
+    var out = [];
+    try { for (var i = 0; i < localStorage.length; i++) { var k = localStorage.key(i); if (/^players\./.test(k)) out.push(k); } } catch (e) {}
+    return out;
+  }
+  function resetSettings() {
+    if (playing) stop(false);
+    var before = {};
+    settingKeys().forEach(function (k) { before[k] = stored(k, null); });
+    resetting = true;                 // so the reload keeps this Undo
+    try { sessionStorage.setItem(UNDO_RESET, JSON.stringify(before)); } catch (e) {}
+    settingKeys().forEach(function (k) { if (k !== 'players.current') { try { localStorage.removeItem(k); } catch (e) {} } });
+    var cur = stored('players.current', '');
+    if (cur) {
+      try { var d = JSON.parse(cur); d.options = {}; store('players.current', JSON.stringify(d, null, 1)); }
+      catch (e) { try { localStorage.removeItem('players.current'); } catch (e2) {} }
+    }
+    location.reload();
+  }
+  function undoReset() {
+    var before = null;
+    try { before = JSON.parse(sessionStorage.getItem(UNDO_RESET) || 'null'); sessionStorage.removeItem(UNDO_RESET); } catch (e) {}
+    if (!before) return;
+    settingKeys().forEach(function (k) { try { localStorage.removeItem(k); } catch (e) {} });
+    Object.keys(before).forEach(function (k) { if (before[k] != null) store(k, before[k]); });
+    location.reload();
+  }
+  // After a reset: say so, with Undo, this once.
+  function showResetDone() {
+    var have = false;
+    try { have = !!sessionStorage.getItem(UNDO_RESET); } catch (e) {}
+    $('reset-done').hidden = !have;
+    if (have) window.addEventListener('pagehide', function () { if (!resetting) try { sessionStorage.removeItem(UNDO_RESET); } catch (e) {} });
+  }
+
   /* ---------- wiring ---------- */
   function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
@@ -1437,7 +1483,9 @@
     // The box shows the tune on the page; a click selects it, so typing starts a new search.
     $('q').addEventListener('focus', function () { var q = this; setTimeout(function () { q.select(); }, 0); });
     $('matches').addEventListener('toggle', summarise);
-    $('setting').addEventListener('change', function () { build(tune.meta, tune.settings, +this.value); });
+    // Another setting of the same tune keeps your tempo (until 1.18.2 it went
+    // back to the type's), unless your copy of that setting has its own.
+    $('setting').addEventListener('change', function () { build(tune.meta, tune.settings, +this.value, null, +$('bpm').value); });
     $('save').addEventListener('click', save);
     $('fav').addEventListener('click', toggleFav);
     $('save-list').addEventListener('click', saveList);
@@ -1474,8 +1522,14 @@
     $('bpm-num').addEventListener('change', function () { setBpm(this.value); remember(); });
     $('bpm').addEventListener('change', remember);
     ['times', 'countin'].forEach(function (id) { $(id).addEventListener('change', remember); });
+    // Which of them are ticked is kept too (since 1.18.2; a reload put them
+    // back to guitar, flute and bodhrán).
+    var ticked = {};
+    try { ticked = JSON.parse(stored('players.voices', '{}')) || {}; } catch (e) {}
     ['guitar', 'tune', 'concertina', 'drum'].forEach(function (k) {
       var el = $('vol-' + k), box = $('on-' + k);
+      if (typeof ticked[k] === 'boolean') box.checked = ticked[k];
+      box.addEventListener('change', function () { ticked[k] = box.checked; store('players.voices', JSON.stringify(ticked)); });
       function show() {
         $('vol-' + k + '-out').textContent = Math.round(vol[k] * 100) + '%';
         el.closest('.voice').classList.toggle('is-off', !box.checked);
@@ -1491,6 +1545,15 @@
       // load while you get ready rather than after the first notes.
       if (k === 'concertina') box.addEventListener('change', function () { if (box.checked) ensureAudio(); showConcertina(); });
     });
+    // Ticked from last time, the concertina's recordings start loading at
+    // your first tap anywhere, as ticking it would (sound can only start at one).
+    if ($('on-concertina').checked) {
+      var early = function () { document.removeEventListener('click', early, true); ensureAudio(); showConcertina(); };
+      document.addEventListener('click', early, true);
+    }
+    $('reset-settings').addEventListener('click', resetSettings);
+    $('reset-undo').addEventListener('click', undoReset);
+    showResetDone();
     Array.prototype.forEach.call($('sympathy').children, function (b) {
       b.setAttribute('aria-checked', String((b.dataset.sympathy === 'on') === sympathy));
       b.addEventListener('click', function () {

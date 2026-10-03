@@ -458,6 +458,24 @@ The page at `/buddies/` has its own version number, shown next to its title.
 It was called Session Players, at `/players/`, until 1.8.0; the entries
 before that keep the old name.
 
+### Session Buddies 1.18.2 — 2026-10-03 — Your settings kept, and a clean reset
+
+- **Every choice comes back after a reload.** Which instruments are ticked
+  went back to guitar, flute and bodhrán (the concertina unticked) at every
+  reload; now they are kept like the rest. Ticked from last time, the
+  concertina's recordings start loading at your first tap on the page.
+  (Tested by setting every control away from its start and reloading:
+  nothing else was lost.)
+- **Another setting of the same tune keeps your tempo.** It went back to the
+  type's starting tempo (from the audit, B39).
+- **Reset settings**, at the end of What you hear: every choice back to how
+  it starts, from the tempo, "Play it" and count-in to the instruments,
+  their volumes, melody, strum, backing feel, bodhrán, swing, tuning and
+  sympathy. The tune on the page, your tunes and your chord changes are
+  kept, and Undo brings it all back (until the next reload).
+- A reload always runs the newest code: the site asks the browser to check
+  every Session Buddies file each time, as it did before.
+
 ### Session Buddies 1.18.1 — 2026-10-03
 
 - **The bodhrán no longer leans toward a snare drum.** It went through a
