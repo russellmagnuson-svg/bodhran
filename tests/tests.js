@@ -3507,8 +3507,13 @@
               if (sel.options.length !== j.settings.length || sel.disabled) bad.push('the Setting menu offers ' + sel.options.length + ' of ' + j.settings.length + ' settings');
               if (sel.value !== '1' || PP.tune().index !== 1) bad.push('the menu is on setting ' + (+sel.value + 1) + ', not the one on the page (2)');
               if (!/Setting 2 of 3/.test($('chosen-facts').textContent)) bad.push('the tune says “' + $('chosen-facts').textContent + '”');
+              Array.prototype.forEach.call(sel.options, function (o, k) {
+                var who = j.settings[k].member && j.settings[k].member.name;
+                if (/\[object/.test(o.textContent) || (who && o.textContent.indexOf(who) === -1)) bad.push('the menu reads “' + o.textContent + '”, not naming ' + who);
+              });
               sel.value = '0'; sel.dispatchEvent(new (W().Event)('change'));
               if (PP.tune().index !== 0 || PP.tune().settings[0].id !== j.settings[0].id) bad.push('choosing setting 1 did not open it');
+              if (/\[object/.test($('chosen-facts').textContent + $('credit').textContent)) bad.push('setting 1, chosen from the filled menu, is credited “' + $('credit').textContent + '”');
               W().fetch = real;
               expect(bad.length === 0, bad.join('\n'));
             });

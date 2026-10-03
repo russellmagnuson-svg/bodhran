@@ -471,6 +471,13 @@ The page at `/buddies/` has its own version number, shown next to its title.
 It was called Session Players, at `/players/`, until 1.8.0; the entries
 before that keep the old name.
 
+### Session Buddies 1.19.1 — 2026-10-03
+
+- The Setting menu, filled in from thesession.org after a reload (1.18.3),
+  named each setting's poster "[object Object]": the Session's answer went
+  in untidied. Now it names them, as a search does, and so does the credit
+  line for a setting chosen from it.
+
 ### Session Buddies 1.19.0 — 2026-10-03 — Ornaments on the flute
 
 - **The flute plays the rolls and cuts a setting writes.** The tune reader

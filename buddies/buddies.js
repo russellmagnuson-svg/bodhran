@@ -17,7 +17,7 @@
    * next to the title and at the foot. Bump it with every change pushed (the
    * last number for a fix, the middle for something new) and add it to the
    * "Session Buddies" sections of CHANGELOG.md and the release notes. */
-  var VERSION = '1.19.0';
+  var VERSION = '1.19.1';
 
   var $ = function (id) { return document.getElementById(id); };
   var P = window.BUDDIES, G = window.GTR, T = window.TRAD, TPQ = P.TPQ;
@@ -358,10 +358,14 @@
       return;
     }
     var meta = { id: j.id, name: j.name, type: j.type, url: j.url || API + '/tunes/' + j.id };
-    var settings = j.settings.map(function (s) {
+    var settings = sessionSettings(j);
+    build(meta, settings, Math.min(index || 0, settings.length - 1));
+  }
+  // The Session's settings as the page keeps them: who posted each, by name.
+  function sessionSettings(j) {
+    return j.settings.map(function (s) {
       return { id: s.id, key: s.key, abc: s.abc, member: s.member && s.member.name, date: s.date, url: s.url };
     });
-    build(meta, settings, Math.min(index || 0, settings.length - 1));
   }
 
   /* ---------- saving and opening ---------- */
@@ -615,7 +619,9 @@
         if (tune !== t || !j || !Array.isArray(j.settings) || j.settings.length < 2) return;
         var at = j.settings.map(function (st) { return st.id; }).indexOf(s.id);
         if (at < 0) return;
-        var list = j.settings.slice();
+        // Tidied as a search's are (until 1.19.1 they went in raw, and the
+        // menu named each setting's poster "[object Object]").
+        var list = sessionSettings(j);
         list[at] = s;
         t.settings = list; t.index = at;
         drawSettings();
