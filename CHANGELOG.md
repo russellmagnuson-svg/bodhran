@@ -471,6 +471,15 @@ The page at `/buddies/` has its own version number, shown next to its title.
 It was called Session Players, at `/players/`, until 1.8.0; the entries
 before that keep the old name.
 
+### Session Buddies 1.21.2 — 2026-10-03
+
+- **A new icon**, chosen from three: the session's instruments in
+  silhouette (a flute, a bodhrán and a guitar) on the bodhrán icon's
+  wooden face and gold ring, in place of 1.21.0's guitar soundhole. It is
+  the icon at the top of the page and on a phone's home screen.
+- A check that sometimes failed by chance now counts the bodhrán's fills
+  over 32 phrases, not 8 (where 1 run in 14 failed with nothing wrong).
+
 ### Session Buddies 1.21.1 — 2026-10-03
 
 - **No more slowing down like a tape on a Mac.** Playing Sí Bheag Sí Mhór in

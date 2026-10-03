@@ -1,43 +1,38 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <!-- Session Buddies' icon: the bodhrán icon's frame (the same dark ground,
-       gold ring, brown rim and warm wooden face), with a guitar's soundhole,
-       its rosette and six strings in place of the drum's crossbar and tipper.
-       The PNGs beside it are drawn from this file. -->
-  <defs>
-    <radialGradient id="face" cx="0.33" cy="0.3" r="0.8">
-      <stop offset="0" stop-color="#e3c69a"/>
-      <stop offset="0.55" stop-color="#c9a674"/>
-      <stop offset="1" stop-color="#a58355"/>
-    </radialGradient>
-    <radialGradient id="hole" cx="0.42" cy="0.38" r="0.7">
-      <stop offset="0" stop-color="#3a2a1a"/>
-      <stop offset="1" stop-color="#1f160d"/>
-    </radialGradient>
-    <clipPath id="inside"><circle cx="256" cy="256" r="177"/></clipPath>
-  </defs>
-  <rect width="512" height="512" fill="#1e1a17"/>
-  <circle cx="256" cy="256" r="200" fill="#e0a04a"/>
-  <circle cx="256" cy="256" r="192" fill="#6b4a28"/>
-  <circle cx="256" cy="256" r="177" fill="url(#face)"/>
-  <!-- the rosette: rings of inlay round the soundhole -->
-  <circle cx="256" cy="256" r="98" fill="none" stroke="#6b4a28" stroke-width="5"/>
-  <circle cx="256" cy="256" r="88" fill="none" stroke="#e0a04a" stroke-width="9"/>
-  <circle cx="256" cy="256" r="78" fill="none" stroke="#6b4a28" stroke-width="5"/>
-  <circle cx="256" cy="256" r="70" fill="url(#hole)"/>
-  <!-- six strings, each with a faint shadow on the wood -->
-  <g clip-path="url(#inside)" stroke-linecap="butt">
-    <g stroke="#3a2a1a" stroke-opacity="0.35" stroke-width="5">
-      <line x1="210" y1="60" x2="210" y2="452"/><line x1="230" y1="60" x2="230" y2="452"/>
-      <line x1="250" y1="60" x2="250" y2="452"/><line x1="270" y1="60" x2="270" y2="452"/>
-      <line x1="290" y1="60" x2="290" y2="452"/><line x1="310" y1="60" x2="310" y2="452"/>
-    </g>
-    <g stroke="#f4e6c8">
-      <line x1="206" y1="60" x2="206" y2="452" stroke-width="6"/>
-      <line x1="226" y1="60" x2="226" y2="452" stroke-width="5.5"/>
-      <line x1="246" y1="60" x2="246" y2="452" stroke-width="5"/>
-      <line x1="266" y1="60" x2="266" y2="452" stroke-width="4"/>
-      <line x1="286" y1="60" x2="286" y2="452" stroke-width="3.5"/>
-      <line x1="306" y1="60" x2="306" y2="452" stroke-width="3"/>
-    </g>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 512 512">
+<!-- Session Buddies' icon (since 1.21.2, chosen by the user from three):
+     the bodhrán icon's frame (the same dark ground, gold ring, brown rim and
+     wooden face) with the session's instruments in silhouette: a flute
+     behind, a bodhrán and a guitar in front, each edged in the face's colour
+     so they stand apart. The PNGs beside it are drawn from this file. -->
+<defs><radialGradient id="face" cx="0.33" cy="0.3" r="0.8"><stop offset="0" stop-color="#e3c69a"/><stop offset="0.55" stop-color="#c9a674"/><stop offset="1" stop-color="#a58355"/></radialGradient><clipPath id="inside"><circle cx="256" cy="256" r="177"/></clipPath></defs><rect width="512" height="512" fill="#1e1a17"/><circle cx="256" cy="256" r="200" fill="#e0a04a"/><circle cx="256" cy="256" r="192" fill="#6b4a28"/><circle cx="256" cy="256" r="177" fill="url(#face)"/>
+<defs>
+  <g id="flute"><rect x="-120" y="-10" width="240" height="20" rx="10"/></g>
+  <g id="drum"><circle cx="0" cy="0" r="74"/></g>
+  <g id="gtr">
+    <rect x="-14" y="-196" width="28" height="40" rx="5"/>
+    <rect x="-9" y="-164" width="18" height="110"/>
+    <circle cx="0" cy="-30" r="46"/>
+    <circle cx="0" cy="50" r="60"/>
+    <rect x="-40" y="-30" width="80" height="72"/>
   </g>
+</defs>
+<g clip-path="url(#inside)">
+  <g transform="translate(232 196) rotate(-22)">
+    <use xlink:href="#flute" fill="#d2b07e" stroke="#d2b07e" stroke-width="16"/>
+    <use xlink:href="#flute" fill="#2e2116"/>
+    <g fill="#d2b07e"><circle cx="-56" r="4"/><circle cx="-38" r="4"/><circle cx="-20" r="4"/><circle cx="12" r="4"/><circle cx="30" r="4"/><circle cx="48" r="4"/><rect x="84" y="-5" width="13" height="10" rx="4"/></g>
+  </g>
+  <g transform="translate(190 316)">
+    <use xlink:href="#drum" fill="#d2b07e" stroke="#d2b07e" stroke-width="16"/>
+    <use xlink:href="#drum" fill="#2e2116"/>
+    <circle r="60" fill="none" stroke="#5a4129" stroke-width="4"/>
+    <rect x="-60" y="-5" width="120" height="10" rx="5" fill="#5a4129"/>
+  </g>
+  <g transform="translate(310 300) rotate(12) scale(0.92)">
+    <use xlink:href="#gtr" fill="#d2b07e" stroke="#d2b07e" stroke-width="17"/>
+    <use xlink:href="#gtr" fill="#2e2116"/>
+    <circle cx="0" cy="12" r="19" fill="#d2b07e"/>
+    <rect x="-20" y="66" width="40" height="8" rx="3" fill="#d2b07e"/>
+  </g>
+</g>
 </svg>

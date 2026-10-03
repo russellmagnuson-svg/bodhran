@@ -3718,14 +3718,16 @@
           if (doc.getElementById('drum-busy-box').hidden) bad.push('Busyness is hidden in Full');
           // Full: fills only at bar 4 or 8 of a phrase, most at 8; patterns vary; busyness weights the banks.
           busy(1);
-          var full = bars(64), at = { 3: 0, 7: 0 }, kinds = {};
+          // 32 phrases, played on (no last bar): over 8, chance alone failed the count below 1 run in 14.
+          var times = doc.getElementById('times'); times.value = '0'; times.dispatchEvent(new win.Event('change'));
+          var full = bars(256), at = { 3: 0, 7: 0 }, kinds = {};
           full.forEach(function (b, i) {
             kinds[b.grid] = 1;
             if (app.grids.fills.indexOf(b.grid) !== -1) { if (i % 8 === 3 || i % 8 === 7) at[i % 8]++; else bad.push('a fill in bar ' + (i % 8 + 1) + ' of a phrase'); }
             if (app.grids.sparse.indexOf(b.grid) !== -1) bad.push('a sparse bar at full busyness');
           });
-          if (!(at[7] >= 3 && at[7] > at[3])) bad.push('fills at the end of a phrase ' + at[7] + ' times in 8 phrases, half way ' + at[3]);
-          if (Object.keys(kinds).length < 3) bad.push('only ' + Object.keys(kinds).length + ' patterns in 64 bars of Full');
+          if (!(at[7] >= 12 && at[7] > at[3])) bad.push('fills at the end of a phrase ' + at[7] + ' times in 32 phrases, half way ' + at[3]);
+          if (Object.keys(kinds).length < 3) bad.push('only ' + Object.keys(kinds).length + ' patterns in 256 bars of Full');
           var scattered = full.some(function (b) { return b.strokes.some(function (x) { return Math.abs(x.t / (60 / +doc.getElementById('bpm').value / 2) - x.slot) > 0.004 && x.slot % 2 === 0; }); });
           if (!scattered) bad.push('Full’s strokes on the beats land exactly on them, every one: no player’s scatter');
           busy(0);

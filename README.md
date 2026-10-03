@@ -514,7 +514,8 @@ of the app and of Session Buddies switches between the two.
 
 The top of the page is laid out as the app's (since 1.21.0): Session Buddies'
 own icon, `buddies/icons/` (`icon.svg` is the source, drawn in the bodhrán
-icon's style with a guitar's soundhole; the PNGs are drawn from it), the name
+icon's style with a flute, a bodhrán and a guitar in silhouette, chosen by
+the user in 1.21.2; the PNGs are drawn from it), the name
 and version, a tagline and About (`wireAbout()`). What you hear folds into a
 summary (`wireHear()`, `hearRows()`): read from the panel itself, the choice
 each group shows as chosen, and redrawn by a MutationObserver while folded;
