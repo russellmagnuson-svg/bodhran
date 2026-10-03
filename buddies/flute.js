@@ -180,6 +180,9 @@
       c.start(t, Math.random() * 0.5, 0.1);
       nodes.push(cg);
     }
+    // Rung out, the note is unplugged so the browser can let it go (since
+    // Session Buddies 1.22.0; see js/bodhran.js, Bodhran.prototype._release).
+    o.onended = function () { nodes.forEach(function (x) { x.disconnect(); }); };
     this.queued = this.queued.filter(function (q) { return q.t > ctx.currentTime - 1; });
     this.queued.push({ t: t, nodes: nodes });
   };

@@ -422,6 +422,7 @@
     g.gain.setValueAtTime(0, t);
     g.gain.linearRampToValueAtTime(vel, t + 0.002);
     src.connect(g); g.connect(this.input);
+    src.onended = function () { g.disconnect(); };   // rung out: let it go (Session Buddies 1.22.0)
     src.start(t);
     this.voices[string] = { gain: g, src: src };
     var now = ctx.currentTime;
@@ -513,6 +514,7 @@
     g.gain.setValueAtTime(0, t);
     g.gain.linearRampToValueAtTime(level, t + 0.004);    // a thumb, not a pick: no click
     src.connect(tone); tone.connect(g); g.connect(this.pickBus);
+    src.onended = function () { g.disconnect(); };
     src.start(t);
     this.voices[string] = { gain: g, src: src };
     var now = ctx.currentTime;
@@ -572,6 +574,7 @@
       g.gain.setValueAtTime(0, t);
       g.gain.setTargetAtTime(SYMPATHY * strength * vel, t + 0.01, 0.12);   // it builds up; it is not struck
       src.connect(pure); pure.connect(g); g.connect(this.input);
+      src.onended = (function (g) { return function () { g.disconnect(); }; })(g);   // this string's own, not the loop's last
       src.start(t);
       this.sym[s] = { gain: g, src: src };
       var now = ctx.currentTime;

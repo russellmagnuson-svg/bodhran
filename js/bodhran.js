@@ -85,6 +85,20 @@
     return out;
   };
 
+  /* Let a stroke go once it has rung out: when the last of its sounds has
+   * ended, its output is unplugged, and with it the whole stroke. Until app
+   * 1.10.2 and Session Buddies 1.22.0 each stroke's little output stayed
+   * plugged into the drum. Found while looking into Safari's memory growing
+   * over an hour of Session Buddies (all its instruments did the same); in a
+   * bare test page unplugging kept Safari's memory down, but whether it was
+   * the cause there is not yet known. */
+  Bodhran.prototype._release = function (out, sources) {
+    var left = sources.length;
+    sources.forEach(function (src) {
+      src.onended = function () { if (--left === 0) out.disconnect(); };
+    });
+  };
+
   /* Drop every stroke due at or after `time`. Strokes already sounding ring
    * on, and so does the room. */
   Bodhran.prototype.cancelFrom = function (time) {
@@ -126,6 +140,7 @@
     // Offset into the noise buffer so repeated hits never sound identical.
     src.start(time, Math.random() * 1.5, dur + 0.05);
     src.stop(time + dur + 0.05);
+    return src;
   };
 
   /* Both strokes land on the same goatskin, so they share one model and only
@@ -237,7 +252,7 @@
     // All of them settle together, a few percent, as the struck skin relaxes.
     // (Each mode dies away inside the stroke's own fade, so a mode meant to
     // ring for a share r of it fades on its own over dur·r/(1−r).)
-    var sharp = 1 + s.bend * Math.min(1, vel);
+    var sharp = 1 + s.bend * Math.min(1, vel), sources = [];
     for (var k = 0; k < s.modes.length; k++) {
       var fk = f0 * MODES[k], r = s.rings[k];
       var share = s.body * s.modes[k] * (k ? 0.8 + Math.random() * 0.4 : 1 - 0.2 * p) * SIGNS[k];
@@ -253,15 +268,17 @@
       if (r < 1) g.gain.exponentialRampToValueAtTime(share * 0.0001, time + dur * r / (1 - r));
       o.connect(g); g.connect(amp);
       o.start(time); o.stop(time + dur + 0.02);
+      sources.push(o);
     }
 
     // The goatskin's slap: the dense higher modes, too close together to
     // hear one by one, through the same tone as the skin so it is no hiss.
     // Then the stick meeting it.
-    this._noiseBurst(time, s.slapLen, f0 * s.slapAt, s.slapQ,
-                     vel * (s.level || 1) * s.slap, lp);
-    this._noiseBurst(time, s.stickLen, s.stickHz, s.stickQ,
-                     vel * (s.level || 1) * s.stick, out);
+    sources.push(this._noiseBurst(time, s.slapLen, f0 * s.slapAt, s.slapQ,
+                                  vel * (s.level || 1) * s.slap, lp));
+    sources.push(this._noiseBurst(time, s.stickLen, s.stickHz, s.stickQ,
+                                  vel * (s.level || 1) * s.stick, out));
+    this._release(out, sources);
   };
 
   /* The "dum" — down stroke, on the beat. */
@@ -283,12 +300,14 @@
     amp.gain.setValueAtTime(0.0001, time);
     amp.gain.exponentialRampToValueAtTime(vel * 0.4, time + 0.001);
     amp.gain.exponentialRampToValueAtTime(0.0001, time + 0.05);
-    amp.connect(this._strokeOut(time));
+    var out = this._strokeOut(time);
+    amp.connect(out);
     var o = ctx.createOscillator();
     o.type = 'square';
     o.frequency.value = vel > 0.7 ? 1600 : 1050;
     o.connect(amp);
     o.start(time); o.stop(time + 0.06);
+    this._release(out, [o]);
   };
 
   /* press: how hard the back hand is pressing, 0 (open skin) to 1. */

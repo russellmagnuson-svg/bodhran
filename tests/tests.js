@@ -3941,6 +3941,105 @@
       });
     });
 
+  check('Session Buddies', 'A PDF you open is played as if it came from the Session',
+    'Asked for in 1.22.0: open a PDF of a tune and play along with it. Tunes written in ABC in it are built as a setting from the Session would be (two in one file: you choose; a note length of a semiquaver read as written; its own chords kept), and come back after a reload without asking the Session for other settings. A PDF with the notes drawn on staves has its title looked up on the Session; a scan, with no text, says so. The PDFs are made by tests/fixtures/make-pdfs.py. (Reading a PDF fetches pdf.js from cdnjs, so this check needs the internet.)',
+    function () {
+      return withBuddies(function (win, doc) {
+        var fr = win.frameElement, bad = [], asked = [];
+        function W() { return fr.contentWindow; }
+        function $(id) { return fr.contentDocument.getElementById(id); }
+        function stub() {
+          var real = W().fetch;
+          W().fetch = function (url) {
+            if (/thesession\.org/.test(String(url))) {
+              asked.push(String(url));
+              var Res = W().Response;
+              return Promise.resolve(new Res(JSON.stringify({ tunes: [{ id: 55, name: 'The Kesh', type: 'jig' }] }), { status: 200 }));
+            }
+            return real.apply(W(), arguments);
+          };
+        }
+        function open(name) {
+          return fetch(FIX.replace('thesession-', '') + name).then(function (r) { return r.blob(); }).then(function (b) {
+            W().BUDDIES_PAGE.openPdf(new (W().File)([b], name, { type: 'application/pdf' }));
+            var until = Date.now() + 20000;
+            return new Promise(function (ok) {
+              (function poll() { if (!/^Reading/.test($('file-status').textContent) || Date.now() > until) ok(); else setTimeout(poll, 100); })();
+            });
+          }).then(function () { return wait(200); });
+        }
+        stub();
+        return open('pdf-abc.pdf').then(function () {
+          var offered = Array.prototype.map.call($('results').querySelectorAll('button'), function (b) { return b.textContent; });
+          if (offered.length !== 2 || !/Checker/.test(offered[0]) || !/Check Reel/.test(offered[1])) bad.push('the two tunes were offered as ' + JSON.stringify(offered) + ' (' + $('file-status').textContent + ')');
+          var b = $('results').querySelectorAll('button')[1];
+          if (!b) { expect(false, bad.join('\n')); }
+          b.click();
+          var PP = W().BUDDIES_PAGE, t = PP.tune();
+          if (!t || t.meta.name !== 'A Check Reel' || t.meta.type !== 'reel') bad.push('the reel did not open: ' + (t && t.meta.name));
+          if (!/Reel · 4\/4 · D major · from your file “pdf-abc\.pdf”/.test($('chosen-facts').textContent)) bad.push('it says “' + $('chosen-facts').textContent + '”');
+          if ($('chord-source').textContent !== 'from the setting') bad.push('its own chords were not kept: ' + $('chord-source').textContent);
+          var bars = fr.contentDocument.querySelectorAll('#chart .bar').length;
+          if (bars !== 8) bad.push(bars + ' bars in the chart, not 8');
+          var notes = PP.plan(0).filter(function (x) { return x.who === 'flute'; }).map(function (x) { return x.midi; });
+          if (notes.join(',') !== '66,69,69,66,67,71,71,67') bad.push('bar 1 plays ' + notes.join(',') + ' (L:1/16 misread?)');
+          if (!$('setting-link').hidden) bad.push('it links to thesession.org');
+          asked = [];
+          return new Promise(function (ok) { fr.onload = function () { setTimeout(ok, 500); }; W().location.reload(); });
+        }).then(function () {
+          stub();
+          return wait(300);
+        }).then(function () {
+          var t = W().BUDDIES_PAGE.tune();
+          if (!t || t.meta.name !== 'A Check Reel') bad.push('after a reload the tune is ' + (t && t.meta.name));
+          var early = W().performance.getEntriesByType('resource').map(function (e) { return e.name; }).filter(function (u) { return /thesession\.org\/tunes\//.test(u); });
+          if (asked.length || early.length) bad.push('after a reload it asked the Session for ' + asked.concat(early).join(', '));
+          return open('pdf-staff.pdf');
+        }).then(function () {
+          if (!asked.some(function (u) { return /search\?q=The%20Kesh/.test(u); })) bad.push('the staff PDF’s title was not looked up: ' + asked.join(', '));
+          if (!/drawn on staves/.test($('find-status').textContent) || $('q').value !== 'The Kesh') bad.push('for the staff PDF it says “' + $('find-status').textContent + '”, the box “' + $('q').value + '”');
+          return open('pdf-scan.pdf');
+        }).then(function () {
+          if (!/scan or photo/.test($('file-status').textContent)) bad.push('for the scan it says “' + $('file-status').textContent + '”');
+          expect(bad.length === 0, bad.join('\n'));
+        });
+      });
+    });
+
+  check('Session Buddies', 'Every note is let go once it has rung out',
+    'Each note (a drum stroke, a flute or concertina note, a guitar string, its sympathetic ring) ended with a little chain left plugged into its instrument. Found while looking into Safari’s memory growing over an hour of Session Buddies (about 6 MB a minute in the Safari engine); in a bare test page unplugging kept Safari’s memory down. Since app 1.10.2 and Session Buddies 1.22.0 each note unplugs itself once it has rung out.',
+    function () {
+      var SR = 22050, oc = new OfflineAudioContext(1, SR * 14, SR), P = window.BUDDIES;
+      var proto = AudioNode.prototype, conn = proto.connect, disc = proto.disconnect;
+      var drum = new TRAD.Bodhran(oc, oc.destination), flute = new P.Flute(oc, oc.destination);
+      var conc = new P.Concertina(oc, oc.destination), gtr = new GTR.Guitar(oc, oc.destination);
+      return conc.ready.then(function () {
+        var buses = new Map([[drum.master, 'the bodhrán'], [flute.out, 'the flute'], [conc.out, 'the concertina'],
+                             [conc.synth.out, 'the stand-in concertina'], [gtr.input, 'the guitar'], [gtr.pickBus, 'the guitar’s picked notes']]);
+        var plugged = [];
+        proto.connect = function (to) { if (buses.has(to)) plugged.push({ node: this, into: buses.get(to) }); return conn.apply(this, arguments); };
+        proto.disconnect = function () { this.__unplugged = true; return disc.apply(this, arguments); };
+        try {
+          drum.hit('bass', 0.1, 1); drum.hit('treble', 0.4, 0.8); drum.hit('ghost', 0.6, 0.5, 0.5); drum.hit('click', 0.8, 1);
+          flute.note(1.0, 0.4, 74, 0.8, 1, { into: true }); flute.note(1.4, 0.6, 76, 0.8, 1, { slur: true });
+          conc.synth.note(2.2, 0.4, 72, 0.8); conc.note(2.8, 0.4, 72, 0.8);
+          var open = P.TUNINGS.dadgad.strings, chord = P.voicing('dadgad', 'D');
+          gtr.sympathy = true;
+          gtr.prepare(chord.filter(function (m) { return m != null; }));
+          gtr.strum(chord, 3.5, 'D', 1, 4, open); gtr.strum(chord, 3.9, 'U', 0.8, 4, open);
+          if (gtr.preparePicks) { gtr.preparePicks([62]); gtr.pick(3, 62, 4.2, 0.8); }
+        } finally { proto.connect = conn; }
+        return oc.startRendering().then(function () { return wait(300); }).then(function () {
+          proto.disconnect = disc;
+          var left = {};
+          plugged.forEach(function (p) { if (!p.node.__unplugged) left[p.into] = (left[p.into] || 0) + 1; });
+          var seen = {}; plugged.forEach(function (p) { seen[p.into] = 1; });
+          expect(Object.keys(seen).length >= 5, 'only ' + Object.keys(seen).join(', ') + ' played');
+          expect(Object.keys(left).length === 0, 'still plugged in after ringing out: ' + Object.keys(left).map(function (k) { return left[k] + ' from ' + k; }).join(', '));
+        }, function (e) { proto.disconnect = disc; throw e; });
+      });
+    });
+
   check('Session Buddies', 'In Mac Safari its sound goes straight to the speaker, not through an audio element',
     'Through the audio element the app uses in Mac Safari, Sí Bheag Sí Mhór slowed and dropped in pitch after a while, like a tape running down, while the chords kept time: Safari’s audio faltered for a moment under four instruments, and the element made up the gap by playing slower and stayed behind. Since 1.21.1 Session Buddies goes direct, with the near-silent nudge on each Play that woke a stuck tab before.',
     function () {
@@ -4088,6 +4187,9 @@
     var passed = 0, failed = 0, failures = [];
     window.TEST_RESULTS = { done: false, passed: 0, failed: 0, failures: failures };
     var chain = Promise.resolve();
+    // tests/#part of a name|part of another: run only the checks named so.
+    var want = decodeURIComponent(location.hash.slice(1)).split('|').filter(Boolean);
+    if (want.length) tests = tests.filter(function (t) { return want.some(function (w) { return t.name.indexOf(w) !== -1; }); });
     tests.forEach(function (t, i) {
       chain = chain.then(function () {
         mark(t, 'run');

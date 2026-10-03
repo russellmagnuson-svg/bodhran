@@ -106,6 +106,8 @@
     bg.gain.setTargetAtTime(0, end, REL);
     b.connect(bp); bp.connect(bg); bg.connect(this.out);
     b.start(t, Math.random() * 0.2); b.stop(end + 8 * REL);
+    // Rung out, the note is unplugged so Safari can let it go (since 1.22.0).
+    reed.onended = function () { shimmer.disconnect(); bg.disconnect(); };
     this.queued = this.queued.filter(function (q) { return q.t > ctx.currentTime - 1; });
     this.queued.push({ t: t, nodes: [shimmer, bg] });
   };
@@ -338,6 +340,7 @@
     amp.gain.setTargetAtTime(0, end, REL);
     src.connect(tone); tone.connect(amp); amp.connect(this.out);
     src.start(from, offset); src.stop(end + 8 * REL);
+    src.onended = function () { amp.disconnect(); };   // rung out: let it go (since 1.22.0)
     this.queued = this.queued.filter(function (q) { return q.t > ctx.currentTime - 1; });
     this.queued.push({ t: t, nodes: [amp] });
   };

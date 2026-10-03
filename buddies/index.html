@@ -83,6 +83,9 @@
       <button id="save" class="action ghost" type="button" disabled>Save to a file</button>
       <button id="open" class="action ghost" type="button">Open a saved tune</button>
       <input id="file" type="file" accept=".json,application/json" hidden>
+      <!-- A tune from a PDF (or an .abc file): buddies/pdf.js. -->
+      <button id="open-pdf" class="action ghost" type="button">Open a PDF</button>
+      <input id="pdf-file" type="file" accept=".pdf,application/pdf,.abc,.txt,text/plain" hidden>
     </div>
     <p id="file-status" class="blurb" role="status"></p>
   </section>
@@ -319,7 +322,9 @@
 
     <h3>Getting going</h3>
     <ol>
-      <li>Find a tune by name, and pick a setting of it if you like.</li>
+      <li>Find a tune by name, and pick a setting of it if you like. Or <b>Open a PDF</b>
+      of a tune: one written in ABC is read note for note; one with the notes drawn on
+      staves has its title looked up on the Session.</li>
       <li>Press <b>Play</b>. Set the tempo, and how many times through.</li>
       <li>Choose <b>what you hear</b>: who plays, how the melody comes and goes, the
       strum, the bodhr&aacute;n&rsquo;s style, the tuning. Once you are happy,
@@ -367,6 +372,7 @@
 <script src="shapes.js"></script>
 <script src="flute.js"></script>
 <script src="concertina.js"></script>
+<script src="pdf.js"></script>
 <script src="buddies.js"></script>
 </body>
 </html>

@@ -1,0 +1,57 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Courier /Encoding /WinAnsiEncoding >>
+endobj
+2 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>
+endobj
+3 0 obj
+<< /Length 1200 >>
+stream
+BT /F2 16 Tf 60 800.0 Td (My checks tune book) Tj ET
+BT /F1 10 Tf 60 770.0 Td (X:1) Tj ET
+BT /F1 10 Tf 60 757.5 Td (T:The Checker's Jig) Tj ET
+BT /F1 10 Tf 60 745.0 Td (R:jig) Tj ET
+BT /F1 10 Tf 60 732.5 Td (M:6/8) Tj ET
+BT /F1 10 Tf 60 720.0 Td (L:1/8) Tj ET
+BT /F1 10 Tf 60 707.5 Td (K:G) Tj ET
+BT /F1 10 Tf 60 695.0 Td (|:GAB c2d|e2d B2G|ABA G2E|D2E G3|) Tj ET
+BT /F1 10 Tf 60 682.5 Td (GAB c2d|e2d B2G|A2B cBA|1 G3 G2D:|2 G3 G2B||) Tj ET
+BT /F1 10 Tf 60 670.0 Td (|:d2e dBG|c2d cAF|d2e dBG|A3 A2B|) Tj ET
+BT /F1 10 Tf 60 657.5 Td (d2e dBG|c2d cAF|GAB cBA|1 G3 G2B:|2 G3 G3|]) Tj ET
+BT /F1 10 Tf 60 645.0 Td () Tj ET
+BT /F1 10 Tf 60 632.5 Td (X:2) Tj ET
+BT /F1 10 Tf 60 620.0 Td (T:A Check Reel) Tj ET
+BT /F1 10 Tf 60 607.5 Td (R:reel) Tj ET
+BT /F1 10 Tf 60 595.0 Td (M:4/4) Tj ET
+BT /F1 10 Tf 60 582.5 Td (L:1/16) Tj ET
+BT /F1 10 Tf 60 570.0 Td (K:D) Tj ET
+BT /F1 10 Tf 60 557.5 Td (|:"D"F2A2 A2F2 "G"G2B2 B2G2|"D"F2A2 A2F2 "A"E2F2 G2E2|) Tj ET
+BT /F1 10 Tf 60 545.0 Td ("D"F2A2 A2F2 "G"G2B2 B2d2|"A"c2B2 A2G2 "D"F2D2 D4:|) Tj ET
+BT /F1 10 Tf 60 532.5 Td (|:"D"d4 f2d2 "A"c2e2 e2c2|"G"B2d2 d2B2 "D"A2F2 F2A2|) Tj ET
+BT /F1 10 Tf 60 520.0 Td ("D"d4 f2d2 "A"c2e2 e2c2|"G"B2A2 G2E2 "D"D4 D4:|) Tj ET
+endstream
+endobj
+4 0 obj
+<< /Type /Page /Parent 5 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 1 0 R /F2 2 0 R >> >> /Contents 3 0 R >>
+endobj
+5 0 obj
+<< /Type /Pages /Kids [4 0 R] /Count 1 >>
+endobj
+6 0 obj
+<< /Type /Catalog /Pages 5 0 R >>
+endobj
+xref
+0 7
+0000000000 65535 f 
+0000000009 00000 n 
+0000000104 00000 n 
+0000000206 00000 n 
+0000001458 00000 n 
+0000001594 00000 n 
+0000001651 00000 n 
+trailer
+<< /Size 7 /Root 6 0 R >>
+startxref
+1700
+%%EOF

@@ -4,6 +4,15 @@ What changed in each version of Bodhrán, newest first. The version shows next
 to the title in the app; bump it at the top of `js/app.js` with every change
 that gets pushed (the last number for a fix, the middle one for a feature).
 
+## 1.10.2 — 2026-10-03
+
+- **Each drum stroke lets go once it has rung out.** Every stroke ended with
+  a little output left plugged into the drum. It is now unplugged when the
+  stroke's last sound ends, so the browser can let the whole stroke go.
+  Found while looking into Safari's memory growing over an hour of Session
+  Buddies (1.22.0), whose instruments all did the same; whether it was the
+  cause there is not yet known.
+
 ## 1.10.1 — 2026-10-03
 
 - The **Sound check** line under Play is hidden, as in Session Buddies. It was
@@ -470,6 +479,33 @@ The page at `/guitar/` had its own version number, shown next to its title.
 The page at `/buddies/` has its own version number, shown next to its title.
 It was called Session Players, at `/players/`, until 1.8.0; the entries
 before that keep the old name.
+
+### Session Buddies 1.22.0 — 2026-10-03 — Open a PDF
+
+- **Open a PDF** (next to Open a saved tune) plays a tune from a PDF as if it
+  came from the Session: the backing, chords, chart and everything else built
+  for it. What can be read depends on what the PDF holds:
+  - the tune written in **ABC** (printed from thesession.org's ABC, or a tune
+    book typed in ABC): its title, rhythm, meter, note length, key, notes and
+    any chords it has are read. A PDF with several tunes offers them to choose
+    from. An `.abc` text file opens the same way;
+  - the tune drawn as **notes on staves** (from notation software, or a
+    printed page): a browser cannot reliably read notes drawn as shapes, but
+    the title is nearly always text, so the page looks it up on the Session;
+  - a **scan or photo**: there is no text in it, and the page says so.
+  The PDF is read in the browser, with Mozilla's pdf.js (fetched from cdnjs the
+  first time a PDF is opened), and goes nowhere. A tune from your file can be
+  favourited or saved like any other, and comes back after a reload; it does
+  not ask the Session for other settings.
+- **Each note lets go once it has rung out** (a drum stroke, a flute or
+  concertina note, a guitar string and its sympathetic ring): each used to
+  end with a little chain of sound left plugged into its instrument. Found
+  while looking into Safari's memory growing over an hour of play (about
+  5–6 MB a minute, measured in the Safari engine); in a bare test page this
+  kind of change kept Safari's memory down, but on this page the growth
+  could not yet be shown to stop, so that is still being looked into.
+- The checks page can run just some checks: `tests/#part of a name`, more
+  than one separated by `|`.
 
 ### Session Buddies 1.21.2 — 2026-10-03
 

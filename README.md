@@ -46,7 +46,9 @@ The drone roots are D, G, A, E, B, C, F and B♭.
 
 Open <http://localhost:8777/tests/> (or `/tests/` on the live site) and press
 **Run checks**. In about ten seconds it checks the rules the app has settled on,
-against the real code:
+against the real code. To run only some, put part of their names after a `#`
+in the address, more than one separated by `|`:
+`/tests/#let go once|straight to the speaker`.
 
 - **Patterns** — every pattern fits its meter; no tak on a main beat; accents
   fall on the quavers; every style has more than one fill; Pulse is the low
@@ -537,6 +539,15 @@ open or folded kept in `players.hearopen`.
   tune on it. Since 1.1.0 it knows a part's shape: bar 4 of each eight leans
   to the cadence chord (V in major; bVII in dorian, mixolydian and minor),
   and bar 8 opens on it and goes home, a mid-bar change there costing little.
+- `buddies/pdf.js` — a tune from a PDF or an `.abc` file (Open a PDF, since
+  1.22.0): the PDF's text read with Mozilla's pdf.js (3.11.174, fetched from
+  cdnjs the first time, its worker started from a blob), its lines rebuilt
+  from where the text sits; every tune written in ABC in it read from its
+  header (T:, R:, M:, L:, K:) and body, the type from R: or else the meter;
+  with no ABC, the largest words on page 1 taken as the title and searched
+  for on the Session. `buildFromFile()` in buddies.js builds it as a setting
+  (`meta.from = 'pdf'`, no Session id, so no other settings are fetched).
+  The checks' PDFs are made by `tests/fixtures/make-pdfs.py`.
 - `buddies/shapes.js` — shapes in both tunings: a hand-chosen table (the
   demo's DADGAD drone shapes among them) and a search for anything else
   (root in the bass, chord tones only, a four-fret stretch).
