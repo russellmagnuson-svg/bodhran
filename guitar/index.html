@@ -4,153 +4,38 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0f1411">
-<meta name="description" content="A rhythmic guitar backing for The Kesh, an Irish jig: chords, shapes and strum, played live.">
-<title>The Kesh — guitar backing</title>
+<meta name="description" content="The guitar demo has been retired: its guitar plays on in Session Buddies.">
+<!-- The guitar demo (The Kesh with a guitar backing) was retired on
+     3 October 2026: Session Buddies does all it did, with any tune. This page
+     stays at the old address, for bookmarks, and points to the other two.
+     Its guitar (guitar.js, guitar.css) stays in this folder: Session Buddies
+     uses it. -->
+<title>Guitar demo retired</title>
 <link rel="icon" href="../icons/icon-192.png" sizes="192x192" type="image/png">
 <link rel="apple-touch-icon" href="../icons/apple-touch-icon.png">
 <link rel="stylesheet" href="../css/app.css">
-<link rel="stylesheet" href="guitar.css">
+<style>
+  .moved { max-width: 32rem; margin: 3rem auto; text-align: center; }
+  .moved h1 { color: var(--skin); font-size: 1.5rem; }
+  .moved .action {
+    display: inline-block; margin: 0.4rem 0.3rem 1rem; text-decoration: none;
+    background: var(--accent); color: var(--on-accent); border-radius: 8px;
+    padding: 10px 18px; font-size: 15px; font-weight: 600;
+  }
+  .moved .action.ghost { background: var(--panel-2); color: var(--text); border: 1px solid var(--line); }
+</style>
 </head>
 <body>
-
 <main class="app">
-
-  <header class="head">
-    <div class="brand">
-      <p class="eyebrow">Guitar backing · a demonstration</p>
-      <h1>The Kesh <span id="demo-version" class="version"></span></h1>
-      <p class="tune-facts">Jig · 6/8 · G major</p>
-      <p class="sub">A rhythmic guitar accompaniment for one tune, played live in the
-      browser. Turn the tune, the guitar and the bodhrán on and off to hear how
-      the backing sits under the melody.</p>
-    </div>
-  </header>
-
-  <!-- Transport -->
-  <section class="panel transport">
-    <div class="play-col">
-      <button id="play" class="play" type="button" aria-label="Start or stop" aria-pressed="false">
-        <span class="play-icon" aria-hidden="true"></span>
-        <span class="play-label">Play</span>
-      </button>
-    </div>
-    <div class="tempo">
-      <div class="tempo-readout">
-        <input id="bpm-num" type="number" min="60" max="130" step="1" value="100"
-               aria-label="Tempo in beats per minute">
-        <div class="tempo-unit">
-          <span>bpm</span>
-          <small>per dotted crotchet</small>
-        </div>
-      </div>
-      <input id="bpm" type="range" min="60" max="130" step="1" value="100" aria-label="Tempo slider">
-      <div class="row tight">
-        <label class="inline">Play it
-          <select id="times">
-            <option value="1">once through</option>
-            <option value="2" selected>2 times</option>
-            <option value="3">3 times</option>
-            <option value="0">until I stop</option>
-          </select>
-        </label>
-      </div>
-    </div>
+  <section class="panel moved">
+    <h1>The guitar demo has been retired</h1>
+    <p class="blurb">Its guitar plays on in Session Buddies, behind any tune from thesession.org,
+    with the flute, a concertina and the bodhrán. The Kesh, the tune this page played, is there too:
+    it opens on a first visit, or search for it.</p>
+    <a id="to-buddies" class="action" href="../buddies/">Go to Session Buddies</a>
+    <a id="to-app" class="action ghost" href="../">Go to the Bodhrán app</a>
+    <p class="blurb">If you bookmarked this page, bookmark one of those instead.</p>
   </section>
-  <p id="sound-check" class="sound-check"></p>
-
-  <!-- What you hear -->
-  <section class="panel">
-    <h2>What you hear</h2>
-    <!-- Each sound on or off, and how loud. 100% is the balance the demo
-         was set to by measurement, with the guitar leading. -->
-    <div class="mixer">
-      <div class="voice">
-        <label class="toggle"><input id="on-guitar" type="checkbox" checked> Guitar</label>
-        <input id="vol-guitar" type="range" min="0" max="2" step="0.05" value="1" aria-label="Guitar volume">
-        <output id="vol-guitar-out" for="vol-guitar">100%</output>
-      </div>
-      <div class="voice">
-        <label class="toggle"><input id="on-tune" type="checkbox" checked> The tune <small>(flute)</small></label>
-        <input id="vol-tune" type="range" min="0" max="2" step="0.05" value="1" aria-label="Flute volume">
-        <output id="vol-tune-out" for="vol-tune">100%</output>
-      </div>
-      <div class="voice">
-        <label class="toggle"><input id="on-drum" type="checkbox"> Bodhrán</label>
-        <input id="vol-drum" type="range" min="0" max="2" step="0.05" value="1" aria-label="Bodhrán volume">
-        <output id="vol-drum-out" for="vol-drum">100%</output>
-      </div>
-    </div>
-    <p class="blurb">100% is the balance the demo was set to, with the guitar leading; each goes up to 200%.</p>
-    <h3 class="sub-h">Strum</h3>
-    <div id="strums" class="modes" role="radiogroup" aria-label="Strum">
-      <button class="mode" type="button" role="radio" data-strum="lilt" aria-checked="true">Lilt</button>
-      <button class="mode" type="button" role="radio" data-strum="drive" aria-checked="false">Driving</button>
-    </div>
-    <p id="strum-desc" class="blurb"></p>
-    <h3 class="sub-h">Tuning</h3>
-    <div id="tunings" class="modes" role="radiogroup" aria-label="Guitar tuning">
-      <button class="mode" type="button" role="radio" data-tuning="standard" aria-checked="false">Standard</button>
-      <button class="mode" type="button" role="radio" data-tuning="dadgad" aria-checked="true">DADGAD</button>
-    </div>
-    <p class="blurb">Switch while it plays to hear the difference: the new tuning comes in at the next bar.
-    In DADGAD the open low D and top D drone under every chord.</p>
-    <h3 class="sub-h">Open strings ring in sympathy</h3>
-    <div id="sympathy" class="modes" role="radiogroup" aria-label="Sympathetic ringing">
-      <button class="mode" type="button" role="radio" data-sympathy="off" aria-checked="false">Off</button>
-      <button class="mode" type="button" role="radio" data-sympathy="on" aria-checked="true">On</button>
-    </div>
-    <p class="blurb">On a real guitar the open strings keep ringing and take up energy from the
-    other strings wherever they share notes, so each chord blooms a little and hangs on. DADGAD
-    leaves more strings open, all D, A and G, so it rings noticeably more than standard tuning,
-    most of all on the open-fifth D.</p>
-  </section>
-
-  <!-- Now -->
-  <section class="panel">
-    <h2>Now <span id="where" class="tag">—</span></h2>
-    <div class="now">
-      <div class="now-shape">
-        <div id="now-diagram" class="diagram big"></div>
-      </div>
-      <div class="now-text">
-        <div class="now-label">Chord</div>
-        <div id="now-chord" class="now-chord">G</div>
-        <div class="now-label">Next</div>
-        <div id="next-chord" class="next-chord">D</div>
-        <div id="strum-dots" class="strum-dots" aria-hidden="true"></div>
-      </div>
-    </div>
-  </section>
-
-  <!-- The chart -->
-  <section class="panel">
-    <h2>Chords <span class="tag muted">each part played twice: AABB</span></h2>
-    <div id="chart" class="chart"></div>
-    <p class="blurb">The small print in each bar is the melody in ABC notation.</p>
-  </section>
-
-  <!-- Shapes -->
-  <section class="panel">
-    <h2>The shapes <span id="shapes-tuning" class="tag muted">DADGAD</span></h2>
-    <div id="shapes" class="shapes"></div>
-    <p id="shapes-note" class="blurb"></p>
-    <p class="blurb">Highlighted strings are the ones that ring through the changes.</p>
-  </section>
-
-  <footer class="foot">
-    <p>Melody: <a href="https://thesession.org/tunes/55">The Kesh</a>, traditional,
-    setting 1 from thesession.org, note for note. Chords chosen for this demonstration.
-    Everything you hear is synthesised as it plays; there are no recordings.</p>
-    <p><span id="foot-version"></span> <a href="../release-notes/#guitar">What’s new</a> ·
-    <a href="../">The bodhrán app</a> · <b>Space</b> play/stop</p>
-  </footer>
-
 </main>
-
-<script src="../js/bodhran.js"></script>
-<script src="../js/wake.js"></script>
-<script src="kesh.js"></script>
-<script src="guitar.js"></script>
-<script src="demo.js"></script>
 </body>
 </html>

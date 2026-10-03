@@ -262,7 +262,14 @@ The offline copy made safe on bad wifi (from the audit):
 
 ## Guitar demo
 
-The page at `/guitar/` has its own version number, shown next to its title.
+The page at `/guitar/` had its own version number, shown next to its title.
+
+### Guitar demo retired — 2026-10-03
+
+- The demo is retired: Session Buddies does all it did, with any tune, and The
+  Kesh opens there on a first visit. The old address says so and links to
+  Session Buddies and the Bodhrán app. The demo's own code is gone; its guitar
+  stays, as Session Buddies plays it, and so do the checks that try it.
 
 ### Guitar demo 1.12.0 — 2026-10-02
 

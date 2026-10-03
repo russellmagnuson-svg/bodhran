@@ -5,6 +5,9 @@
  * shapes Irish guitarists favour in G: in standard tuning the top two strings
  * held at the third fret (D and G) under G, C and Em; in DADGAD the open top
  * D and G strings left ringing.
+ *
+ * It was the guitar demo's tune (/guitar/, retired 3 October 2026); kept
+ * here, in the checks' folder, as the tune the guitar's checks play.
  */
 (function (KESH) {
   'use strict';

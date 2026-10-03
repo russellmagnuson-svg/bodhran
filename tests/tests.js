@@ -1040,8 +1040,8 @@
       });
     });
 
-  check('The app', 'The screen stays on while anything plays, on all three pages',
-    'A phone screen that locks itself takes the sound with it. Only the app held the screen on, and only for the drum: not for the drone alone, and not at all in Session Buddies or the guitar demo. Now each holds it while it plays (the drone included) and lets go when stopped; and since the browser lets go whenever the page is hidden, each takes it back when the page is shown again.',
+  check('The app', 'The screen stays on while anything plays, on both pages',
+    'A phone screen that locks itself takes the sound with it. Only the app held the screen on, and only for the drum: not for the drone alone, and not at all in Session Buddies (or the guitar demo, since retired). Now each holds it while it plays (the drone included) and lets go when stopped; and since the browser lets go whenever the page is hidden, each takes it back when the page is shown again.',
     function () {
       // A stand-in for the browser's screen lock, and a page that counts as shown.
       function fake(win) {
@@ -1087,20 +1087,6 @@
             .then(function () { want(L, 1, 'Session Buddies, shown again while playing'); return step(function () { play.click(); }); })
             .then(function () { want(L, 0, 'Session Buddies, stopped'); });
         });
-      }).then(function () {
-        var frame = document.createElement('iframe');
-        frame.src = '../guitar/';
-        frame.style.cssText = 'position:absolute;left:-10000px;top:0;border:0;width:375px;height:812px';
-        document.body.appendChild(frame);
-        return new Promise(function (ok, no) {
-          var t = setTimeout(function () { no(new Error('the demo page did not load')); }, 10000);
-          frame.onload = function () { clearTimeout(t); setTimeout(ok, 200); };
-        }).then(function () {
-          var win = frame.contentWindow, L = fake(win), play = frame.contentDocument.getElementById('play');
-          return step(function () { play.click(); })
-            .then(function () { want(L, 1, 'the guitar demo, playing'); return step(function () { play.click(); }); })
-            .then(function () { want(L, 0, 'the guitar demo, stopped'); });
-        }).finally(function () { frame.remove(); });
       }).then(function () { expect(bad.length === 0, bad.join('\n')); });
     });
 
@@ -1880,10 +1866,26 @@
     });
 
   /* ================================================================
-   * Guitar demo (/guitar/): The Kesh with a guitar backing
+   * Guitar: the guitar Session Buddies plays (guitar/guitar.js), tried on
+   * The Kesh as the guitar demo played it (tests/kesh.js). The demo page
+   * itself was retired on 3 October 2026.
    * ================================================================ */
 
-  check('Guitar demo', 'The Kesh: every bar is a full 6/8 bar',
+  check('Guitar', 'The guitar demo’s old address points to Session Buddies and the app',
+    'The guitar demo was retired on 3 October 2026: Session Buddies does all it did, with any tune. Its address stays, for bookmarks, saying so and linking to Session Buddies and the Bodhrán app; the demo’s own code is gone, and the guitar Session Buddies plays stays where it was.',
+    function () {
+      return Promise.all([text('../guitar/'), fetch('../guitar/demo.js', { cache: 'no-store' }), fetch('../guitar/guitar.js', { cache: 'no-store' })]).then(function (r) {
+        var html = r[0], links = html.match(/href="([^"]+)"/g) || [];
+        expect(/retired/i.test(html), 'the old address does not say the demo has been retired');
+        expect(html.indexOf('href="../buddies/"') !== -1, 'it does not link to Session Buddies: ' + links.join(' '));
+        expect(html.indexOf('href="../"') !== -1, 'it does not link to the Bodhrán app: ' + links.join(' '));
+        expect(!/<script/i.test(html), 'it still runs a script');
+        expect(!r[1].ok, 'the demo’s code (demo.js) is still served');
+        expect(r[2].ok, 'the guitar Session Buddies plays (guitar.js) is gone');
+      });
+    });
+
+  check('Guitar', 'The Kesh: every bar is a full 6/8 bar',
     'The melody is setting 1 from thesession.org. A bar a quaver short or long would put the tune out against the backing.',
     function () {
       var K = window.KESH, bad = [];
@@ -1901,7 +1903,7 @@
       expect(K.parts.B[4].notes[4].midi === 73, 'the ^c in B5 is not a C sharp');
     });
 
-  check('Guitar demo', 'Every chord has a shape, and the drone rings through',
+  check('Guitar', 'Every chord has a shape, and the drone rings through',
     'G, Cadd9 and Em7 all hold D and G on the top two strings, the open droning sound of Irish guitar; D lets them go for its F sharp.',
     function () {
       var K = window.KESH, missing = [];
@@ -1916,7 +1918,7 @@
       expect(K.voicing('D')[5] === 66, 'the D shape has no F sharp on top');
     });
 
-  check('Guitar demo', 'DADGAD: D A D G A D, with the low D and top D open in every shape',
+  check('Guitar', 'DADGAD: D A D G A D, with the low D and top D open in every shape',
     'In DADGAD the open strings are the point: the low D and top D drone under every chord, the open G rings in three. Started on their own roots, G, C and Em sounded much as in standard tuning.',
     function () {
       var K = window.KESH, t = K.tunings.dadgad;
@@ -1938,7 +1940,7 @@
              'the DADGAD shapes are not the open ones intended');
     });
 
-  check('Guitar demo', 'The guitar is in tune',
+  check('Guitar', 'The guitar is in tune',
     'A plucked-string model sounds a little flat unless its loop is corrected. Strings more than a few cents apart beat against each other in a chord.',
     function () {
       var SRG = 48000, notes = [38, 40, 47, 55, 57, 62, 66], out = [];
@@ -1968,292 +1970,7 @@
       });
     });
 
-  check('Guitar demo', 'The page builds its chart and shapes',
-    'The demo lives at /guitar/, apart from the app. It should load on its own and lay out all 16 bars and the four shapes.',
-    function () {
-      var frame = document.createElement('iframe');
-      frame.src = '../guitar/';
-      frame.style.cssText = 'position:absolute;left:-10000px;top:0;border:0;width:375px;height:812px';
-      document.body.appendChild(frame);
-      return new Promise(function (resolve, reject) {
-        var t = setTimeout(function () { reject(new Error('the demo page did not load')); }, 10000);
-        frame.onload = function () { clearTimeout(t); setTimeout(resolve, 200); };
-      }).then(function () {
-        var doc = frame.contentDocument, win = frame.contentWindow;
-        var bars = doc.querySelectorAll('#chart .bar').length, shapes = doc.querySelectorAll('#shapes svg').length;
-        expect(bars === 16, bars + ' bars in the chart, not 16');
-        expect(shapes === 4, shapes + ' chord shapes drawn, not 4');
-        expect(win.KESH_DEMO && win.KESH_DEMO.FORM.length === 32, 'the demo does not play the tune AABB');
-        expect(doc.documentElement.scrollWidth <= win.innerWidth, 'the demo scrolls sideways on a phone');
-      }).finally(function () { frame.remove(); });
-    });
-
-  check('Guitar demo', 'Each sound has its own volume, heard straight away and remembered',
-    '100% is the measured balance. A slider must change the sound as it plays, not from the next tune, and come back the same next visit.',
-    function () {
-      var KEY = 'kesh.demo.volume', saved = localStorage.getItem(KEY);
-      localStorage.removeItem(KEY);
-      var frame = document.createElement('iframe');
-      frame.src = '../guitar/';
-      frame.style.cssText = 'position:absolute;left:-10000px;top:0;border:0;width:375px;height:812px';
-      document.body.appendChild(frame);
-      function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
-      return new Promise(function (resolve, reject) {
-        var t = setTimeout(function () { reject(new Error('the demo page did not load')); }, 10000);
-        frame.onload = function () { clearTimeout(t); setTimeout(resolve, 200); };
-      }).then(function () {
-        var doc = frame.contentDocument, win = frame.contentWindow, D = win.KESH_DEMO;
-        function slide(id, v) { var el = doc.getElementById(id); el.value = v; el.dispatchEvent(new win.Event('input')); }
-        slide('vol-guitar', 0.5);                       // before playing
-        doc.getElementById('play').click();
-        return wait(400).then(function () {
-          var A = D.audio(), before = A.flute.gain.value;
-          slide('vol-tune', 0);                         // while playing
-          return wait(400).then(function () {
-            var g = A.guitar.level.gain.value, f = A.flute.gain.value;
-            var stored = JSON.parse(win.localStorage.getItem(KEY) || '{}');
-            var label = doc.getElementById('vol-guitar-out').textContent;
-            doc.getElementById('play').click();
-            expect(Math.abs(g - D.MIX.guitar * 0.5) < 0.01, 'guitar at 50% plays at ' + round(g, 3) + ', not ' + D.MIX.guitar * 0.5);
-            expect(Math.abs(before - D.MIX.tune) < 0.01, 'the flute did not start at its 100% level');
-            expect(f < 0.005, 'the flute slider at 0% mid-tune left it at ' + round(f, 3));
-            expect(stored.guitar === 0.5 && stored.tune === 0, 'not remembered: ' + JSON.stringify(stored));
-            expect(label === '50%', 'the guitar slider says "' + label + '"');
-          });
-        });
-      }).finally(function () {
-        frame.remove();
-        if (saved == null) localStorage.removeItem(KEY); else localStorage.setItem(KEY, saved);
-      });
-    });
-
-  check('Guitar demo', 'The tuning switch changes the shapes, and is remembered',
-    'DADGAD to begin with. Switching must redraw the shapes for the new tuning and play them, and come back the same next visit.',
-    function () {
-      var KEY = 'kesh.demo.tuning', saved = localStorage.getItem(KEY);
-      localStorage.removeItem(KEY);
-      var frame = document.createElement('iframe');
-      frame.src = '../guitar/';
-      frame.style.cssText = 'position:absolute;left:-10000px;top:0;border:0;width:375px;height:812px';
-      document.body.appendChild(frame);
-      return new Promise(function (resolve, reject) {
-        var t = setTimeout(function () { reject(new Error('the demo page did not load')); }, 10000);
-        frame.onload = function () { clearTimeout(t); setTimeout(resolve, 200); };
-      }).then(function () {
-        var doc = frame.contentDocument, win = frame.contentWindow, D = win.KESH_DEMO;
-        function first() { return doc.querySelector('#shapes svg').getAttribute('aria-label'); }
-        var start = D.tuning(), startShape = first();
-        doc.querySelector('#tunings [data-tuning="standard"]').click();
-        var after = D.tuning(), afterShape = first(), stored = win.localStorage.getItem(KEY);
-        var label = doc.getElementById('shapes-tuning').textContent;
-        expect(start === 'dadgad' && startShape === 'G/D chord shape', 'a first visit starts in ' + start + ' showing ' + startShape);
-        expect(after === 'standard' && afterShape === 'G chord shape', 'switching gave ' + after + ' showing ' + afterShape);
-        expect(label === 'Standard', 'the shapes are labelled ' + label);
-        expect(stored === 'standard', 'the choice was saved as ' + stored);
-      }).finally(function () {
-        frame.remove();
-        if (saved == null) localStorage.removeItem(KEY); else localStorage.setItem(KEY, saved);
-      });
-    });
-
-  check('Guitar demo', 'The bodhrán is not buried under the guitar',
-    'It was: 4 dB under overall, and its stick click, the part the ear picks a drum out by, 34 dB under the guitar in its own band. Now level overall, the click lifted.',
-    function () {
-      var frame = document.createElement('iframe');
-      frame.src = '../guitar/';
-      frame.style.cssText = 'position:absolute;left:-10000px;top:0;border:0;width:375px;height:812px';
-      document.body.appendChild(frame);
-      var SRG = 48000, q = 60 / 100 / 3, BARS = 8, K = window.KESH;
-      function level(d, lo, hi) {                 // average level in a band, dB
-        var o = new OfflineAudioContext(1, d.length, SRG), b = o.createBuffer(1, d.length, SRG);
-        b.getChannelData(0).set(d);
-        var s = o.createBufferSource(); s.buffer = b; var node = s;
-        [[lo, 'highpass'], [lo, 'highpass'], [hi, 'lowpass'], [hi, 'lowpass']].forEach(function (f) {
-          if (!f[0]) return;
-          var bq = o.createBiquadFilter(); bq.type = f[1]; bq.frequency.value = f[0]; node.connect(bq); node = bq;
-        });
-        node.connect(o.destination); s.start();
-        return o.startRendering().then(function (r) {
-          var x = r.getChannelData(0), e = 0; for (var i = 0; i < x.length; i++) e += x[i] * x[i];
-          return 10 * Math.log10(e / x.length);
-        });
-      }
-      return new Promise(function (resolve, reject) {
-        var t = setTimeout(function () { reject(new Error('the demo page did not load')); }, 10000);
-        frame.onload = function () { clearTimeout(t); setTimeout(resolve, 200); };
-      }).then(function () {
-        var D = frame.contentWindow.KESH_DEMO, MIX = D.MIX, lift = D.DRUM && D.DRUM.lift;
-        var len = Math.ceil(SRG * (BARS * 6 * q + 2));
-        var og = new OfflineAudioContext(1, len, SRG), g = new window.GTR.Guitar(og, og.destination);
-        g.level.gain.value = MIX.guitar;
-        var notes = {};
-        ['G', 'D', 'C', 'Em'].forEach(function (c) { K.voicing(c, 'dadgad').forEach(function (m) { if (m != null) notes[m] = 1; }); });
-        g.prepare(Object.keys(notes).map(Number));
-        var od = new OfflineAudioContext(1, len, SRG), dest = od.destination;
-        if (lift) {
-          var pk = od.createBiquadFilter(); pk.type = 'peaking';
-          pk.frequency.value = lift.f; pk.Q.value = lift.q; pk.gain.value = lift.gain; pk.connect(od.destination); dest = pk;
-        }
-        var drum = new TRAD.Bodhran(od, dest);
-        drum.master.gain.value = MIX.drum; drum.setRoom(0.1);
-        var t = 0.05;
-        ['G', 'D', 'C', 'D', 'G', 'D', 'C', 'G'].forEach(function (c) {
-          var v = K.voicing(c, 'dadgad');
-          g.strum(v, t, 'D', 1); g.strum(v, t + 2 * q, 'U', 0.5, 4); g.strum(v, t + 3 * q, 'D', 0.8); g.strum(v, t + 5 * q, 'U', 0.5, 4);
-          drum.hit('bass', t, 1); drum.hit('treble', t + 2 * q, 0.46); drum.hit('bass', t + 3 * q, 1); drum.hit('treble', t + 5 * q, 0.46);
-          t += 6 * q;
-        });
-        return Promise.all([og.startRendering(), od.startRendering()]).then(function (r) {
-          var gd = r[0].getChannelData(0), dd = r[1].getChannelData(0);
-          return Promise.all([level(gd), level(dd), level(gd, 1500, 5000), level(dd, 1500, 5000)]);
-        }).then(function (L) {
-          var overall = L[1] - L[0], click = L[3] - L[2];
-          expect(overall > -2, 'the bodhrán is ' + round(-overall) + ' dB under the guitar overall');
-          expect(click > -24, 'its stick click is ' + round(-click) + ' dB under the guitar at 1.5–5 kHz');
-        });
-      }).finally(function () { frame.remove(); });
-    });
-
-  check('Guitar demo', 'It wakes a silent Safari tab the way the app does',
-    'The demo only resumed its audio, and went silent in Mac Safari after sleep as the app once did. Both now share js/wake.js: resume on every press, and in Mac Safari the sound goes out through an audio element, started from each press.',
-    function () {
-      function run(ua, touch) {
-        var first = 'Object.defineProperty(Navigator.prototype, "userAgent", { configurable: true, get: function () { return ' +
-          JSON.stringify(ua) + '; } });' +
-          'Object.defineProperty(Navigator.prototype, "maxTouchPoints", { configurable: true, get: function () { return ' + touch + '; } });' +
-          'window.__plays = 0; HTMLMediaElement.prototype.play = function () { window.__plays++; return Promise.resolve(); };' +
-          'window.__resumes = 0; Object.defineProperty(BaseAudioContext.prototype, "state", { configurable: true, get: function () { return "running"; } });' +
-          'var real = AudioContext.prototype.resume; AudioContext.prototype.resume = function () { window.__resumes++; return real.call(this); };';
-        var frame = document.createElement('iframe');
-        frame.style.cssText = 'position:absolute;left:-10000px;top:0;border:0;width:375px;height:812px';
-        document.body.appendChild(frame);
-        return text('../guitar/').then(function (html) {
-          return new Promise(function (resolve, reject) {
-            var t = setTimeout(function () { reject(new Error('the demo page did not load')); }, 10000);
-            frame.onload = function () { clearTimeout(t); setTimeout(resolve, 200); };
-            frame.srcdoc = html.replace('<head>', '<head><base href="' + new URL('../guitar/', location.href).href +
-              '"><script>' + first + '<\/script>');
-          });
-        }).then(function () {
-          var win = frame.contentWindow, play = frame.contentDocument.getElementById('play');
-          play.click();                      // start
-          var a = { plays: win.__plays, resumes: win.__resumes };
-          play.click(); play.click();        // stop, start again
-          a.plays2 = win.__plays; a.resumes2 = win.__resumes;
-          play.click();
-          return a;
-        }).finally(function () { frame.remove(); });
-      }
-      var SAFARI = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Safari/605.1.15';
-      var CHROME = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36';
-      return run(SAFARI, 0).then(function (mac) {
-        return run(CHROME, 0).then(function (chrome) {
-          expect(mac.resumes >= 1 && mac.resumes2 > mac.resumes, 'Play did not ask the sound to start each time: ' + JSON.stringify(mac));
-          expect(mac.plays === 1 && mac.plays2 === 2, 'in Mac Safari the audio element was not started on each Play: ' + JSON.stringify(mac));
-          expect(chrome.plays === 0, 'Chrome played an audio element too');
-        });
-      });
-    });
-
-  check('Guitar demo', 'While it plays, it says whether it is making sound, or not',
-    'The same line as the app, and it must also say so when the page goes quiet inside: that is the case it is there to catch.',
-    function () {
-      function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
-      var frame = document.createElement('iframe');
-      frame.src = '../guitar/';
-      frame.style.cssText = 'position:absolute;left:-10000px;top:0;border:0;width:375px;height:812px';
-      document.body.appendChild(frame);
-      return new Promise(function (resolve, reject) {
-        var t = setTimeout(function () { reject(new Error('the demo page did not load')); }, 10000);
-        frame.onload = function () { clearTimeout(t); setTimeout(resolve, 200); };
-      }).then(function () {
-        var doc = frame.contentDocument, D = frame.contentWindow.KESH_DEMO, el = doc.getElementById('sound-check');
-        var play = doc.getElementById('play'), n = {};
-        play.click();
-        return wait(3500).then(function () {
-          n.playing = el.textContent;
-          D.audio().run.disconnect();                  // the page's sound cut off inside it
-          return wait(4000);
-        }).then(function () {
-          n.cut = el.textContent;
-          play.click();
-          return wait(1500);
-        }).then(function () {
-          n.stopped = el.textContent;
-          expect(/making sound \(-?\d+ dB\)/.test(n.playing), 'while playing it says "' + n.playing + '"');
-          expect(/making no sound/.test(n.cut), 'with its sound cut off inside the page, it says "' + n.cut + '"');
-          expect(n.stopped === '', 'stopped, it still says "' + n.stopped + '"');
-        });
-      }).finally(function () { frame.remove(); });
-    });
-
-  check('Guitar demo', 'Stopped, it lets go of the speaker',
-    'The same as the app: left running after Stop, the demo kept the speaker open, and the Mac awake, for as long as the tab stayed open.',
-    function () {
-      var first = 'window.__suspends = 0; Object.defineProperty(BaseAudioContext.prototype, "state", { configurable: true, get: function () { return "running"; } });' +
-        'AudioContext.prototype.suspend = function () { window.__suspends++; return Promise.resolve(); };';
-      function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
-      var frame = document.createElement('iframe');
-      frame.style.cssText = 'position:absolute;left:-10000px;top:0;border:0;width:375px;height:812px';
-      document.body.appendChild(frame);
-      return text('../guitar/').then(function (html) {
-        return new Promise(function (resolve, reject) {
-          var t = setTimeout(function () { reject(new Error('the demo page did not load')); }, 10000);
-          frame.onload = function () { clearTimeout(t); setTimeout(resolve, 200); };
-          frame.srcdoc = html.replace('<head>', '<head><base href="' + new URL('../guitar/', location.href).href +
-            '"><script>' + first + '<\/script>');
-        });
-      }).then(function () {
-        var win = frame.contentWindow, play = frame.contentDocument.getElementById('play'), n = {};
-        win.TRAD.REST_AFTER = 0.15;
-        play.click(); play.click(); play.click();   // play, stop, and play again before it rests
-        return wait(400).then(function () {
-          n.playing = win.__suspends;
-          play.click();                             // stop
-          return wait(400);
-        }).then(function () {
-          n.stopped = win.__suspends;
-          expect(n.playing === 0, 'it let go of the speaker while playing');
-          expect(n.stopped === 1, 'stopped, it kept hold of the speaker');
-        });
-      }).finally(function () { frame.remove(); });
-    });
-
-  check('Guitar demo', 'Hidden behind another tab, it plans ahead, and Stop drops the lot',
-    'Safari slows a hidden tab’s timers to about once a second, and the demo stumbled. Hidden, it hands notes seconds ahead; Stop must drop them or they come back with the next Play.',
-    function () {
-      var first = 'window.__hidden = false;' +
-          'Object.defineProperty(Document.prototype, "hidden", { configurable: true, get: function () { return window.__hidden; } });' +
-          'Object.defineProperty(Document.prototype, "visibilityState", { configurable: true, get: function () { return window.__hidden ? "hidden" : "visible"; } });' +
-          'window.__lead = 0; var os = OscillatorNode.prototype.start;' +
-          'OscillatorNode.prototype.start = function (w) { if (w) window.__lead = Math.max(window.__lead, w - this.context.currentTime); return os.apply(this, arguments); };';
-      var frame = document.createElement('iframe');
-      frame.style.cssText = 'position:absolute;left:-10000px;top:0;border:0;width:375px;height:812px';
-      document.body.appendChild(frame);
-      return text('../guitar/').then(function (html) {
-        return new Promise(function (resolve, reject) {
-          var t = setTimeout(function () { reject(new Error('the demo page did not load')); }, 10000);
-          frame.onload = function () { clearTimeout(t); setTimeout(resolve, 200); };
-          frame.srcdoc = html.replace('<head>', '<head><base href="' + new URL('../guitar/', location.href).href +
-            '"><script>' + first + '<\/script>');
-        });
-      }).then(function () {
-        var win = frame.contentWindow, doc = frame.contentDocument, D = win.KESH_DEMO;
-        doc.getElementById('play').click();
-        var shown = win.__lead;
-        win.__hidden = true; doc.dispatchEvent(new win.Event('visibilitychange'));
-        var hidden = win.__lead, ahead = D.ahead(), A = D.audio();
-        var queued = A.guitar.queued.filter(function (q) { return q.t > A.ctx.currentTime + 1; }).length;
-        doc.getElementById('play').click();          // Stop
-        var left = A.guitar.queued.filter(function (q) { return q.t > A.ctx.currentTime; }).length;
-        expect(shown < 1, 'on screen it already handed notes ' + round(shown, 2) + ' s ahead');
-        expect(ahead === window.TRAD.HIDDEN_AHEAD && hidden > 3, 'hidden, it handed notes only ' + round(hidden, 2) + ' s ahead');
-        expect(queued > 0, 'no guitar notes were queued ahead, so this proves nothing');
-        expect(left === 0, left + ' guitar notes were still queued after Stop');
-      }).finally(function () { frame.remove(); });
-    });
-
-  check('Guitar demo', 'Bass runs walk up into the next chord',
+  check('Guitar', 'Bass runs walk up into the next chord',
     'Three single notes, a step apart, climbing to a note of the chord they lead into, and playable on the strings of the tuning in use.',
     function () {
       var K = window.KESH, bad = [], found = 0;
@@ -2282,7 +1999,7 @@
       expect(bad.length === 0, bad.join('\n'));
     });
 
-  check('Guitar demo', 'A picked bass note settles like a guitar string, not a piano',
+  check('Guitar', 'A picked bass note settles like a guitar string, not a piano',
     'Picked alone, the strum voice kept its overtones as strong half a second in as at the pick, like a piano; then it read bright and weak for a bass line. A bass run should settle warm, be dark, and sit a little above the strums.',
     function () {
       var SRG = 48000, G = window.GTR, K = window.KESH, q = 60 / 100 / 3;
@@ -2326,7 +2043,7 @@
       });
     });
 
-  check('Guitar demo', 'A bass run note starts from a thumb pluck, not a burst of noise',
+  check('Guitar', 'A bass run note starts from a thumb pluck, not a burst of noise',
     'Started from random noise, a lone bass note had jagged overtones that jumped about (the low D’s 2nd louder than its fundamental) and every rendering differed: part of why it sounded synthesised. A pluck’s overtones step down in order, and every pluck of a string sounds alike.',
     function () {
       var SRG = 48000, G = window.GTR, bad = [];
@@ -2357,7 +2074,7 @@
       return chain.then(function () { expect(bad.length === 0, bad.join('\n')); });
     });
 
-  check('Guitar demo', 'Open strings ring in sympathy, and DADGAD rings more',
+  check('Guitar', 'Open strings ring in sympathy, and DADGAD rings more',
     'On a real guitar the open strings hum along with the notes they share, which is much of DADGAD’s sound. Without it the two tunings differed only in which notes were played. Only open strings may ring; a fretted or muted one cannot.',
     function () {
       var SRG = 48000, K = window.KESH, G = window.GTR, q = 60 / 100 / 3, chords = ['G', 'D', 'C', 'D'];
@@ -2390,7 +2107,7 @@
       });
     });
 
-  check('Guitar demo', 'In DADGAD the low D drones under every chord',
+  check('Guitar', 'In DADGAD the low D drones under every chord',
     'What DADGAD backing is known for: the open low D sounding under G, C and Em as well as D. The first shapes left it out of G and C, 35 to 44 dB down there, and DADGAD was hard to tell from standard.',
     function () {
       var SRG = 48000, K = window.KESH, G = window.GTR, q = 60 / 100 / 3;
@@ -2429,13 +2146,10 @@
         expect(loud.length === 0, 'standard tuning has a low D droning too, so the tunings sound alike: ' + loud.join(', '));
         var oc = new OfflineAudioContext(1, 128, SRG);
         expect(new G.Guitar(oc, oc.destination).ringOn === undefined, 'the guitar has a ring-through setting again (dropped in 1.9.0)');
-        return fetch('../guitar/', { cache: 'no-store' }).then(function (res) { return res.text(); });
-      }).then(function (html) {
-        expect(html.indexOf('id="ringon"') === -1, 'the page has a ring-through switch again (dropped in 1.9.0)');
       });
     });
 
-  check('Guitar demo', 'A fretted string the next chord leaves out stops',
+  check('Guitar', 'A fretted string the next chord leaves out stops',
     'Lifting the finger stops a fretted string. In standard tuning, G to C: the low G, fretted, is not in the C and must not ring on under it.',
     function () {
       var SRG = 48000, K = window.KESH, G = window.GTR, q = 60 / 100 / 3;
@@ -2456,66 +2170,6 @@
         var fell = 20 * Math.log10(level(d, f, t1 + 0.1, t1 + 0.6) / level(d, f, t1 - 0.5, t1));
         expect(fell < -25, 'the fretted low G rang on under the C (' + round(fell) + ' dB)');
       });
-    });
-
-  check('Guitar demo', 'The sympathy switch works, and is remembered',
-    'On to begin with. Off must stop the hum, and the choice come back the same next visit.',
-    function () {
-      var KEY = 'kesh.demo.sympathy', saved = localStorage.getItem(KEY);
-      localStorage.removeItem(KEY);
-      var frame = document.createElement('iframe');
-      frame.src = '../guitar/';
-      frame.style.cssText = 'position:absolute;left:-10000px;top:0;border:0;width:375px;height:812px';
-      document.body.appendChild(frame);
-      return new Promise(function (resolve, reject) {
-        var t = setTimeout(function () { reject(new Error('the demo page did not load')); }, 10000);
-        frame.onload = function () { clearTimeout(t); setTimeout(resolve, 200); };
-      }).then(function () {
-        var win = frame.contentWindow, doc = frame.contentDocument, D = win.KESH_DEMO;
-        var startOn = D.sympathy();
-        doc.getElementById('play').click();
-        var guitarOn = D.audio().guitar.sympathy;
-        doc.querySelector('#sympathy [data-sympathy="off"]').click();
-        var guitarOff = D.audio().guitar.sympathy;
-        doc.getElementById('play').click();
-        var stored = win.localStorage.getItem(KEY);
-        expect(startOn && guitarOn === true, 'a first visit does not start with the strings ringing in sympathy');
-        expect(guitarOff === false, 'switching it off did not reach the guitar');
-        expect(stored === 'off', 'the choice was saved as ' + stored);
-      }).finally(function () {
-        frame.remove();
-        if (saved == null) localStorage.removeItem(KEY); else localStorage.setItem(KEY, saved);
-      });
-    });
-
-  check('Guitar demo', 'The page plays no bass runs, for now',
-    'Taken off at the user’s request in guitar demo 1.6.0 (the engine and its checks are kept for later). This makes sure they don’t come back by accident.',
-    function () {
-      // Hidden, so the demo hands several seconds of notes to the audio at once.
-      var first = 'window.__hidden = true;' +
-          'Object.defineProperty(Document.prototype, "hidden", { configurable: true, get: function () { return window.__hidden; } });' +
-          'Object.defineProperty(Document.prototype, "visibilityState", { configurable: true, get: function () { return window.__hidden ? "hidden" : "visible"; } });';
-      var frame = document.createElement('iframe');
-      frame.style.cssText = 'position:absolute;left:-10000px;top:0;border:0;width:375px;height:812px';
-      document.body.appendChild(frame);
-      return text('../guitar/').then(function (html) {
-        return new Promise(function (resolve, reject) {
-          var t = setTimeout(function () { reject(new Error('the demo page did not load')); }, 10000);
-          frame.onload = function () { clearTimeout(t); setTimeout(resolve, 200); };
-          frame.srcdoc = html.replace('<head>', '<head><base href="' + new URL('../guitar/', location.href).href +
-            '"><script>' + first + '<\/script>');
-        });
-      }).then(function () {
-        var win = frame.contentWindow, doc = frame.contentDocument;
-        var picks = 0, real = win.GTR.Guitar.prototype.pick;
-        win.GTR.Guitar.prototype.pick = function () { picks++; return real.apply(this, arguments); };
-        var bpm = doc.getElementById('bpm'); bpm.value = 130; bpm.dispatchEvent(new win.Event('input'));
-        doc.getElementById('play').click();
-        var played = picks;
-        doc.getElementById('play').click();
-        expect(played === 0, played + ' bass-run notes were played in the first bars');
-        expect(!doc.getElementById('runs') && !doc.querySelector('.run-mark'), 'the page still shows bass runs');
-      }).finally(function () { frame.remove(); });
     });
 
   check('Session Buddies', 'The concertina plays recordings of a real one, credited',
@@ -2625,7 +2279,7 @@
       });
     });
 
-  check('Guitar demo', 'The guitar strums smoothly: no wire-fence edge',
+  check('Guitar', 'The guitar strums smoothly: no wire-fence edge',
     'Its strings started from bursts of random noise and kept their top as they rang: “someone hitting a wire fence with a pole”. A real steel-string G chord (measured, Wikimedia Commons) has its top, above 2 kHz against below 1 kHz, at -16.5 dB a third of a second on and -21.5 dB at 0.8 s. A strummed G must come near that, sparkle at the strum but no clang, and not dull to a thud.',
     function () {
       var SRG = 48000, G = window.GTR, Gstd = [43, 47, 50, 55, 59, 67], STD = [40, 45, 50, 55, 59, 64];
@@ -2649,28 +2303,6 @@
         expect(ring < -12 && ring > -24, 'a third of a second on its top is ' + round(ring) + ' dB: ' + (ring >= -12 ? 'still ringing bright, like wire (the real chord: -16.5)' : 'dull, a thud'));
         expect(late < -16, 'at 0.8 s its top is ' + round(late) + ' dB (the real chord: -21.5)');
       });
-    });
-
-  check('Guitar demo', 'It shows its own version, and the notes cover it',
-    'The quickest way to tell whether a phone has the latest demo. Bump the demo’s version? Add it to CHANGELOG.md and the release notes in the same change.',
-    function () {
-      var frame = document.createElement('iframe');
-      frame.src = '../guitar/';
-      frame.style.cssText = 'position:absolute;left:-10000px;top:0;border:0;width:375px;height:812px';
-      document.body.appendChild(frame);
-      return new Promise(function (resolve, reject) {
-        var t = setTimeout(function () { reject(new Error('the demo page did not load')); }, 10000);
-        frame.onload = function () { clearTimeout(t); setTimeout(resolve, 200); };
-      }).then(function () {
-        var doc = frame.contentDocument, v = frame.contentWindow.KESH_DEMO && frame.contentWindow.KESH_DEMO.VERSION;
-        expect(!!v, 'the demo has no version');
-        expect(doc.getElementById('demo-version').textContent === 'v' + v, 'the title shows "' + doc.getElementById('demo-version').textContent + '"');
-        expect(doc.getElementById('foot-version').textContent.indexOf(v) !== -1, 'the foot of the page does not show ' + v);
-        return Promise.all([text('../CHANGELOG.md'), text('../release-notes/')]).then(function (r) {
-          expect(r[0].indexOf('### Guitar demo ' + v + ' ') !== -1, 'CHANGELOG.md has no entry for guitar demo ' + v);
-          expect(r[1].indexOf('<span class="ver">Guitar demo ' + v + '</span>') !== -1, 'the release notes have no entry for guitar demo ' + v);
-        });
-      }).finally(function () { frame.remove(); });
     });
 
   /* ================================================================

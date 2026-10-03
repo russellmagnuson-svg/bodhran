@@ -97,7 +97,7 @@ against the real code:
   file on it exists; run against a stand-in network, a slow page never mixes
   old and new files, the copy survives two refreshes at once and answers an
   old link offline, and the app asks for a refresh a while after starting
-- **Guitar demo** — every bar of The Kesh is a full 6/8 bar; every chord has
+- **Guitar** (the retired demo's checks that try the guitar Session Buddies plays; its old address points on) — every bar of The Kesh is a full 6/8 bar; every chord has
   a shape and the drone rings through; the guitar is in tune and strums
   smoothly, near a real steel-string chord; the page builds;
   each sound's volume is heard straight away and remembered; DADGAD is
@@ -411,15 +411,18 @@ npx wrangler pages deploy . --project-name=bodhran
   tags that reference them in `index.html` removes all of that cleanly if you
   would rather not have it.
 
-## Guitar backing demonstration
+## Guitar backing demonstration (retired)
 
-`/guitar/` is a page of its own, apart from the app: The Kesh (setting 1 from
+`/guitar/` was a page of its own, apart from the app: The Kesh (setting 1 from
 thesession.org, note for note) with a synthesised guitar backing, and the
-tune on a simple flute and the app's bodhrán to play against. It reuses the
-app's styles, its bodhrán and its output limiter.
+tune on a simple flute and the app's bodhrán to play against. It was retired
+on 3 October 2026, Session Buddies doing all it did with any tune: the address
+now says so and links to Session Buddies and the app. Its guitar stays in
+`guitar/`, as Session Buddies plays it; the notes below describe it as built.
 
-- `guitar/kesh.js` — the tune as data: the ABC, the chords bar by bar, the
-  guitar shapes, and a small ABC reader
+- `tests/kesh.js` (until the demo was retired, `guitar/kesh.js`) — the tune as
+  data: the ABC, the chords bar by bar, the guitar shapes, and a small ABC
+  reader; now only the guitar's checks play it
 - `guitar/guitar.js` — the guitar: since demo 1.11.0 each strummed string starts
   from a soft pick (noise softened to ~4 of the note's harmonics, `GTR.PICK`)
   and loses its top as it rings, set against a real steel-string G chord;
@@ -430,13 +433,10 @@ app's styles, its bodhrán and its output limiter.
   the slope of a rounded bend, two slightly detuned vibrations, a lowpass and
   an exactly tuned fractional delay inside each loop, a pitch settle, and
   the body's resonances by convolution
-- `guitar/demo.js` — the clock, the flute, the chart and the shape diagrams
+- `guitar/demo.js` — (removed with the demo) the clock, the flute, the chart
+  and the shape diagrams
 
-The demo has its own version number, at the top of `guitar/demo.js` and shown
-next to its title, apart from the app's: bump it with every pushed change to
-the demo (last number for a fix, middle for something new) and add it to the
-"Guitar demo" section of `CHANGELOG.md` and the release notes in the same
-change. A check makes sure. The guitar's sound is shaped like a dreadnought:
+The demo had its own version number, last 1.12.0. The guitar's sound is shaped like a dreadnought:
 by measurement, the bass below 150 Hz is its strongest band.
 
 Chords: A part G | D | C | D | G | D | C | D G, B part G | C D | G | D |
@@ -601,7 +601,7 @@ patterns sound the way you want.
 | `serve.py`        | local server that turns caching off, for editing |
 | `tests/`          | the checks page: open it and press Run |
 | `CHANGELOG.md`    | what changed in each version |
-| `guitar/`         | a separate demonstration: The Kesh with a guitar backing, at `/guitar/` |
+| `guitar/`         | the guitar Session Buddies plays; `/guitar/` itself, the retired demo's address, points to Session Buddies and the app |
 | `buddies/`        | Session Buddies: find a tune on thesession.org and play along, at `/buddies/` |
 | `players/`        | Its old address: says it has moved and forwards to `/buddies/` |
 | `release-notes/`  | the same, as a page to share: `/release-notes/` on the site |
