@@ -471,6 +471,24 @@ The page at `/buddies/` has its own version number, shown next to its title.
 It was called Session Players, at `/players/`, until 1.8.0; the entries
 before that keep the old name.
 
+### Session Buddies 1.21.0 — 2026-10-03 — A tidier top, and choices that fold away
+
+- **The top of the page is laid out as the app's:** its own icon beside the
+  name and version, a one-line tagline under them, and an About button on
+  the right. The icon is drawn in the bodhrán icon's style (the same dark
+  ground, gold ring and wooden face) with a guitar's soundhole and strings;
+  it is also the icon a phone shows for the page on its home screen. The
+  paragraph of explanation that sat at the top is in About now, with a few
+  steps for getting going.
+- **What you hear folds away.** Once you are happy with the choices, Hide (at
+  the top of the panel) or Done (at its foot) folds them into a few lines
+  saying how each is set: who is playing (and their level, if not 100%), the
+  melody, the guitar's strum, tuning and ringing strings, the bodhrán's
+  style, busyness and back hand, and the backing's feel. Tap the summary or
+  Change to open them again. Open or folded is kept, through a reload too;
+  it starts open, and Reset settings opens it. Folded, the page on a phone
+  is about a third shorter.
+
 ### Session Buddies 1.20.0 — 2026-10-03 — Back hand, and a waltz bass that walks
 
 - **The bodhrán's back hand**, as in the app: a Back hand slider in the

@@ -133,7 +133,8 @@ against the real code:
   Session Buddies link to each other at the foot; chords follow the shape of a part; the matches fold away once one is picked; reopening keeps your chords and
   chooses the rest afresh; finding a tune asks the Session and offers only
   the types it can play; it
-  shows its own version and the notes cover it
+  shows its own version and the notes cover it; its top is the app's (own
+  icon, tagline, About) and What you hear folds into a summary
 - **Release notes** (under The app) — `CHANGELOG.md` and `release-notes/` both
   have an entry for the current version, so bumping the version means adding
   the notes in the same change
@@ -504,6 +505,14 @@ Session's names for them; a hornpipe swings by its Swing control, 64:36 to
 start and kept in `players.swing.hornpipe`, guitar, drum and tune together; its
 triplets, dotted pairs and semiquavers play as written: `asWritten`). The foot
 of the app and of Session Buddies switches between the two.
+
+The top of the page is laid out as the app's (since 1.21.0): Session Buddies'
+own icon, `buddies/icons/` (`icon.svg` is the source, drawn in the bodhrán
+icon's style with a guitar's soundhole; the PNGs are drawn from it), the name
+and version, a tagline and About (`wireAbout()`). What you hear folds into a
+summary (`wireHear()`, `hearRows()`): read from the panel itself, the choice
+each group shows as chosen, and redrawn by a MutationObserver while folded;
+open or folded kept in `players.hearopen`.
 
 - `buddies/abc.js` — reads the Session's ABC (the body only: the meter comes
   from the tune type, the key from the setting, L:1/8): repeats, first and

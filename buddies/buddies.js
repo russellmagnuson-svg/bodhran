@@ -17,7 +17,7 @@
    * next to the title and at the foot. Bump it with every change pushed (the
    * last number for a fix, the middle for something new) and add it to the
    * "Session Buddies" sections of CHANGELOG.md and the release notes. */
-  var VERSION = '1.20.0';
+  var VERSION = '1.21.0';
 
   var $ = function (id) { return document.getElementById(id); };
   var P = window.BUDDIES, G = window.GTR, T = window.TRAD, TPQ = P.TPQ;
@@ -648,8 +648,6 @@
     var ty = type(), s = setting(), lay = tune.lay;
     options = options || {};
     var number = settingNumber();
-    $('tune-facts').textContent = tune.meta.name + ' · ' + ty.name + ' · ' + ty.meter + ' · ' + lay.key.name +
-      ' · setting ' + number + (s.member ? ' by ' + s.member : '');
     document.title = tune.meta.name + ' — Session Buddies';
     drawSettings();
     $('q').value = tune.meta.name;
@@ -1806,6 +1804,100 @@
     // if you had any tunes); closed to begin with.
     $('mine').open = stored('players.mineopen', '') === 'open';
     $('mine').addEventListener('toggle', function () { store('players.mineopen', $('mine').open ? 'open' : 'closed'); });
+    wireAbout();
+    wireHear();
+  }
+
+  /* ---------- About (since 1.21.0, as in the app) ---------- */
+  function wireAbout() {
+    var dlg = $('about');
+    $('about-version').textContent = 'Session Buddies version ' + VERSION + '.';
+    $('about-open').addEventListener('click', function () { dlg.showModal(); });
+    $('about-close').addEventListener('click', function () { dlg.close(); });
+    // The dialog has no padding, so a click on the element itself is on the backdrop.
+    dlg.addEventListener('click', function (e) { if (e.target === dlg) dlg.close(); });
+  }
+
+  /* ---------- What you hear, folded (since 1.21.0) ----------
+   * The panel had grown to most of a phone's page of choices. Once you are
+   * happy with them, Hide (or Done at its foot) folds them into a few lines
+   * saying how each is set; the summary, or Change, opens them again. Open
+   * to begin with; open or folded is kept (players.hearopen), and Reset
+   * opens it. The summary is read from the panel itself, the choice each
+   * group shows as chosen, so it says what the page says. */
+  function chosenText(id) {
+    var b = $(id) && $(id).querySelector('[aria-checked="true"]');
+    return b ? b.textContent.trim() : '';
+  }
+  function hearRows() {
+    var rows = [], who = [];
+    [['on-guitar', 'vol-guitar-out', 'Guitar'], ['on-tune', 'vol-tune-out', 'Flute'],
+     ['on-concertina', 'vol-concertina-out', 'Concertina'], ['on-drum', 'vol-drum-out', 'Bodhrán']].forEach(function (v) {
+      if (!$(v[0]).checked) return;
+      var level = $(v[1]).textContent.trim();
+      who.push(v[2] + (level && level !== '100%' ? ' ' + level : ''));
+    });
+    rows.push(['Playing', who.length ? who.join(' · ') : 'Nobody: you play alone', !who.length]);
+    var melody = $('on-tune').checked || $('on-concertina').checked;
+    if (melody) {
+      var m = [chosenText('melody-mode')];
+      if (!$('your-turn-box').hidden) m.push(chosenText('your-turn-level').replace(/^Your turn: (.*)$/, '$1 on your turn'));
+      if ($('on-tune').checked) m.push('flute ornaments ' + chosenText('ornaments').toLowerCase());
+      rows.push(['Melody', m.join(' · ')]);
+    } else rows.push(['Melody', 'Yours: the flute and concertina are off', true]);
+    if ($('on-guitar').checked) {
+      rows.push(['Guitar', [chosenText('strums') + ' strum', chosenText('tunings'),
+        chosenText('sympathy') === 'On' ? 'open strings ring' : 'open strings quiet'].join(' · ')]);
+    }
+    if ($('on-drum').checked) {
+      var d = [chosenText('drum-style')];
+      if (!$('drum-busy-box').hidden) d.push('busyness ' + $('drum-busy-out').textContent.trim());
+      if (!$('drum-hand-box').hidden) d.push('back hand ' + $('drum-hand-out').textContent.trim());
+      rows.push(['Bodhrán', d.join(' · ')]);
+    }
+    var feel = [{ Straight: 'Straight, even quavers', 'A little': 'A little lilt', 'With the tune': 'Lilts with the tune' }[chosenText('backing-feel')] || chosenText('backing-feel')];
+    if (!$('swing-box').hidden) feel.push('swing ' + $('swing-out').textContent.trim());
+    if ($('on-guitar').checked || $('on-drum').checked) rows.push(['Feel', feel.join(' · ')]);
+    return rows;
+  }
+  function drawHearSummary() {
+    var host = $('hear-rows');
+    host.innerHTML = '';
+    hearRows().forEach(function (r) {
+      var k = document.createElement('span'), v = document.createElement('span');
+      k.className = 'k'; k.textContent = r[0];
+      v.className = 'v' + (r[2] ? ' off' : ''); v.textContent = r[1];
+      host.appendChild(k); host.appendChild(v);
+    });
+  }
+  var hearOpen = true;
+  function drawHear() {
+    $('hear').classList.toggle('folded', !hearOpen);
+    $('hear-body').hidden = !hearOpen;
+    $('hear-summary').hidden = hearOpen;
+    $('hear-toggle').textContent = hearOpen ? 'Hide' : 'Change';
+    $('hear-toggle').setAttribute('aria-expanded', String(hearOpen));
+    if (!hearOpen) drawHearSummary();
+  }
+  function setHear(open, focus) {
+    hearOpen = open;
+    store('players.hearopen', open ? 'open' : 'folded');
+    drawHear();
+    // Folded from Done at the foot: bring the panel's top back into view.
+    if (!open && $('hear').getBoundingClientRect().top < 0) $('hear').scrollIntoView({ block: 'start' });
+    if (focus) $(open ? 'hear-toggle' : 'hear-summary').focus();
+  }
+  function wireHear() {
+    hearOpen = stored('players.hearopen', 'open') !== 'folded';
+    $('hear-toggle').addEventListener('click', function () { setHear(!hearOpen); });
+    $('hear-done').addEventListener('click', function () { setHear(false, true); });
+    $('hear-summary').addEventListener('click', function () { setHear(true, true); });
+    // The summary follows any change made while it is folded too (a reset's
+    // Undo, a tune of another type showing or hiding Swing).
+    new MutationObserver(function () { if (!hearOpen) drawHearSummary(); })
+      .observe($('hear-body'), { subtree: true, attributes: true, attributeFilter: ['aria-checked', 'hidden'], childList: true, characterData: true });
+    $('hear-body').addEventListener('change', function () { if (!hearOpen) drawHearSummary(); });
+    drawHear();
   }
 
   // For the checks page.
@@ -1830,6 +1922,7 @@
     }, saveText: saveText, setChord: setChord,
     playing: function () { return playing; },
     drumGrid: function () { return drumPlayed; },     // the pattern the last bar laid used
+    hearRows: hearRows,
     audio: function () { return { ctx: ctx, run: run, guitar: guitar, flute: fluteBus, concertina: concertina, concBus: concBus, drum: drum }; }
   };
 

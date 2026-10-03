@@ -6,8 +6,8 @@
 <meta name="theme-color" content="#0f1411">
 <meta name="description" content="Find a tune on thesession.org and play along with a guitar and bodhrán backing built for it, the melody on flute and concertina.">
 <title>Session Buddies</title>
-<link rel="icon" href="../icons/icon-192.png" sizes="192x192" type="image/png">
-<link rel="apple-touch-icon" href="../icons/apple-touch-icon.png">
+<link rel="icon" href="icons/icon-192.png" sizes="192x192" type="image/png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="stylesheet" href="../css/app.css">
 <link rel="stylesheet" href="../guitar/guitar.css">
 <link rel="stylesheet" href="buddies.css">
@@ -16,16 +16,23 @@
 
 <main class="app">
 
+  <!-- One row, as the app's: icon, name and version with the tagline under
+       them, About on the right. Until 1.21.0 a paragraph of explanation sat
+       here; it is in About now. -->
   <header class="head">
+    <img class="logo" src="icons/icon-192.png" alt="" width="44" height="44">
     <div class="brand">
-      <p class="eyebrow">Play along</p>
       <h1>Session Buddies <span id="buddies-version" class="version"></span></h1>
-      <p id="tune-facts" class="tune-facts">Find a tune to begin</p>
-      <p class="sub">Name a tune and it is fetched from thesession.org and given a guitar
-      and bodhrán backing. The flute plays the melody, and the concertina can join it
-      or play it alone. Turn both off to play the tune yourself. Save it to keep your
-      chord changes.</p>
+      <p class="sub">Play along with any tune from thesession.org</p>
     </div>
+    <button id="about-open" class="ghost-btn about-btn" type="button" aria-label="About Session Buddies">
+      <svg class="info-icon" viewBox="0 0 16 16" aria-hidden="true">
+        <circle cx="8" cy="8" r="7" fill="none" stroke="currentColor" stroke-width="1.5"/>
+        <path d="M8 7.2v4.3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+        <circle cx="8" cy="4.8" r="1" fill="currentColor"/>
+      </svg>
+      <span>About</span>
+    </button>
   </header>
 
   <!-- Find a tune -->
@@ -123,9 +130,18 @@
   <!-- Hidden unless the address has ?soundcheck (buddies.js). -->
   <p id="sound-check" class="sound-check" hidden></p>
 
-  <!-- What you hear -->
-  <section class="panel">
-    <h2>What you hear</h2>
+  <!-- What you hear. Its choices fold away into a short summary once you
+       are happy with them (Hide, or Done at the foot), and open again from
+       the summary or Change; open or folded is kept, as the choices are. -->
+  <section id="hear" class="panel hear">
+    <div class="panel-head">
+      <h2>What you hear</h2>
+      <button id="hear-toggle" class="ghost-btn hear-toggle" type="button" aria-expanded="true" aria-controls="hear-body">Hide</button>
+    </div>
+    <button id="hear-summary" class="hear-summary" type="button" hidden>
+      <span id="hear-rows" class="hear-rows"></span>
+    </button>
+    <div id="hear-body">
     <div class="mixer">
       <div class="voice">
         <label class="toggle"><input id="on-guitar" type="checkbox" checked> Guitar</label>
@@ -236,6 +252,11 @@
     <button id="reset-settings" class="action ghost" type="button">Reset settings</button>
     <p id="reset-done" class="blurb warn" role="status" hidden>Settings are back to how they start.
     <button id="reset-undo" class="action ghost" type="button">Undo</button></p>
+    <div class="hear-done">
+      <button id="hear-done" class="action" type="button">Done</button>
+      <span class="blurb">Folds these choices into a short summary.</span>
+    </div>
+    </div>
   </section>
 
   <!-- Now -->
@@ -283,6 +304,43 @@
   </footer>
 
 </main>
+
+<!-- About: what the header said until 1.21.0, and a little more. -->
+<dialog id="about" class="about" aria-labelledby="about-title">
+  <div class="about-head">
+    <h2 id="about-title">About Session Buddies</h2>
+    <button id="about-close" class="icon-btn" type="button" aria-label="Close">&#10005;</button>
+  </div>
+  <div class="about-body">
+    <p class="lede">A session in your pocket. Name a tune and it is fetched from
+    thesession.org and given a guitar and bodhr&aacute;n backing. The flute plays the
+    melody, and the concertina can join it or play it alone. Turn both off to play
+    the tune yourself.</p>
+
+    <h3>Getting going</h3>
+    <ol>
+      <li>Find a tune by name, and pick a setting of it if you like.</li>
+      <li>Press <b>Play</b>. Set the tempo, and how many times through.</li>
+      <li>Choose <b>what you hear</b>: who plays, how the melody comes and goes, the
+      strum, the bodhr&aacute;n&rsquo;s style, the tuning. Once you are happy,
+      <b>Hide</b> folds them into a short summary; tap it to change them again.</li>
+      <li>Tap a bar in <b>Chords</b> to change its chord. Save the tune, or make it a
+      favourite, to keep your changes.</li>
+    </ol>
+
+    <h3>Your settings</h3>
+    <p>Every choice on the page is kept in this browser for next time, a reload
+    included. <b>Reset settings</b>, under What you hear, puts them back to how they
+    start, with an Undo.</p>
+
+    <h3>Keyboard</h3>
+    <p class="keys"><b>Space</b> play/stop &middot; <b>F</b> finish</p>
+
+    <p id="about-version" class="hint about-version"></p>
+    <p class="hint"><a href="../release-notes/#buddies">What&rsquo;s new</a> &mdash; the release
+    notes, version by version.</p>
+  </div>
+</dialog>
 
 <!-- Changing a bar's chord -->
 <dialog id="chooser" class="chooser">

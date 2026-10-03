@@ -2317,7 +2317,7 @@
     var keys = ['players.current', 'players.tuning', 'players.sympathy', 'players.volume', 'players.swing.hornpipe',
                 'buddies.favourites', 'buddies.recent', 'players.melody', 'players.yourturn', 'players.backing',
                 'players.drumstyle', 'players.drumbusy', 'players.voices', 'players.mineopen',
-                'players.ornaments', 'players.drumhand'], saved = {};
+                'players.ornaments', 'players.drumhand', 'players.hearopen'], saved = {};
     keys.forEach(function (k) { saved[k] = localStorage.getItem(k); localStorage.removeItem(k); });
     var frame = document.createElement('iframe');
     frame.src = '../buddies/';
@@ -3806,12 +3806,12 @@
           var PP = win.BUDDIES_PAGE;
           PP.loadTune(j, 0);
           var bars = doc.querySelectorAll('#chart .bar').length, shapes = doc.querySelectorAll('#shapes svg').length;
-          var facts = doc.getElementById('tune-facts').textContent, play = doc.getElementById('play');
+          var facts = doc.getElementById('chosen-name').textContent + ' · ' + doc.getElementById('chosen-facts').textContent, play = doc.getElementById('play');
           play.click();
           return wait(1500).then(function () {
             var where = doc.getElementById('where').textContent, check = doc.getElementById('sound-check').textContent;
             expect(bars === 16 && shapes >= 3, bars + ' bars in the chart and ' + shapes + ' shapes');
-            expect(/The Kesh · Jig · 6\/8 · G major · setting 1/.test(facts), 'the page says "' + facts + '"');
+            expect(/^The Kesh · Jig · 6\/8 · G major · Setting 1\b/.test(facts), 'the page says "' + facts + '"');
             expect(/^count-in [12] of 2/.test(where), 'it started with "' + where + '", not the two-bar count-in');
             expect(/making sound/.test(check), 'the sound check says "' + check + '"');
             expect(doc.getElementById('sound-check').hidden, 'the sound check’s line shows without ?soundcheck');
@@ -3847,7 +3847,7 @@
           expect(plays === 2, 'bar 3 comes round ' + plays + ' times once through, not 2');
           expect(opened2 && back === 'Am D' && stillMine, 'after saving and opening, bar 3 is "' + back + '"' + (stillMine ? '' : ', no longer yours'));
           expect(cell && /Am·D/.test(cell.textContent) && cell.classList.contains('mine'), 'the chart shows "' + (cell && cell.textContent) + '"');
-          expect(/The Kesh/.test(doc.getElementById('tune-facts').textContent), 'the opened file is not The Kesh');
+          expect(/The Kesh/.test(doc.getElementById('chosen-name').textContent), 'the opened file is not The Kesh');
         });
       });
     });
@@ -3925,17 +3925,78 @@
     });
 
   check('Session Buddies', 'It is called Session Buddies, says what plays, and the old address leads to it',
-    'Session Players was renamed Session Buddies and moved from /players/ to /buddies/. The old address stays for bookmarks: it says so, links to the new one and goes on there by itself. The description at the top names the concertina as well as the flute, which it once left out.',
+    'Session Players was renamed Session Buddies and moved from /players/ to /buddies/. The old address stays for bookmarks: it says so, links to the new one and goes on there by itself. The description (at the top until 1.21.0, in About since) names the concertina as well as the flute, which it once left out.',
     function () {
       return Promise.all([text('../buddies/'), text('../players/')]).then(function (r) {
         var page = r[0], old = r[1];
-        var sub = ((/<p class="sub">([\s\S]*?)<\/p>/.exec(page) || [])[1] || '').replace(/\s+/g, ' ');
+        var sub = ((/<p class="lede">([\s\S]*?)<\/p>/.exec(page) || [])[1] || '').replace(/\s+/g, ' ').replace(/&aacute;/g, 'á');
         expect(/<title>Session Buddies<\/title>/.test(page) && /<h1>Session Buddies /.test(page), 'the page is not called Session Buddies');
         expect(page.indexOf('Session Players') === -1, 'the page still says Session Players');
         expect(/concertina/i.test(sub) && /flute/i.test(sub) && /guitar/i.test(sub) && /bodhrán/i.test(sub), 'the description leaves out an instrument: "' + sub + '"');
         expect(/<a [^>]*href="\.\.\/buddies\/"/.test(old), 'the old address does not link to the new one');
         expect(/http-equiv="refresh" content="\d+; url=\.\.\/buddies\/"/.test(old), 'the old address does not go on to the new one');
         expect(old.indexOf('<script') === -1, 'the old address still runs a page of its own');
+      });
+    });
+
+  check('Session Buddies', 'Its top is the app’s, and What you hear folds into a summary',
+    'Asked for in 1.21.0: the top of the page laid out as the app’s (its own icon, the name and version, a one-line tagline, About), the paragraph that was there moved into About; and the What you hear panel, most of a phone’s page of choices, folded into a few lines saying how each is set once you are happy with them. Hide or Done folds it, the summary or Change opens it; it stays as you left it through a reload, and Reset opens it.',
+    function () {
+      return json(FIX + 'the-kesh.json').then(function (j) {
+        return withBuddies(function (win, doc) {
+          var fr = win.frameElement, bad = [];
+          function W() { return fr.contentWindow; }
+          function $(id) { return fr.contentDocument.getElementById(id); }
+          function reloaded() { return new Promise(function (ok) { fr.onload = function () { setTimeout(ok, 400); }; W().location.reload(); }); }
+          function folded() { return $('hear-body').hidden && !$('hear-summary').hidden && $('hear-toggle').getAttribute('aria-expanded') === 'false'; }
+          function opened() { return !$('hear-body').hidden && $('hear-summary').hidden && $('hear-toggle').getAttribute('aria-expanded') === 'true'; }
+          function row(k) { var r = W().BUDDIES_PAGE.hearRows().filter(function (x) { return x[0] === k; })[0]; return r ? r[1] : null; }
+          function shown() { return $('hear-rows').textContent; }
+          W().BUDDIES_PAGE.loadTune(j, 0);
+          // The top.
+          var logo = fr.contentDocument.querySelector('.head img.logo'), touch = fr.contentDocument.querySelector('link[rel="apple-touch-icon"]');
+          if (!logo || !/\/buddies\/icons\/icon-192\.png$/.test(logo.src)) bad.push('the top has no icon of its own: ' + (logo && logo.src));
+          else if (!logo.complete || !logo.naturalWidth) bad.push('its icon did not load');
+          if (!touch || !/\/buddies\/icons\/apple-touch-icon\.png$/.test(touch.href)) bad.push('the home-screen icon is ' + (touch && touch.href));
+          if (fr.contentDocument.querySelector('.head .sub').textContent.length > 60) bad.push('the tagline is a paragraph again');
+          $('about-open').click();
+          if (!$('about').open) bad.push('About did not open');
+          if ($('about-version').textContent.indexOf(W().BUDDIES_PAGE.VERSION) === -1) bad.push('About does not give the version');
+          $('about-close').click();
+          // Open to begin with; Hide folds it into the summary.
+          if (!opened()) bad.push('What you hear did not start open');
+          $('hear-toggle').click();
+          if (!folded()) bad.push('Hide did not fold it');
+          if (W().localStorage.getItem('players.hearopen') !== 'folded') bad.push('folded is not kept');
+          if (!/Guitar/.test(row('Playing')) || !/Flute/.test(row('Playing')) || /Concertina/.test(row('Playing'))) bad.push('Playing says “' + row('Playing') + '”');
+          if (!/Full/.test(row('Bodhrán') || '') || !/DADGAD/.test(row('Guitar') || '')) bad.push('the summary says “' + shown() + '”');
+          // Changed while folded (a reset's Undo, a tune of another type), the summary follows.
+          fr.contentDocument.querySelector('#drum-style [data-drum="simple"]').click();
+          return wait(50).then(function () {
+            if (!/Simple/.test(row('Bodhrán') || '') || shown().indexOf('Simple') === -1) bad.push('after Simple the summary says “' + shown() + '”');
+            $('on-drum').click();
+            return wait(50);
+          }).then(function () {
+            if (row('Bodhrán') !== null || /Bodhrán/.test(shown())) bad.push('with the bodhrán off the summary says “' + shown() + '”');
+            return reloaded();
+          }).then(function () {
+            if (!folded()) bad.push('after a reload it was open again');
+            if (/Bodhrán/.test(shown()) || !/Guitar/.test(shown())) bad.push('after a reload the summary says “' + shown() + '”');
+            $('hear-summary').click();
+            if (!opened()) bad.push('the summary did not open it');
+            $('hear-done').click();
+            if (!folded()) bad.push('Done did not fold it');
+            $('reset-settings').click();               // reloads the page
+            return new Promise(function (ok) { fr.onload = function () { setTimeout(ok, 400); }; });
+          }).then(function () {
+            if (!opened()) bad.push('after Reset settings it stayed folded');
+            $('reset-undo').click();
+            return new Promise(function (ok) { fr.onload = function () { setTimeout(ok, 400); }; });
+          }).then(function () {
+            if (!folded()) bad.push('Undo did not fold it again');
+            expect(bad.length === 0, bad.join('\n'));
+          });
+        });
       });
     });
 
