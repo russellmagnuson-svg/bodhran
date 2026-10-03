@@ -4030,7 +4030,7 @@
     });
 
   check('Session Buddies', 'The page builds a tune and plays it',
-    'From the Session’s JSON to a chart of the tune’s bars, a shape for each chord, and sound, with a count-in first.',
+    'From the Session’s JSON to a chart of the tune’s bars, a shape for each chord, and sound, with a count-in first. The sound check measures it, its line hidden unless the address asks for it (?soundcheck).',
     function () {
       return json(FIX + 'the-kesh.json').then(function (j) {
         return withBuddies(function (win, doc) {
@@ -4045,6 +4045,7 @@
             expect(/The Kesh · Jig · 6\/8 · G major · setting 1/.test(facts), 'the page says "' + facts + '"');
             expect(/^count-in [12] of 2/.test(where), 'it started with "' + where + '", not the two-bar count-in');
             expect(/making sound/.test(check), 'the sound check says "' + check + '"');
+            expect(doc.getElementById('sound-check').hidden, 'the sound check’s line shows without ?soundcheck');
           });
         });
       });

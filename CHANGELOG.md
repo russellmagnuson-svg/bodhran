@@ -458,6 +458,12 @@ The page at `/buddies/` has its own version number, shown next to its title.
 It was called Session Players, at `/players/`, until 1.8.0; the entries
 before that keep the old name.
 
+### Session Buddies 1.18.4 — 2026-10-03
+
+- The **Sound check** line under Play is hidden. It was there to find out
+  why Safari once went silent, not for every day. It still measures, and
+  `?soundcheck` at the end of the page's address shows it again.
+
 ### Session Buddies 1.18.3 — 2026-10-03
 
 - **My tunes stays as you left it.** It opened at every load if you had any

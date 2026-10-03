@@ -17,7 +17,7 @@
    * next to the title and at the foot. Bump it with every change pushed (the
    * last number for a fix, the middle for something new) and add it to the
    * "Session Buddies" sections of CHANGELOG.md and the release notes. */
-  var VERSION = '1.18.3';
+  var VERSION = '1.18.4';
 
   var $ = function (id) { return document.getElementById(id); };
   var P = window.BUDDIES, G = window.GTR, T = window.TRAD, TPQ = P.TPQ;
@@ -815,6 +815,9 @@
     ctx = new AC({ latencyHint: 'interactive' });
     var out = T.makeOutput(ctx);
     T.startSound(ctx);                    // after: on a Mac, its audio element (js/wake.js)
+    // The sound check (js/wake.js) still measures, but its line is shown only
+    // when asked for, with ?soundcheck in the address: since 1.18.4, as it was
+    // there to find why Safari once went silent, not for every day.
     T.soundCheck(ctx, out.last, $('sound-check'), function () { return playing; });
     run = ctx.createGain();
     run.connect(out);
@@ -1642,6 +1645,7 @@
     });
     drawShapes();
     drawStrum();
+    $('sound-check').hidden = !/soundcheck/i.test(location.search + location.hash);
     // The tune left on the page last time; on a first visit, the starter.
     var last = stored('players.current', '');
     if (!(last && openText(last, true))) {
