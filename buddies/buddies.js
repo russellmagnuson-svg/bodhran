@@ -17,7 +17,7 @@
    * next to the title and at the foot. Bump it with every change pushed (the
    * last number for a fix, the middle for something new) and add it to the
    * "Session Buddies" sections of CHANGELOG.md and the release notes. */
-  var VERSION = '1.19.1';
+  var VERSION = '1.19.2';
 
   var $ = function (id) { return document.getElementById(id); };
   var P = window.BUDDIES, G = window.GTR, T = window.TRAD, TPQ = P.TPQ;
@@ -222,6 +222,15 @@
    * over that copy, so searching a tune you had worked on wiped its chords. */
   function build(meta, settings, index, saved, keepBpm) {
     if (playing) stop(false);
+    // Who posted each setting, by name: a tune saved while 1.18.3 to 1.19.0
+    // were live can hold the Session's raw record instead, which showed as
+    // "[object Object]"; tidied here, and saved tidy from now on.
+    settings = settings.map(function (st) {
+      if (!st || !st.member || typeof st.member !== 'object') return st;
+      var c = {}; for (var k in st) c[k] = st[k];
+      c.member = st.member.name;
+      return c;
+    });
     var s = settings[index], ty = TYPES[meta.type];
     var yours = !saved && copyOf(meta.id + '/' + (s.id != null ? s.id : index + 1));
     if (yours) saved = { chords: yourChords(yours.data), mine: yours.data.mine || [],

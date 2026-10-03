@@ -3514,6 +3514,14 @@
               sel.value = '0'; sel.dispatchEvent(new (W().Event)('change'));
               if (PP.tune().index !== 0 || PP.tune().settings[0].id !== j.settings[0].id) bad.push('choosing setting 1 did not open it');
               if (/\[object/.test($('chosen-facts').textContent + $('credit').textContent)) bad.push('setting 1, chosen from the filled menu, is credited “' + $('credit').textContent + '”');
+              // A tune saved while that bug was live holds the Session's raw record of who posted it.
+              var old = JSON.parse(PP.saveText());
+              old.setting.member = { id: 1, name: 'Old Saved', url: '' };
+              W().fetch = function () { return Promise.reject(new TypeError('offline')); };
+              PP.openText(JSON.stringify(old), true);
+              var shown = sel.options[0].textContent + ' | ' + $('chosen-facts').textContent + ' | ' + $('credit').textContent;
+              if (/\[object/.test(shown) || shown.indexOf('Old Saved') === -1) bad.push('a tune saved with the raw record shows “' + shown + '”');
+              if (/\[object|"member":\s*\{/.test(W().localStorage.getItem('players.current'))) bad.push('it is saved again with the raw record');
               W().fetch = real;
               expect(bad.length === 0, bad.join('\n'));
             });

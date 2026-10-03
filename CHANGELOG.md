@@ -471,6 +471,13 @@ The page at `/buddies/` has its own version number, shown next to its title.
 It was called Session Players, at `/players/`, until 1.8.0; the entries
 before that keep the old name.
 
+### Session Buddies 1.19.2 — 2026-10-03
+
+- The setting you were on could still say "[object Object]": chosen from the
+  faulty menu while 1.18.3 to 1.19.0 were live, it had been saved that way
+  (and so might a favourite or a tune played lately). Every tune is now
+  tidied as it opens, and saved tidy from then on.
+
 ### Session Buddies 1.19.1 — 2026-10-03
 
 - The Setting menu, filled in from thesession.org after a reload (1.18.3),
