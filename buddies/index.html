@@ -177,6 +177,22 @@
       <button class="mode" type="button" role="radio" data-backing="tune" aria-checked="true">With the tune</button>
     </div>
     <p id="backing-desc" class="blurb"></p>
+    <!-- Only while the bodhrán is ticked. -->
+    <div id="drum-box">
+      <h3 class="sub-h">Bodhrán</h3>
+      <div id="drum-style" class="modes" role="radiogroup" aria-label="Bodhrán">
+        <button class="mode" type="button" role="radio" data-drum="full" aria-checked="true">Full</button>
+        <button class="mode" type="button" role="radio" data-drum="simple" aria-checked="false">Simple</button>
+        <button class="mode" type="button" role="radio" data-drum="pulse" aria-checked="false">Pulse</button>
+      </div>
+      <p id="drum-desc" class="blurb"></p>
+      <div id="drum-busy-box" class="voice">
+        <label for="drum-busy">Busyness</label>
+        <input id="drum-busy" type="range" min="0" max="1" step="0.05" value="0.5"
+               aria-label="Bodhrán busyness: from sparse, through steady, to busy">
+        <output id="drum-busy-out" for="drum-busy">50%</output>
+      </div>
+    </div>
     <!-- Only for a tune that swings (a hornpipe). -->
     <div id="swing-box" hidden>
       <h3 class="sub-h">Swing</h3>

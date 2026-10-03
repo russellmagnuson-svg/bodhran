@@ -490,7 +490,8 @@ file comes back exactly as saved.
 on thesession.org (its API answers any site, so the page asks it directly;
 there is no server of ours), fetched, and played with the guitar demo's
 guitar, flute and bodhrán, and a recorded concertina. Jigs, reels, hornpipes,
-polkas, slides, slip jigs and waltzes for now (`TYPES` in buddies.js, keyed by the
+polkas, slides, slip jigs and waltzes for now (the bodhrán Full, Simple or Pulse
+as in the app: `drumGrid()`, Full's fills at the tune's own phrase ends; `TYPES` in buddies.js, keyed by the
 Session's names for them; a hornpipe swings by its Swing control, 64:36 to
 start and kept in `players.swing.hornpipe`, guitar, drum and tune together; its
 triplets, dotted pairs and semiquavers play as written: `asWritten`). The foot

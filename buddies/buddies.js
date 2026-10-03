@@ -17,7 +17,7 @@
    * next to the title and at the foot. Bump it with every change pushed (the
    * last number for a fix, the middle for something new) and add it to the
    * "Session Buddies" sections of CHANGELOG.md and the release notes. */
-  var VERSION = '1.17.0';
+  var VERSION = '1.18.0';
 
   var $ = function (id) { return document.getElementById(id); };
   var P = window.BUDDIES, G = window.GTR, T = window.TRAD, TPQ = P.TPQ;
@@ -1073,6 +1073,48 @@
     $('backing-desc').textContent = BACKING[backingFeel];
   }
 
+  /* The bodhrán: the app's three ways of playing (since 1.18.0; until then
+   * always Simple, the one plain bar). Full phrases like a player, as the
+   * app's Full does: the pattern changes bar to bar, weighted by Busyness
+   * (sparse, steady, busy: TRAD.pickGrid), with a fill most likely at the end
+   * of each of the tune's phrases and sometimes half way (Session Buddies
+   * knows where the phrases fall, which the app does not), and a player's
+   * small scatter in timing and weight. The choice and the busyness are kept. */
+  var DRUM_STYLE = {
+    full: 'Patterns change bar to bar, as a player’s do, with a fill most likely at the end of each phrase of the tune, sometimes half way.',
+    simple: 'One steady figure for the tune type, the same every bar, no fills.',
+    pulse: 'The low drum only, one stroke per beat, weighted where the dance falls. Nothing to follow but the pulse.'
+  };
+  var drumStyle = DRUM_STYLE[stored('players.drumstyle', '')] ? stored('players.drumstyle') : 'full';
+  var drumBusy = Math.max(0, Math.min(1, +stored('players.drumbusy', '0.5') || 0));
+  var lastDrumGrid = null, drumPlayed = null;   // the last Full pattern (for the picker); the last played (for the checks)
+  function appTune() {        // the app's own patterns for this type
+    var id = tune.meta.type.replace(' ', ''), t = T.tuneById && T.tuneById(id);
+    return t && t.id === id ? t : null;
+  }
+  // The bar's pattern; k: the bar's place in the time through.
+  function drumGrid(k) {
+    var ty = type(), app = appTune();
+    if (!app || drumStyle === 'simple') return (drumPlayed = ty.grid);
+    if (drumStyle === 'pulse') return (drumPlayed = T.pulseGrid(app));
+    var PH = tune.lay.meter.phrase || 8, pos = k % PH, g = app.grids, rng = Math.random;
+    var chance = pos === PH - 1 ? 0.2 + 0.55 * drumBusy : PH >= 8 && pos === PH / 2 - 1 ? 0.1 + 0.25 * drumBusy : 0;
+    var grid = chance && g.fills.length && rng() < chance ? g.fills[(rng() * g.fills.length) | 0]
+             : T.pickGrid(app, drumBusy, false, lastDrumGrid, rng);
+    lastDrumGrid = grid;
+    return (drumPlayed = grid);
+  }
+  function drawDrum() {
+    $('drum-box').hidden = !$('on-drum').checked;
+    Array.prototype.forEach.call($('drum-style').children, function (b) {
+      b.setAttribute('aria-checked', String(b.dataset.drum === drumStyle));
+    });
+    $('drum-desc').textContent = DRUM_STYLE[drumStyle];
+    $('drum-busy-box').hidden = drumStyle !== 'full';
+    $('drum-busy').value = drumBusy;
+    $('drum-busy-out').textContent = Math.round(drumBusy * 100) + '%';
+  }
+
   /* Where quaver s of the bar falls, in quavers: straight, or swung (a
    * hornpipe), the quaver between the beats coming late. */
   function swung(s) {
@@ -1146,14 +1188,21 @@
           (function (at) { pending.push({ t: at, fn: function (t) { drum.hit('bass', t, 1); } }); })(t0 + s * q);
         });
       } else {
-        var g = ty.grid, step = L / g.length;
+        var g = drumGrid(k), step = L / g.length, full = drumStyle === 'full';
+        // Triplets in a duple beat (a reel's fills) stay even, as the tune's do.
+        var even = ty.per === 2 && (g.length * ty.per / L) % 3 === 0;
         for (var i = 0; i < g.length; i++) {
           var voice = T.VOICE[g[i]];
           if (!voice) continue;
+          var at = t0 + (even ? i * step : backingAt(i * step)) * q, v = T.VELOCITY[g[i]];
+          if (full) {                              // a player's scatter, as the app's Humanise
+            at += (Math.random() * 2 - 1) * 0.0036;
+            v *= 1 + (Math.random() * 2 - 1) * 0.072;
+          }
           (function (at, vc, v) {
             pending.push({ t: at, note: { who: 'drum', slot: i * step },
                            fn: function (t) { drum.hit(vc, t, v); } });
-          })(t0 + backingAt(i * step) * q, voice, T.VELOCITY[g[i]]);
+          })(at, voice, v);
         }
       }
     }
@@ -1190,7 +1239,7 @@
     barN = -(+$('countin').value || 1);
     nextBar = ctx.currentTime + 0.12;
     ahead = T.lookahead(AHEAD);
-    pending = []; shown = []; endAt = null; finishAt = null;
+    pending = []; shown = []; endAt = null; finishAt = null; lastDrumGrid = null;
     tick();
     timer = setInterval(tick, 25);
     T.keepAwake(true, ctx);               // the screen held on while it plays (js/wake.js)
@@ -1478,6 +1527,16 @@
       });
     });
     drawBacking();
+    Array.prototype.forEach.call($('drum-style').children, function (b) {
+      b.addEventListener('click', function () {               // heard from the next bar
+        drumStyle = b.dataset.drum; store('players.drumstyle', drumStyle); drawDrum();
+      });
+    });
+    $('drum-busy').addEventListener('input', function () {
+      drumBusy = +this.value; store('players.drumbusy', String(drumBusy)); drawDrum();
+    });
+    $('on-drum').addEventListener('change', drawDrum);
+    drawDrum();
     document.addEventListener('keydown', function (e) {
       var typing = /^(INPUT|SELECT|TEXTAREA|BUTTON)$/.test(e.target.tagName) && !(e.target.type === 'range');
       if (typing || $('chooser').open || !tune || e.metaKey || e.ctrlKey || e.altKey) return;
@@ -1517,6 +1576,7 @@
       } finally { pending = keep.p; shown = keep.s; endAt = keep.e; }
     }, saveText: saveText, setChord: setChord,
     playing: function () { return playing; },
+    drumGrid: function () { return drumPlayed; },     // the pattern the last bar laid used
     audio: function () { return { ctx: ctx, run: run, guitar: guitar, flute: fluteBus, concertina: concertina, concBus: concBus, drum: drum }; }
   };
 

@@ -458,6 +458,20 @@ The page at `/buddies/` has its own version number, shown next to its title.
 It was called Session Players, at `/players/`, until 1.8.0; the entries
 before that keep the old name.
 
+### Session Buddies 1.18.0 — 2026-10-03 — Choose how the bodhrán plays
+
+- **Full, Simple or Pulse**, as in the app, under Backing feel while the
+  Bodhrán is ticked. It always played Simple, one plain bar for the tune
+  type. The choice is kept.
+- **Full** (where it starts) phrases like a player, as the app's Full does:
+  the pattern changes from bar to bar, weighted by **Busyness** (sparse,
+  through steady, to busy), with a player's small scatter in timing and
+  weight. Session Buddies knows where the tune's phrases fall, which the app
+  cannot, so a fill comes most often at the end of each phrase of the tune
+  and sometimes half way through it; a fill's triplets stay even.
+- **Simple** is the one plain bar it played before; **Pulse** one low stroke
+  per beat, weighted where the dance falls.
+
 ### Session Buddies 1.17.0 — 2026-10-03 — A flute player, not a keyboard
 
 The flute sounded "a bit like it's coming from a keyboard". Three reasons,

@@ -2682,7 +2682,8 @@
   /* The Session Buddies page in a frame, its saved state put back after. */
   function withBuddies(fn) {
     var keys = ['players.current', 'players.tuning', 'players.sympathy', 'players.volume', 'players.swing.hornpipe',
-                'buddies.favourites', 'buddies.recent', 'players.melody', 'players.yourturn', 'players.backing'], saved = {};
+                'buddies.favourites', 'buddies.recent', 'players.melody', 'players.yourturn', 'players.backing',
+                'players.drumstyle', 'players.drumbusy'], saved = {};
     keys.forEach(function (k) { saved[k] = localStorage.getItem(k); localStorage.removeItem(k); });
     var frame = document.createElement('iframe');
     frame.src = '../buddies/';
@@ -3772,6 +3773,57 @@
       });
     });
 
+  check('Session Buddies', 'The bodhrán plays Full, Simple or Pulse as you choose, and Full phrases like a player',
+    'The bodhrán always played one plain bar, where the app lets you choose. Now, while it is ticked, it offers the app’s three: Full (where it starts) changes pattern bar to bar by its Busyness, with fills only at the end of a phrase of the tune or half way (most often at the end), and a player’s scatter; Simple the one plain bar; Pulse one low stroke per beat. Busyness weights the patterns from sparse to busy, and both are kept for next time.',
+    function () {
+      return json(FIX + 'cooleys.json').then(function (j) {
+        return withBuddies(function (win, doc) {
+          var PP = win.BUDDIES_PAGE, T = win.TRAD, app = T.tuneById('reel'), bad = [];
+          function style(v) { doc.querySelector('#drum-style [data-drum="' + v + '"]').click(); }
+          function busy(v) { var b = doc.getElementById('drum-busy'); b.value = v; b.dispatchEvent(new win.Event('input')); }
+          function bars(n) {          // the pattern of each of n bars, and its strokes
+            var out = [];
+            for (var i = 0; i < n; i++) { var st = PP.plan(i).filter(function (x) { return x.who === 'drum'; }); out.push({ grid: PP.drumGrid(), strokes: st }); }
+            return out;
+          }
+          PP.loadTune(j, 0);
+          var box = doc.getElementById('drum-box'), drum = doc.getElementById('on-drum');
+          expect(box && doc.getElementById('drum-style'), 'there is no choice of how the bodhrán plays');
+          if (box.hidden) bad.push('the bodhrán’s choices are hidden while it is ticked');
+          drum.click();
+          if (!box.hidden) bad.push('the bodhrán’s choices show while it is unticked');
+          drum.click();
+          var starts = doc.querySelector('#drum-style [aria-checked="true"]').dataset.drum;
+          if (starts !== 'full') bad.push('it starts on ' + starts + ', not Full');
+          if (doc.getElementById('drum-busy-box').hidden) bad.push('Busyness is hidden in Full');
+          // Full: fills only at bar 4 or 8 of a phrase, most at 8; patterns vary; busyness weights the banks.
+          busy(1);
+          var full = bars(64), at = { 3: 0, 7: 0 }, kinds = {};
+          full.forEach(function (b, i) {
+            kinds[b.grid] = 1;
+            if (app.grids.fills.indexOf(b.grid) !== -1) { if (i % 8 === 3 || i % 8 === 7) at[i % 8]++; else bad.push('a fill in bar ' + (i % 8 + 1) + ' of a phrase'); }
+            if (app.grids.sparse.indexOf(b.grid) !== -1) bad.push('a sparse bar at full busyness');
+          });
+          if (!(at[7] >= 3 && at[7] > at[3])) bad.push('fills at the end of a phrase ' + at[7] + ' times in 8 phrases, half way ' + at[3]);
+          if (Object.keys(kinds).length < 3) bad.push('only ' + Object.keys(kinds).length + ' patterns in 64 bars of Full');
+          var scattered = full.some(function (b) { return b.strokes.some(function (x) { return Math.abs(x.t / (60 / +doc.getElementById('bpm').value / 2) - x.slot) > 0.004 && x.slot % 2 === 0; }); });
+          if (!scattered) bad.push('Full’s strokes on the beats land exactly on them, every one: no player’s scatter');
+          busy(0);
+          // (A bar played on can carry over into the next, as in the app; once a calmer one comes, no more busy ones.)
+          var calm = bars(40), firstCalm = calm.findIndex(function (b) { return app.grids.busy.indexOf(b.grid) === -1; });
+          calm.slice(firstCalm).forEach(function (b) { if (app.grids.busy.indexOf(b.grid) !== -1) bad.push('a busy bar at no busyness'); });
+          // Simple: the plain bar every bar; Pulse: one stroke per beat.
+          style('simple');
+          if (!doc.getElementById('drum-busy-box').hidden) bad.push('Busyness shows in Simple');
+          bars(8).forEach(function (b, i) { if (b.grid !== app.grids.simple[0]) bad.push('Simple bar ' + (i + 1) + ' plays ' + b.grid); });
+          style('pulse');
+          bars(8).forEach(function (b, i) { if (b.strokes.length !== 4) bad.push('Pulse bar ' + (i + 1) + ' has ' + b.strokes.length + ' strokes, not 4'); });
+          if (win.localStorage.getItem('players.drumstyle') !== 'pulse' || win.localStorage.getItem('players.drumbusy') !== '0') bad.push('the choice is not kept');
+          expect(bad.length === 0, bad.join('\n'));
+        });
+      });
+    });
+
   check('Session Buddies', 'The backing rides the tune’s lilt as you choose, and triplets stay even',
     'The melody lilted over a dead-even backing, so in a reel at 100 its off-beats landed 30–42 ms after the guitar’s up-strum and the drum’s tak. With the tune (the start), the guitar and bodhrán ride the melody’s lilt: the concertina’s if it is ticked, else the flute’s; A little goes half way; Straight is as before. The beats stay put. And the lilt no longer bends triplets in reels and jigs: The Silver Spear’s “(3AAA” comes out even, as players keep it (hornpipes already did). The choice is kept.',
     function () {
@@ -3787,6 +3839,7 @@
           var starts = doc.querySelector('#backing-feel [aria-checked="true"]').dataset.backing;
           if (starts !== 'tune') bad.push('the backing starts “' + starts + '”, not with the tune');
           // Bar 2, "dfed BddA": the d on quaver 3, between beats 2 and 3.
+          doc.querySelector('#drum-style [data-drum="simple"]').click();   // the plain bar, its tak on quaver 3, unscattered
           conc(false); feel('tune');
           var f3 = noteAt(1, 'flute', 3), g3 = at(1, 'guitar', 3), d3 = at(1, 'drum', 3);
           if (Math.abs(g3 - f3) > 0.004 || Math.abs(d3 - f3) > 0.004) bad.push('with the tune (flute): the up-strum at ' + round(g3, 3) + ', the tak at ' + round(d3, 3) + ', the flute’s d at ' + round(f3, 3) + ' quavers');
