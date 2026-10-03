@@ -17,7 +17,7 @@
    * next to the title and at the foot. Bump it with every change pushed (the
    * last number for a fix, the middle for something new) and add it to the
    * "Session Buddies" sections of CHANGELOG.md and the release notes. */
-  var VERSION = '1.21.0';
+  var VERSION = '1.21.1';
 
   var $ = function (id) { return document.getElementById(id); };
   var P = window.BUDDIES, G = window.GTR, T = window.TRAD, TPQ = P.TPQ;
@@ -827,7 +827,18 @@
     T.prepareAudio();
     var AC = window.AudioContext || window.webkitAudioContext;
     ctx = new AC({ latencyHint: 'interactive' });
-    var out = T.makeOutput(ctx);
+    /* Straight to the speaker, in Mac Safari too (since 1.21.1). Through the
+     * audio element the app still uses there (js/wake.js, TRAD.speaker),
+     * Sí Bheag Sí Mhór slowed and dropped in pitch after a while, like a
+     * tape running down, while the chords on the page kept time: under four
+     * instruments and the room, Safari's audio can falter for a moment, and
+     * the element made up the gap by playing slower, and stayed behind. It
+     * cannot be caught from the page (the element's own clock reads as on
+     * time throughout), so Session Buddies goes direct, as everywhere else.
+     * If a Mac tab ever goes silent after sleep again, the short near-silent
+     * sound each press of Play makes (TRAD.startSound) is what woke it the
+     * first two times. */
+    var out = T.makeOutput(ctx, { direct: true });
     T.startSound(ctx);                    // after: on a Mac, its audio element (js/wake.js)
     // The sound check (js/wake.js) still measures, but its line is shown only
     // when asked for, with ?soundcheck in the address: since 1.18.4, as it was

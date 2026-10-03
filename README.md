@@ -390,7 +390,13 @@ npx wrangler pages deploy . --project-name=bodhran
   direct beep (A) was silent while the audio-element beep (C) played and
   woke A. So since 1.6.6, in Mac Safari the output chain ends in a
   MediaStream played by an audio element (`TRAD.speaker`), started from each
-  Play and paused at rest.
+  Play and paused at rest. Session Buddies stopped using it in 1.21.1
+  (`makeOutput(ctx, { direct: true })`): under its four instruments Safari's
+  audio faltered for a moment and the element made up the gap by playing
+  slower, the whole sound running down like a tape while the page's clock
+  kept time, and staying behind until Stop. The element's own clock reads as
+  on time throughout, so it cannot be caught from the page. It keeps the
+  near-silent nudge on each Play.
 - **Keeping the screen on.** While anything plays (in the app the drum or
   the drone), each page holds a screen wake lock (`TRAD.keepAwake` in
   `js/wake.js`): a phone that locks itself takes the sound with it. The

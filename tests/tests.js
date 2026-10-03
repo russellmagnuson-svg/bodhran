@@ -3939,6 +3939,30 @@
       });
     });
 
+  check('Session Buddies', 'In Mac Safari its sound goes straight to the speaker, not through an audio element',
+    'Through the audio element the app uses in Mac Safari, Sí Bheag Sí Mhór slowed and dropped in pitch after a while, like a tape running down, while the chords kept time: Safari’s audio faltered for a moment under four instruments, and the element made up the gap by playing slower and stayed behind. Since 1.21.1 Session Buddies goes direct, with the near-silent nudge on each Play that woke a stuck tab before.',
+    function () {
+      return json(FIX + 'the-kesh.json').then(function (j) {
+        return withBuddies(function (win, doc) {
+          var SAFARI = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Safari/605.1.15';
+          Object.defineProperty(win.Navigator.prototype, 'userAgent', { configurable: true, get: function () { return SAFARI; } });
+          Object.defineProperty(win.Navigator.prototype, 'maxTouchPoints', { configurable: true, get: function () { return 0; } });
+          var streams = 0, routed = 0, nudged = 0, mk = win.AudioContext.prototype.createMediaStreamDestination;
+          win.AudioContext.prototype.createMediaStreamDestination = function () { streams++; return mk.call(this); };
+          win.HTMLMediaElement.prototype.play = function () { if (this.srcObject) routed++; else if (this.src) nudged++; return Promise.resolve(); };
+          win.BUDDIES_PAGE.loadTune(j, 0);
+          expect(win.TRAD.isMacSafari(), 'the page did not take itself for Mac Safari');
+          doc.getElementById('play').click();
+          return wait(300).then(function () {
+            doc.getElementById('play').click();
+            expect(streams === 0 && routed === 0, 'its sound went through an audio element: ' + streams + ' stream(s), ' + routed + ' play(s)');
+            expect(nudged >= 1, 'Play made no near-silent nudge');
+            expect(!win.BUDDIES_PAGE.audio().ctx.__route, 'the audio still has a route through an element');
+          });
+        });
+      });
+    });
+
   check('Session Buddies', 'Its top is the app’s, and What you hear folds into a summary',
     'Asked for in 1.21.0: the top of the page laid out as the app’s (its own icon, the name and version, a one-line tagline, About), the paragraph that was there moved into About; and the What you hear panel, most of a phone’s page of choices, folded into a few lines saying how each is set once you are happy with them. Hide or Done folds it, the summary or Change opens it; it stays as you left it through a reload, and Reset opens it.',
     function () {

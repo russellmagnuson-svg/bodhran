@@ -304,7 +304,9 @@
    * limiter on the sum, because the drum's own compressor sits before the room
    * send and cannot see the total — without it, volume at maximum clipped.
    * Shared by the app and by tests/, so the tests check the real chain. */
-  TRAD.makeOutput = function (ctx) {
+  /* opts.direct: straight to the speaker even in Mac Safari, without the
+   * audio element (Session Buddies since 1.21.1, see buddies.js). */
+  TRAD.makeOutput = function (ctx, opts) {
     var out = ctx.createGain();
     out.gain.value = 1;
     var limiter = ctx.createDynamicsCompressor();
@@ -323,7 +325,7 @@
     trim.gain.value = 0.93;
     limiter.connect(trim);
     // The speaker: in Safari on a Mac, by way of an audio element (js/wake.js).
-    trim.connect(TRAD.speaker ? TRAD.speaker(ctx) : ctx.destination);
+    trim.connect(TRAD.speaker && !(opts && opts.direct) ? TRAD.speaker(ctx) : ctx.destination);
     out.last = trim;        // what the speaker gets, for TRAD.soundCheck
     return out;
   };

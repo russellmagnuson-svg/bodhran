@@ -471,6 +471,19 @@ The page at `/buddies/` has its own version number, shown next to its title.
 It was called Session Players, at `/players/`, until 1.8.0; the entries
 before that keep the old name.
 
+### Session Buddies 1.21.1 — 2026-10-03
+
+- **No more slowing down like a tape on a Mac.** Playing Sí Bheag Sí Mhór in
+  Safari, after a while the whole sound slowed and dropped in pitch while
+  the chords on the page kept time, until Stop. In Mac Safari the sound went
+  out through a hidden audio player (added in app 1.6.6, when a Safari tab
+  went silent after sleep); with four instruments and the room playing,
+  Safari's audio can falter for a moment, and that player made up the gap
+  by playing slower, and stayed behind. Session Buddies now sends its sound
+  straight to the speaker, as every other browser does. Each press of Play
+  still makes the short near-silent sound that woke a stuck tab before. The
+  Bodhrán app, lighter and not affected, keeps the hidden player.
+
 ### Session Buddies 1.21.0 — 2026-10-03 — A tidier top, and choices that fold away
 
 - **The top of the page is laid out as the app's:** its own icon beside the
