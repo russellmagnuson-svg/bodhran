@@ -2683,7 +2683,7 @@
   function withBuddies(fn) {
     var keys = ['players.current', 'players.tuning', 'players.sympathy', 'players.volume', 'players.swing.hornpipe',
                 'buddies.favourites', 'buddies.recent', 'players.melody', 'players.yourturn', 'players.backing',
-                'players.drumstyle', 'players.drumbusy', 'players.voices'], saved = {};
+                'players.drumstyle', 'players.drumbusy', 'players.voices', 'players.mineopen'], saved = {};
     keys.forEach(function (k) { saved[k] = localStorage.getItem(k); localStorage.removeItem(k); });
     var frame = document.createElement('iframe');
     frame.src = '../buddies/';
@@ -3483,9 +3483,14 @@
           // A chord you change goes into your copy.
           var slot = PP.tune().lay.slots[1].id;
           PP.setChord(slot, ['Em']);
-          // Open The Kesh from the favourites: no network.
-          var fetched = 0, f0 = win.fetch;
-          win.fetch = function () { fetched++; return f0.apply(this, arguments); };
+          // Open The Kesh from the favourites with the network down: it needs none.
+          // (Since 1.18.3 it asks the Session for the tune's other settings
+          // afterwards, for the Setting menu; that, and nothing else, is allowed.)
+          var other = [], f0 = win.fetch;
+          win.fetch = function (url) {
+            if (!/thesession\.org\/tunes\/\d+\?format=json$/.test(String(url))) other.push(String(url));
+            return Promise.reject(new TypeError('offline'));
+          };
           $('mine').open = true;
           doc.querySelector('#favs .open').click();             // "Cooley's" sorts first; take The Kesh
           var first = PP.tune().meta.name;
@@ -3515,7 +3520,7 @@
           expect(favs.join(',') === "Cooley's,The Kesh", 'the favourites are ' + favs.join(', ') + ', not both by name');
           expect(recent.join(',') === "Cooley's,The Kesh", 'played lately: ' + recent.join(', ') + ' (want Cooley’s, then The Kesh, once each)');
           expect(first === "Cooley's" && opened === 'The Kesh' && folded, 'opening from the favourites gave ' + first + ' then ' + opened + (folded ? '' : ', and the list stayed open'));
-          expect(fetched === 0, 'opening your tunes asked the network ' + fetched + ' times');
+          expect(other.length === 0, 'opening your tunes asked the network for ' + other.join(', '));
           expect(/from your tunes/.test(said), 'the page did not say where it came from: ' + said);
           expect(kept, 'the chord changed in Cooley’s was not kept in your copy');
           expect(many === 12, 'played lately holds ' + many + ', not twelve');
@@ -3768,6 +3773,47 @@
             var d = win.document, mode = d.querySelector('#melody-mode [aria-checked="true"]'), lvl = d.querySelector('#your-turn-level [aria-checked="true"]');
             if (!mode || mode.dataset.melody !== 'turns' || !lvl || lvl.dataset.level !== 'silent') bad.push('after a reload the choice is ' + (mode && mode.dataset.melody) + ' / ' + (lvl && lvl.dataset.level));
             expect(bad.length === 0, bad.join('\n'));
+          });
+        });
+      });
+    });
+
+  check('Session Buddies', 'My tunes stays as you left it, and a tune brought back offers all its settings',
+    'My tunes opened at every load if you had any tunes, however you had left it; and a tune brought back from storage (after a reload, or from My tunes) held only its own setting, so the Setting menu could not switch until you searched again. Now My tunes is open or closed as you left it, and the tune’s other settings are fetched from the Session and added to the menu, the one on the page kept as it is.',
+    function () {
+      return json(FIX + 'the-kesh.json').then(function (j) {
+        return withBuddies(function (win, doc) {
+          var fr = win.frameElement, bad = [];
+          function W() { return fr.contentWindow; }
+          function $(id) { return fr.contentDocument.getElementById(id); }
+          function reloaded() { return new Promise(function (ok) { fr.onload = function () { setTimeout(ok, 400); }; W().location.reload(); }); }
+          W().BUDDIES_PAGE.loadTune(j, 1);                    // setting 2 of The Kesh
+          $('play').click(); $('play').click();                 // played: now in your tunes
+          $('mine').open = false;                               // closed, as you might leave it
+          return wait(100).then(reloaded).then(function () {
+            if ($('mine').open) bad.push('My tunes opened by itself after a reload');
+            $('mine').open = true;
+            return wait(100).then(reloaded);
+          }).then(function () {
+            if (!$('mine').open) bad.push('My tunes, left open, was closed after a reload');
+            // Brought back from storage, with the Session answering.
+            var PP = W().BUDDIES_PAGE, text = PP.saveText(), asked = 0, real = W().fetch;
+            W().fetch = function (url) {
+              if (/thesession\.org\/tunes\/55/.test(String(url))) { asked++; var Res = W().Response; return Promise.resolve(new Res(JSON.stringify(j), { status: 200 })); }
+              return real.apply(W(), arguments);
+            };
+            PP.openText(text, true);
+            return wait(400).then(function () {
+              var sel = $('setting');
+              if (!asked) bad.push('the Session was not asked for the other settings');
+              if (sel.options.length !== j.settings.length || sel.disabled) bad.push('the Setting menu offers ' + sel.options.length + ' of ' + j.settings.length + ' settings');
+              if (sel.value !== '1' || PP.tune().index !== 1) bad.push('the menu is on setting ' + (+sel.value + 1) + ', not the one on the page (2)');
+              if (!/Setting 2 of 3/.test($('chosen-facts').textContent)) bad.push('the tune says “' + $('chosen-facts').textContent + '”');
+              sel.value = '0'; sel.dispatchEvent(new (W().Event)('change'));
+              if (PP.tune().index !== 0 || PP.tune().settings[0].id !== j.settings[0].id) bad.push('choosing setting 1 did not open it');
+              W().fetch = real;
+              expect(bad.length === 0, bad.join('\n'));
+            });
           });
         });
       });

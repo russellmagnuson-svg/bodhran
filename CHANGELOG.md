@@ -458,6 +458,19 @@ The page at `/buddies/` has its own version number, shown next to its title.
 It was called Session Players, at `/players/`, until 1.8.0; the entries
 before that keep the old name.
 
+### Session Buddies 1.18.3 — 2026-10-03
+
+- **My tunes stays as you left it.** It opened at every load if you had any
+  tunes; now it is open or closed as you last left it (closed to begin
+  with), and Reset settings closes it.
+- **The Setting menu after a reload.** A tune brought back from this
+  browser's storage (the one left on the page, one of your tunes, or The
+  Kesh on a first visit) held only its own setting, so the menu could not
+  switch until you searched for the tune again. Now its other settings are
+  fetched from thesession.org once it has opened and added to the menu; the
+  setting on the page, with your chord changes, stays as it is. Offline the
+  menu stays as it was. A tune opened from a saved file keeps to the file.
+
 ### Session Buddies 1.18.2 — 2026-10-03 — Your settings kept, and a clean reset
 
 - **Every choice comes back after a reload.** Which instruments are ticked

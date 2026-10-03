@@ -17,7 +17,7 @@
    * next to the title and at the foot. Bump it with every change pushed (the
    * last number for a fix, the middle for something new) and add it to the
    * "Session Buddies" sections of CHANGELOG.md and the release notes. */
-  var VERSION = '1.18.2';
+  var VERSION = '1.18.3';
 
   var $ = function (id) { return document.getElementById(id); };
   var P = window.BUDDIES, G = window.GTR, T = window.TRAD, TPQ = P.TPQ;
@@ -419,6 +419,7 @@
       options: how === 'list' ? { bpm: o.bpm } : o,
       number: d.settingNumber, fromFile: how === 'file'   // brought back by the page itself is not "from a file"
     });
+    if (how !== 'file') fillSettings();
     if (how === 'file') { $('file-status').textContent = 'Opened “' + d.tune.name + '”, with its chords as saved.'; foldMatches(false); }
     if (how === 'list') { $('find-status').textContent = 'Opened “' + d.tune.name + '” from your tunes.'; foldMatches(false); }
     return true;
@@ -576,6 +577,52 @@
     return true;
   }
 
+  /* The Setting menu, and in the Find panel the tune's name, large, and
+   * which setting of it is playing. */
+  function drawSettings() {
+    var ty = type(), s = setting(), number = settingNumber(), sel = $('setting');
+    sel.innerHTML = '';
+    tune.settings.forEach(function (st, i) {
+      var o = document.createElement('option');
+      o.value = i;
+      o.textContent = 'Setting ' + (tune.settings.length > 1 ? i + 1 : number) + ' · ' + P.parseKey(st.key).name +
+        (st.member ? ' · ' + st.member : '') + (hasChords(st.abc) ? ' · has chords' : '');
+      sel.appendChild(o);
+    });
+    sel.value = String(tune.index);
+    sel.disabled = tune.settings.length < 2;
+    $('chosen').hidden = false;
+    $('chosen-name').textContent = tune.meta.name;
+    $('chosen-facts').textContent = ty.name + ' · ' + ty.meter + ' · ' + tune.lay.key.name + ' · Setting ' + number +
+      (tune.settings.length > 1 ? ' of ' + tune.settings.length : tune.fromFile ? ', from a saved file' : '') +
+      (s.member ? ' by ' + s.member : '');
+  }
+
+  /* A tune brought back from this browser's storage (the one left on the
+   * page, one of your tunes, or the starter) holds only its own setting, so
+   * until 1.18.3 the Setting menu had nothing else to offer until you
+   * searched for the tune again. Its other settings are now fetched from the
+   * Session after it opens and added to the menu; the setting on the page,
+   * with your chords, stays exactly as it is. Offline, the menu stays as it
+   * was. (A tune opened from a file keeps to the file.) */
+  function fillSettings() {
+    var t = tune;
+    if (!t || t.settings.length > 1 || t.fromFile || t.meta.id == null) return;
+    var s = t.settings[t.index];
+    fetch(API + '/tunes/' + encodeURIComponent(t.meta.id) + '?format=json')
+      .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+      .then(function (j) {
+        if (tune !== t || !j || !Array.isArray(j.settings) || j.settings.length < 2) return;
+        var at = j.settings.map(function (st) { return st.id; }).indexOf(s.id);
+        if (at < 0) return;
+        var list = j.settings.slice();
+        list[at] = s;
+        t.settings = list; t.index = at;
+        drawSettings();
+      })
+      .catch(function () {});
+  }
+
   /* ---------- showing the tune ---------- */
   // A setting with chord symbols of its own (whole chord names, not "Ending").
   function hasChords(abc) {
@@ -589,25 +636,7 @@
     $('tune-facts').textContent = tune.meta.name + ' · ' + ty.name + ' · ' + ty.meter + ' · ' + lay.key.name +
       ' · setting ' + number + (s.member ? ' by ' + s.member : '');
     document.title = tune.meta.name + ' — Session Buddies';
-    // settings
-    var sel = $('setting');
-    sel.innerHTML = '';
-    tune.settings.forEach(function (st, i) {
-      var o = document.createElement('option');
-      o.value = i;
-      o.textContent = 'Setting ' + (tune.settings.length > 1 ? i + 1 : number) + ' · ' + P.parseKey(st.key).name +
-        (st.member ? ' · ' + st.member : '') + (hasChords(st.abc) ? ' · has chords' : '');
-      sel.appendChild(o);
-    });
-    sel.value = String(tune.index);
-    sel.disabled = tune.settings.length < 2;
-    // In the Find panel: the tune's name, in the search box and large under
-    // it, and which setting of it is playing.
-    $('chosen').hidden = false;
-    $('chosen-name').textContent = tune.meta.name;
-    $('chosen-facts').textContent = ty.name + ' · ' + ty.meter + ' · ' + lay.key.name + ' · Setting ' + number +
-      (tune.settings.length > 1 ? ' of ' + tune.settings.length : tune.fromFile ? ', from a saved file' : '') +
-      (s.member ? ' by ' + s.member : '');
+    drawSettings();
     $('q').value = tune.meta.name;
     renderMine();                         // its star, and where it is in your tunes
     var link = $('setting-link');
@@ -1617,10 +1646,14 @@
     var last = stored('players.current', '');
     if (!(last && openText(last, true))) {
       loadTune(STARTER, 0);
+      fillSettings();
       $('find-status').textContent = 'The Kesh is ready to play, to start you off. Search above for any other tune.';
     }
     renderMine();
-    $('mine').open = !!(listOf(FAVS).length || listOf(RECENT).length);   // your tunes first, if you have any
+    // Open or closed as you left it (until 1.18.3 it opened at every load
+    // if you had any tunes); closed to begin with.
+    $('mine').open = stored('players.mineopen', '') === 'open';
+    $('mine').addEventListener('toggle', function () { store('players.mineopen', $('mine').open ? 'open' : 'closed'); });
   }
 
   // For the checks page.
