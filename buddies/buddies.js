@@ -17,7 +17,7 @@
    * next to the title and at the foot. Bump it with every change pushed (the
    * last number for a fix, the middle for something new) and add it to the
    * "Session Buddies" sections of CHANGELOG.md and the release notes. */
-  var VERSION = '1.19.2';
+  var VERSION = '1.20.0';
 
   var $ = function (id) { return document.getElementById(id); };
   var P = window.BUDDIES, G = window.GTR, T = window.TRAD, TPQ = P.TPQ;
@@ -143,7 +143,7 @@
       bpm: { start: 116, min: 60, max: 180 }, grid: grid('waltz', 'Dtdtdt'),
       clicks: [[0, 0.9], [2, 0.55], [4, 0.55]], final: [0], accents: [0],
       strums: {
-        lilt: { text: 'The bass note on the first beat and the chord on the second and third: oom-pa-pa. ' +
+        lilt: { text: 'The bass note on the first beat, the root and the fifth by turns bar by bar, and the chord on the second and third: oom-pa-pa. ' +
                       'The waltz’s own lilt.',
                 slots: [{ s: 0, d: 'B', v: 1 }, { s: 2, d: 'T', v: 0.6 }, { s: 4, d: 'T', v: 0.55 }] },
         drive: { text: 'The whole chord on every beat, and up after the second and the third, leaning on 1. Fuller, for the dancers.',
@@ -859,6 +859,26 @@
     requestAnimationFrame(frame);
   }
 
+  /* The string a waltz's bass note is played on (since 1.20.0; 'B' in
+   * guitar.js): the chord's root, or on alternate bars its fifth, as a
+   * guitarist backing a waltz walks between them; each the lowest string of
+   * the shape that has it. A shape without the fifth takes its next string
+   * up from the root; one without the root, its lowest. Until 1.20.0 the bass
+   * was always the shape's lowest string. */
+  function bassString(notes, chord, fifth) {
+    var ch = P.chord(chord), played = [];
+    notes.forEach(function (m, i) { if (m != null) played.push(i); });
+    if (!played.length) return 0;
+    if (!ch) return played[0];
+    function lowest(pc) { for (var i = 0; i < played.length; i++) if (notes[played[i]] % 12 === pc) return played[i]; return -1; }
+    var root = lowest(ch.root);
+    if (!fifth) return root >= 0 ? root : played[0];
+    var f = lowest((ch.root + 7) % 12);
+    if (f >= 0) return f;
+    var after = played.filter(function (i) { return i !== root; });
+    return after.length ? after[0] : played[0];
+  }
+
   /* ---------- the clock: the demo's ---------- */
   var playing = false, timer = null;
   var barN = 0, nextBar = 0, pending = [], shown = [], endAt = null;
@@ -1223,7 +1243,23 @@
   };
   var drumStyle = DRUM_STYLE[stored('players.drumstyle', '')] ? stored('players.drumstyle') : 'full';
   var drumBusy = Math.max(0, Math.min(1, +stored('players.drumbusy', '0.5') || 0));
-  var lastDrumGrid = null, drumPlayed = null;   // the last Full pattern (for the picker); the last played (for the checks)
+  var lastDrumGrid = null, drumPlayed = null;
+  /* The back hand (since 1.20.0), as the app's: the player's other hand
+   * pressing the skin from inside, the pitch rising (up to a fourth) and the
+   * ring shortening, in one slow arc over each four bars of the tune (open at
+   * the top, pressing in to its height 70% through, letting go across the
+   * last bar, so a fill falls in pitch into the next): TRAD.backHandShape.
+   * In Full each arc goes a little deeper or shallower, as a hand never quite
+   * repeats; in Simple it is the same every time; in Pulse, and on the
+   * closing stroke, the skin is left open. Off to begin with, and kept. */
+  var drumHand = Math.max(0, Math.min(1, +stored('players.drumhand', '0') || 0)), handPeak = {};
+  function pressAt(n, frac) {
+    if (!(drumHand > 0) || drumStyle === 'pulse' || n < 0) return 0;
+    var arc = Math.floor(n / 4);
+    if (handPeak[arc] == null) handPeak[arc] = drumStyle === 'full' ? 0.65 + 0.35 * Math.random() : 1;
+    return drumHand * handPeak[arc] * T.backHandShape(((n % 4) + frac) / 4);
+  }
+  function handWord(v) { return v === 0 ? 'off' : v < 0.35 ? 'light' : v < 0.7 ? 'moderate' : 'a lot'; }   // the last Full pattern (for the picker); the last played (for the checks)
   function appTune() {        // the app's own patterns for this type
     var id = tune.meta.type.replace(' ', ''), t = T.tuneById && T.tuneById(id);
     return t && t.id === id ? t : null;
@@ -1249,6 +1285,10 @@
     $('drum-busy-box').hidden = drumStyle !== 'full';
     $('drum-busy').value = drumBusy;
     $('drum-busy-out').textContent = Math.round(drumBusy * 100) + '%';
+    $('drum-hand-box').hidden = drumStyle === 'pulse';
+    $('drum-hand').value = drumHand;
+    $('drum-hand-out').textContent = handWord(drumHand);
+    if (drumHand > 0 && drumStyle !== 'pulse') $('drum-desc').textContent += ' The back hand presses into the skin through each four bars, the pitch rising and the ring shortening, and lets go into the next.';
   }
 
   /* Where quaver s of the bar falls, in quavers: straight, or swung (a
@@ -1311,11 +1351,13 @@
     if ($('on-guitar').checked) {
       var open = P.TUNINGS[tuning].strings;
       slots.forEach(function (x) {
-        var chord = chords.length > 1 && x.s >= ty.half ? chords[1] : chords[0];
-        (function (at, notes, dir, v) {
-          pending.push({ t: at, note: { who: 'guitar', slot: x.s },
-                         fn: function (t) { guitar.strum(notes, t, dir, v, 4, open); } });
-        })(t0 + backingAt(x.s) * q, P.voicing(tuning, chord), x.d, x.v);
+        var chord = chords.length > 1 && x.s >= ty.half ? chords[1] : chords[0], notes = P.voicing(tuning, chord);
+        // A waltz's oom: the root and the fifth by turns, bar by bar.
+        var reach = x.d === 'B' ? bassString(notes, chord, k % 2 === 1) : 4;
+        (function (at, notes, dir, v, reach) {
+          pending.push({ t: at, note: { who: 'guitar', slot: x.s, bass: dir === 'B' ? notes[reach] : undefined },
+                         fn: function (t) { guitar.strum(notes, t, dir, v, reach, open); } });
+        })(t0 + backingAt(x.s) * q, notes, x.d, x.v, reach);
       });
     }
     if ($('on-drum').checked) {
@@ -1330,15 +1372,15 @@
         for (var i = 0; i < g.length; i++) {
           var voice = T.VOICE[g[i]];
           if (!voice) continue;
-          var at = t0 + (even ? i * step : backingAt(i * step)) * q, v = T.VELOCITY[g[i]];
+          var at = t0 + (even ? i * step : backingAt(i * step)) * q, v = T.VELOCITY[g[i]], press = pressAt(n, i / g.length);
           if (full) {                              // a player's scatter, as the app's Humanise
             at += (Math.random() * 2 - 1) * 0.0036;
             v *= 1 + (Math.random() * 2 - 1) * 0.072;
           }
-          (function (at, vc, v) {
-            pending.push({ t: at, note: { who: 'drum', slot: i * step },
-                           fn: function (t) { drum.hit(vc, t, v); } });
-          })(at, voice, v);
+          (function (at, vc, v, press) {
+            pending.push({ t: at, note: { who: 'drum', slot: i * step, press: press },
+                           fn: function (t) { drum.hit(vc, t, v, press); } });
+          })(at, voice, v, press);
         }
       }
     }
@@ -1375,7 +1417,7 @@
     barN = -(+$('countin').value || 1);
     nextBar = ctx.currentTime + 0.12;
     ahead = T.lookahead(AHEAD);
-    pending = []; shown = []; endAt = null; finishAt = null; lastDrumGrid = null;
+    pending = []; shown = []; endAt = null; finishAt = null; lastDrumGrid = null; handPeak = {};
     tick();
     timer = setInterval(tick, 25);
     T.keepAwake(true, ctx);               // the screen held on while it plays (js/wake.js)
@@ -1738,6 +1780,9 @@
     $('drum-busy').addEventListener('input', function () {
       drumBusy = +this.value; store('players.drumbusy', String(drumBusy)); drawDrum();
     });
+    $('drum-hand').addEventListener('input', function () {        // heard from the next stroke laid
+      drumHand = +this.value; store('players.drumhand', String(drumHand)); drawDrum();
+    });
     $('on-drum').addEventListener('change', drawDrum);
     drawDrum();
     document.addEventListener('keydown', function (e) {
@@ -1779,7 +1824,7 @@
       try {
         layBar(n, 0);
         return pending.filter(function (x) { return x.note; }).map(function (x) {
-          return { t: x.t, who: x.note.who, midi: x.note.midi, dur: x.note.dur, final: x.note.final, w: x.note.w, slot: x.note.slot, slur: x.note.slur, grace: x.note.grace };
+          return { t: x.t, who: x.note.who, midi: x.note.midi, dur: x.note.dur, final: x.note.final, w: x.note.w, slot: x.note.slot, slur: x.note.slur, grace: x.note.grace, press: x.note.press, bass: x.note.bass };
         }).sort(function (a, b) { return a.t - b.t; });
       } finally { pending = keep.p; shown = keep.s; endAt = keep.e; }
     }, saveText: saveText, setChord: setChord,

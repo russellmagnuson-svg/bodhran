@@ -2316,7 +2316,8 @@
   function withBuddies(fn) {
     var keys = ['players.current', 'players.tuning', 'players.sympathy', 'players.volume', 'players.swing.hornpipe',
                 'buddies.favourites', 'buddies.recent', 'players.melody', 'players.yourturn', 'players.backing',
-                'players.drumstyle', 'players.drumbusy', 'players.voices', 'players.mineopen'], saved = {};
+                'players.drumstyle', 'players.drumbusy', 'players.voices', 'players.mineopen',
+                'players.ornaments', 'players.drumhand'], saved = {};
     keys.forEach(function (k) { saved[k] = localStorage.getItem(k); localStorage.removeItem(k); });
     var frame = document.createElement('iframe');
     frame.src = '../buddies/';
@@ -3082,7 +3083,7 @@
     });
 
   check('Session Buddies', 'A waltz’s oom is the bass note alone, its pa-pa the top of the chord',
-    'Backing a waltz, the guitar plays the bass note alone on the first beat and the chord on the other two. The bass stroke (B) strikes only the shape’s lowest string; the chord stroke (T) goes down through its top four, high strings last; in both tunings.',
+    'Backing a waltz, the guitar plays the bass note alone on the first beat and the chord on the other two. The bass stroke (B) strikes one string only: the one asked for (since 1.20.0, the root or the fifth), else the shape’s lowest; the chord stroke (T) goes down through its top four, high strings last; in both tunings.',
     function () {
       var bad = [];
       [['standard', 'G'], ['standard', 'Em'], ['dadgad', 'D'], ['dadgad', 'A']].forEach(function (x) {
@@ -3090,13 +3091,70 @@
         g._string = function (k) { hit.push(k); };
         var played = [];
         v.forEach(function (m, k) { if (m != null) played.push(k); });
-        g.strum(v, 0.01, 'B', 1, 4);
+        g.strum(v, 0.01, 'B', 1);
         if (hit.join() !== String(played[0])) bad.push(x.join(' ') + ': the bass stroke struck strings ' + hit.join(', ') + ', not ' + played[0] + ' alone');
+        hit = [];
+        g.strum(v, 0.03, 'B', 1, played[1]);
+        if (hit.join() !== String(played[1])) bad.push(x.join(' ') + ': asked for string ' + played[1] + ', the bass stroke struck ' + hit.join(', '));
         hit = [];
         g.strum(v, 0.05, 'T', 0.6, 4);
         if (hit.join() !== played.slice(-4).join()) bad.push(x.join(' ') + ': the chord stroke struck ' + hit.join(', ') + ', not ' + played.slice(-4).join(', '));
       });
       expect(bad.length === 0, bad.join('\n'));
+    });
+
+  check('Session Buddies', 'A waltz’s bass walks between the root and the fifth',
+    'The oom of a waltz was always the shape’s lowest string. A guitarist backing a waltz takes the chord’s root on one bar and its fifth on the next; so does the page, from the first bar of each time through, in both tunings, on the lowest string of the shape that has each.',
+    function () {
+      return withBuddies(function (win, doc) {
+        var PP = win.BUDDIES_PAGE, bad = [];
+        var waltz = { id: 0, name: 'A made-up waltz', type: 'waltz', url: '', settings: [{ id: 0, url: '', key: 'Dmajor', date: '', member: { name: 'a check' },
+          abc: 'A2|:d2 f2 a2|g2 f2 e2|d2 B2 A2|F4 A2|B2 d2 B2|A2 F2 D2|E2 F2 G2|A4 A2:|' + '|:a3 g f2|g2 e2 c2|d2 f2 a2|b4 a2|g2 e2 c2|d2 B2 A2|F2 E2 F2|D4 A2:|' }] };
+        PP.loadTune(waltz, 0);
+        doc.querySelector('#strums [data-strum="lilt"]').click();
+        ['standard', 'dadgad'].forEach(function (tn) {
+          doc.querySelector('#tunings [data-tuning="' + tn + '"]').click();
+          for (var n = 0; n < 8; n++) {
+            var chord = PP.tune().chords[PP.form()[n].slot][0], ch = PL.chord(chord), want = n % 2 ? (ch.root + 7) % 12 : ch.root;
+            var b = PP.plan(n).filter(function (x) { return x.who === 'guitar' && x.bass != null; })[0];
+            if (!b) { bad.push(tn + ', bar ' + (n + 1) + ': no bass note'); continue; }
+            var notes = PL.voicing(tn, chord), lowest = notes.filter(function (m) { return m != null && m % 12 === want; })[0];
+            if (b.bass % 12 !== want) bad.push(tn + ', bar ' + (n + 1) + ' (' + chord + '): the bass is MIDI ' + b.bass + ', not the ' + (n % 2 ? 'fifth' : 'root'));
+            else if (lowest != null && b.bass !== lowest) bad.push(tn + ', bar ' + (n + 1) + ': the ' + (n % 2 ? 'fifth' : 'root') + ' is not on the lowest string that has it');
+          }
+        });
+        expect(bad.length === 0, bad.join('\n'));
+      });
+    });
+
+  check('Session Buddies', 'The bodhrán’s back hand presses through each four bars, as in the app',
+    'The app’s back hand (the other hand pressing the skin from inside, the pitch rising and the ring shortening) was not in Session Buddies. Now it is, off to begin with and kept: one arc over each four bars of the tune, open at the top, pressed hardest about 70% through, let go across the fourth bar; the same every time in Simple, each a little different in Full; never in Pulse or on the closing stroke.',
+    function () {
+      return json(FIX + 'cooleys.json').then(function (j) {
+        return withBuddies(function (win, doc) {
+          var PP = win.BUDDIES_PAGE, bad = [], hand = doc.getElementById('drum-hand');
+          function set(v) { hand.value = v; hand.dispatchEvent(new win.Event('input')); }
+          function presses(n) { return PP.plan(n).filter(function (x) { return x.who === 'drum'; }).map(function (x) { return x.press || 0; }); }
+          PP.loadTune(j, 0);
+          if (!hand || doc.getElementById('drum-hand-box').hidden) { expect(false, 'there is no back hand for the bodhrán'); }
+          if (+hand.value !== 0 || presses(2).some(function (p) { return p > 0; })) bad.push('the back hand does not start off');
+          doc.querySelector('#drum-style [data-drum="simple"]').click();
+          set(1);
+          var bars = [0, 1, 2, 3, 4].map(presses), firsts = bars.map(function (b) { return b[0]; });
+          if (!(firsts[0] < 0.01 && firsts[1] > firsts[0] && firsts[2] > firsts[1] && firsts[3] > 0.5 && firsts[4] < 0.01)) bad.push('Simple: the bars open at ' + firsts.map(function (v) { return round(v, 2); }).join(', ') + ' (want an arc from open, pressed by bar 4, open again at bar 5)');
+          var top = Math.max.apply(null, [].concat.apply([], bars)), lastOf4 = bars[3][bars[3].length - 1];
+          if (!(top > 0.95 && lastOf4 < 0.3)) bad.push('Simple: pressed hardest ' + round(top, 2) + ', at the end of bar 4 still ' + round(lastOf4, 2));
+          var again = [4, 5, 6, 7].map(presses);
+          if (JSON.stringify(again) !== JSON.stringify([0, 1, 2, 3].map(presses))) bad.push('Simple: the next four bars do not press the same');
+          doc.querySelector('#drum-style [data-drum="full"]').click();
+          var tops = [0, 4, 8, 12, 16, 20].map(function (s0) { return Math.max.apply(null, [].concat.apply([], [s0, s0 + 1, s0 + 2, s0 + 3].map(presses))); });
+          if (!tops.every(function (t) { return t > 0.6 && t <= 1; }) || Math.max.apply(null, tops) - Math.min.apply(null, tops) < 0.01) bad.push('Full: each arc’s depth ' + tops.map(function (v) { return round(v, 2); }).join(', ') + ' (want each 0.65 to 1, not all alike)');
+          doc.querySelector('#drum-style [data-drum="pulse"]').click();
+          if (!doc.getElementById('drum-hand-box').hidden || presses(2).some(function (p) { return p > 0; })) bad.push('Pulse: the back hand is offered, or presses');
+          if (win.localStorage.getItem('players.drumhand') !== '1') bad.push('the back hand is not kept');
+          expect(bad.length === 0, bad.join('\n'));
+        });
+      });
     });
 
   check('Session Buddies', 'A hornpipe’s swing is set by ear, and kept',

@@ -471,6 +471,22 @@ The page at `/buddies/` has its own version number, shown next to its title.
 It was called Session Players, at `/players/`, until 1.8.0; the entries
 before that keep the old name.
 
+### Session Buddies 1.20.0 — 2026-10-03 — Back hand, and a waltz bass that walks
+
+- **The bodhrán's back hand**, as in the app: a Back hand slider in the
+  Bodhrán section (off, light, moderate, a lot; off to begin with, kept).
+  The other hand presses the skin from inside, the pitch rising (up to a
+  fourth) and the ring shortening, in one slow arc over each four bars of
+  the tune: open at the top, pressed hardest about 70% through, let go
+  across the fourth bar, so a fill falls in pitch into the next phrase. In
+  Full each arc goes a little deeper or shallower, as a hand never quite
+  repeats; in Simple it is the same every time; not in Pulse, and not on the
+  closing stroke.
+- **A waltz's bass walks between the root and the fifth.** The oom of the
+  waltz's oom-pa-pa was always the shape's lowest string; now it is the
+  chord's root on one bar and its fifth on the next, from the first bar of
+  each time through, each on the lowest string of the shape that has it.
+
 ### Session Buddies 1.19.2 — 2026-10-03
 
 - The setting you were on could still say "[object Object]": chosen from the
