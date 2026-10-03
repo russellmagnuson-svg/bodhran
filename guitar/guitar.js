@@ -443,7 +443,9 @@
 
   /* Strum a shape at time t.
    *   dir 'D' goes bass to treble through every string the shape plays;
-   *   dir 'U' comes back from the treble through the top `reach` strings.
+   *   dir 'U' comes back from the treble through the top `reach` strings;
+   *   dir 'B' plays the bass note alone, and 'T' goes down through the top
+   *   `reach` strings: a waltz's oom and its pa-pa.
    *   vel is how hard, 0..1. Harder strums sweep faster. */
   Guitar.prototype.strum = function (notes, t, dir, vel, reach, open) {
     // A new shape: the fretting hand lets go of strings it no longer plays,
@@ -465,10 +467,14 @@
     var strings = [];
     for (s = 0; s < 6; s++) if (notes[s] != null) strings.push(s);
     if (dir === 'U') strings = strings.slice(-(reach || 4)).reverse();
+    else if (dir === 'B') strings = strings.slice(0, 1);
+    else if (dir === 'T') strings = strings.slice(-(reach || 4));
     var gap = (dir === 'U' ? 0.009 : 0.012) - 0.004 * vel;
     for (var i = 0; i < strings.length; i++) {
       var k = strings[i];
-      // Down strums lean on the bass, up strums catch the treble.
+      // Down strums lean on the bass, up strums catch the treble. (A bass
+      // note alone, struck as a down strum strikes it, stands a little over
+      // the pa-pa after it: measured, 1-2 dB.)
       var weight = dir === 'U' ? 0.75 + 0.25 * (i === 0) : (k < 3 ? 1.05 : 0.75);
       var v = vel * weight * (0.9 + Math.random() * 0.2) * 0.34;
       this._string(k, notes[k], t + i * gap + Math.random() * 0.002, v);

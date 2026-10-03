@@ -128,7 +128,8 @@ against the real code:
   the concertina sounds like a reed, plays in tune and sits with the
   flute, and ticking it plays the tune on it; the chosen tune and setting are
   shown where you found it; a first visit opens with a tune ready to play; your tunes are a tap away; your work is kept when you search a tune you have; settings the audit found misread read right; the last time through ends on the tune's own last note; a chord you change is kept, played or not, and a reset can be undone; Finish ends at the end of this time through, and so does lowering “Play it”; your turn drops the melody where you choose; the backing rides the tune’s lilt as you choose, and triplets stay even; hornpipes, polkas,
-  slides and slip jigs play, each in its own time; the app and
+  slides, slip jigs and waltzes play, each in its own time (a waltz's guitar
+  oom-pa-pa: the bass note alone, then the chord on the top strings); the app and
   Session Buddies link to each other at the foot; chords follow the shape of a part; the matches fold away once one is picked; reopening keeps your chords and
   chooses the rest afresh; finding a tune asks the Session and offers only
   the types it can play; it
@@ -489,7 +490,7 @@ file comes back exactly as saved.
 on thesession.org (its API answers any site, so the page asks it directly;
 there is no server of ours), fetched, and played with the guitar demo's
 guitar, flute and bodhrán, and a recorded concertina. Jigs, reels, hornpipes,
-polkas, slides and slip jigs for now (`TYPES` in buddies.js, keyed by the
+polkas, slides, slip jigs and waltzes for now (`TYPES` in buddies.js, keyed by the
 Session's names for them; a hornpipe swings by its Swing control, 64:36 to
 start and kept in `players.swing.hornpipe`, guitar, drum and tune together; its
 triplets, dotted pairs and semiquavers play as written: `asWritten`). The foot

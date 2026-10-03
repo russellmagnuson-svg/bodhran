@@ -458,6 +458,20 @@ The page at `/buddies/` has its own version number, shown next to its title.
 It was called Session Players, at `/players/`, until 1.8.0; the entries
 before that keep the old name.
 
+### Session Buddies 1.16.0 — 2026-10-03 — Waltzes
+
+- **Waltzes can be played.** Search for one as for any tune; it counts three
+  crotchets to the bar, starting at 116 (60–180).
+- **The guitar backs it oom-pa-pa** (Lilt, where it starts): the bass note
+  alone on the first beat and the chord on the second and third, as a
+  session guitarist backs a waltz, the chord changing at most on the third
+  beat. Driving plays the whole chord on every beat with an up-strum after
+  the second and third, fuller, for the dancers. The bass note stands 1–4 dB
+  over the chord after it, a waltz's lean on 1.
+- The flute and concertina lean on the first beat and lilt their quavers a
+  little (53:47 on the flute, 54:46 on the concertina); the bodhrán plays the
+  app's plain waltz, and the count-in counts three.
+
 ### Session Buddies 1.15.0 — 2026-10-02 — A less electronic drum; the concertina loads safely
 
 - **The app's new bodhrán** (1.10.0): no swoop, a skin that rings like a

@@ -1,5 +1,5 @@
 /* buddies.js — Session Buddies (called Session Players until 1.8.0): find a
- * tune on thesession.org (a jig, reel, hornpipe, polka, slide or slip jig),
+ * tune on thesession.org (a jig, reel, hornpipe, polka, slide, slip jig or waltz),
  * give it a guitar and bodhrán backing with the tune on flute and
  * concertina, and play along.
  *
@@ -17,7 +17,7 @@
    * next to the title and at the foot. Bump it with every change pushed (the
    * last number for a fix, the middle for something new) and add it to the
    * "Session Buddies" sections of CHANGELOG.md and the release notes. */
-  var VERSION = '1.15.0';
+  var VERSION = '1.16.0';
 
   var $ = function (id) { return document.getElementById(id); };
   var P = window.BUDDIES, G = window.GTR, T = window.TRAD, TPQ = P.TPQ;
@@ -132,12 +132,30 @@
                    return { s: q, d: q % 2 ? 'U' : 'D', v: q === 0 ? 1 : q % 3 === 0 ? 0.75 : 0.4 };
                  }) }
       }
+    },
+    /* Since 1.16.0. Three crotchets, the weight on the first: the guitar
+     * plays it as a session guitarist backs a waltz, the bass note alone on
+     * the first beat and the chord on the other two (oom-pa-pa; 'B' and 'T'
+     * in guitar.js), the chord changing at most on the third beat; the drum
+     * the app's plain waltz. One accent, on 1. */
+    waltz: {
+      name: 'Waltz', plural: 'waltzes', meter: '3/4', slots: 6, half: 4, per: 2, unit: 'per crotchet',
+      bpm: { start: 116, min: 60, max: 180 }, grid: grid('waltz', 'Dtdtdt'),
+      clicks: [[0, 0.9], [2, 0.55], [4, 0.55]], final: [0], accents: [0],
+      strums: {
+        lilt: { text: 'The bass note on the first beat and the chord on the second and third: oom-pa-pa. ' +
+                      'The waltz’s own lilt.',
+                slots: [{ s: 0, d: 'B', v: 1 }, { s: 2, d: 'T', v: 0.6 }, { s: 4, d: 'T', v: 0.55 }] },
+        drive: { text: 'The whole chord on every beat, and up after the second and the third, leaning on 1. Fuller, for the dancers.',
+                 slots: [{ s: 0, d: 'D', v: 1 }, { s: 2, d: 'D', v: 0.6 }, { s: 3, d: 'U', v: 0.4 },
+                         { s: 4, d: 'D', v: 0.6 }, { s: 5, d: 'U', v: 0.4 }] }
+      }
     }
   };
 
-  // "Jigs, reels, hornpipes, polkas, slides and slip jigs", for the page to say.
+  // "Jigs, reels, hornpipes, polkas, slides, slip jigs and waltzes", for the page to say.
   var PLAYABLE = (function () {
-    var n = Object.keys(TYPES).map(function (k) { return TYPES[k].name.toLowerCase() + 's'; });
+    var n = Object.keys(TYPES).map(function (k) { return TYPES[k].plural || TYPES[k].name.toLowerCase() + 's'; });
     n[0] = n[0].charAt(0).toUpperCase() + n[0].slice(1);
     return n.slice(0, -1).join(', ') + ' and ' + n[n.length - 1];
   })();
@@ -925,10 +943,10 @@
   var LILT = {
     flute:      { jig: JIG_F, reel: [[0, 0], [1, 1.10], [2, 2]], 'slip jig': JIG_F,
                   slide: [[0, 0], [1, 1.14], [2, 2.07], [3, 3]],
-                  polka: [[0, 0], [1, 1.06], [1.5, 1.5], [2, 2]] },
+                  polka: [[0, 0], [1, 1.06], [1.5, 1.5], [2, 2]], waltz: [[0, 0], [1, 1.06], [2, 2]] },
     concertina: { jig: JIG_C, reel: [[0, 0], [1, 1.14], [2, 2]], 'slip jig': JIG_C,
                   slide: [[0, 0], [1, 1.18], [2, 2.09], [3, 3]],
-                  polka: [[0, 0], [1, 1.1], [1.5, 1.5], [2, 2]] }
+                  polka: [[0, 0], [1, 1.1], [1.5, 1.5], [2, 2]], waltz: [[0, 0], [1, 1.08], [2, 2]] }
   };
   /* The beats of a bar the warp leaves as written: { beat: true }. In a
    * swung tune, any beat not in plain quavers and longer (a triplet, a dotted
@@ -972,7 +990,8 @@
     hornpipe: [0.95, 0.6, 0.8, 0.62, 0.88, 0.6, 0.8, 0.64],
     polka: [0.95, 0.66, 0.86, 0.7],
     slide: [0.95, 0.62, 0.7, 0.8, 0.62, 0.7, 0.9, 0.62, 0.7, 0.8, 0.62, 0.72],     // leaning on 1 and 3
-    'slip jig': [0.95, 0.62, 0.7, 0.84, 0.62, 0.7, 0.86, 0.62, 0.72]
+    'slip jig': [0.95, 0.62, 0.7, 0.84, 0.62, 0.7, 0.86, 0.62, 0.72],
+    waltz: [0.95, 0.62, 0.78, 0.62, 0.76, 0.64]                                   // leaning on 1
   };
   function weight(tick, k) {
     var ty = type(), w = WEIGHT[tune.meta.type], L = ty.slots * TPQ;
@@ -1225,8 +1244,9 @@
     ty.strums[strum].slots.forEach(function (x) { slots[x.s] = x; });
     var html = '';
     for (var s = 0; s < ty.slots; s++) {
-      var x = slots[s], accent = s === 0 || s === ty.half;
-      html += '<span id="dot-' + s + '" class="' + (x ? (accent ? 'accent' : '') : 'rest') + '">' + (x ? x.d : '·') + '</span>';
+      var x = slots[s], accent = (ty.accents || [0, ty.half]).indexOf(s) !== -1;
+      // A waltz's pa-pa ('T') is a down strum, on the top strings.
+      html += '<span id="dot-' + s + '" class="' + (x ? (accent ? 'accent' : '') : 'rest') + '">' + (x ? (x.d === 'T' ? 'D' : x.d) : '·') + '</span>';
     }
     $('strum-dots').innerHTML = html;
     $('strum-desc').textContent = ty.strums[strum].text;

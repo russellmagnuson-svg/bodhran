@@ -3216,22 +3216,26 @@
       });
     });
 
-  check('Session Buddies', 'Hornpipes, polkas, slides and slip jigs play, each in its own time',
-    'Only jigs and reels could be played. Now a real tune of each of the four (The Boys of Bluehill, The Britches Full of Stitches, The Road to Lisdoonvarna, The Butterfly) reads in whole bars, every chord has a shape, and it plays: the strums of a bar where its type puts them, the hornpipe swung long-short and the others straight, the tune’s beats on time; a hornpipe swung by its Swing control (64:36 to start), guitar and tune together, its triplets kept even and a setting written dotted (B>A) played as written; a polka’s written dotted pair (d>e) not dotted twice; a slip jig’s second chord on its third beat, not mid-beat; a slide’s phrase four of its long bars.',
+  check('Session Buddies', 'Hornpipes, polkas, slides, slip jigs and waltzes play, each in its own time',
+    'Only jigs and reels could be played. Now a real tune of each of four more (The Boys of Bluehill, The Britches Full of Stitches, The Road to Lisdoonvarna, The Butterfly), and since 1.16.0 a waltz (a made-up one in 3/4), reads in whole bars, every chord has a shape, and it plays: the strums of a bar where its type puts them, the hornpipe swung long-short and the others straight, the tune’s beats on time; a hornpipe swung by its Swing control (64:36 to start), guitar and tune together, its triplets kept even and a setting written dotted (B>A) played as written; a polka’s written dotted pair (d>e) not dotted twice; a slip jig’s second chord on its third beat, not mid-beat; a slide’s phrase four of its long bars; a waltz’s guitar oom-pa-pa (the bass note alone on 1, the chord on 2 and 3), its second chord on the third beat.',
     function () {
       var names = ['the-boys-of-bluehill', 'britches-full-of-stitches', 'the-road-to-lisdoonvarna', 'the-butterfly'];
       // And a hornpipe written dotted, as many settings are.
       var dotted = { id: 0, name: 'A dotted hornpipe', type: 'hornpipe', url: '', dotted: true, settings: [{ id: 0, url: '', key: 'Dmajor',
         date: '', member: { name: 'a check' }, abc: '|:B>AF>A D2F>A|B>AF>A d2e>d|B>AF>A D2F>A|B>AF>A d4:|' }] };
+      // A waltz, made up for the check: a crotchet pickup, two 8-bar parts.
+      var waltz = { id: 0, name: 'A made-up waltz', type: 'waltz', url: '', settings: [{ id: 0, url: '', key: 'Dmajor', date: '', member: { name: 'a check' },
+        abc: 'A2|:d2 f2 a2|g2 f2 e2|d2 B2 A2|F4 A2|B2 d2 B2|A2 F2 D2|E2 F2 G2|A4 A2:|' +
+             '|:a3 g f2|g2 e2 c2|d2 f2 a2|b4 a2|g2 e2 c2|d2 B2 A2|F2 E2 F2|D4 A2:|' }] };
       return Promise.all(names.map(function (n) { return json(FIX + n + '.json'); })).then(function (tunes) {
-        tunes.push(dotted);
+        tunes.push(dotted, waltz);
         return withBuddies(function (win, doc) {
           var PP = win.BUDDIES_PAGE, B = win.BUDDIES, bad = [], strums = [], notes = [];
           doc.querySelector('#backing-feel [data-backing="straight"]').click();   // where each type puts its strums, before any lilt
           var GP = win.GTR.Guitar.prototype, gs = GP.strum, FP = B.Flute.prototype, fn = FP.note;
           GP.strum = function (n, t, dir) { strums.push({ t: t, d: dir }); return gs.apply(this, arguments); };
           FP.note = function (t, d, m) { notes.push({ t: t, m: m }); return fn.apply(this, arguments); };
-          expect(/hornpipes, polkas, slides and slip jigs/.test(doc.querySelector('h2 .tag').textContent), 'Find a tune does not say what can be played');
+          expect(/hornpipes, polkas, slides, slip jigs and waltzes/.test(doc.querySelector('h2 .tag').textContent), 'Find a tune does not say what can be played');
           var chain = Promise.resolve();
           tunes.forEach(function (j) {
             chain = chain.then(function () {
@@ -3281,6 +3285,12 @@
                 if (j.type === 'polka' && Math.abs(tn[1] - 1.5) > 0.03) bad.push(name + ': its written d>e plays at ' + round(tn[1], 2) + ', not 1.5 (dotted twice)');
                 if (j.type === 'slip jig' && lay.meter.half !== 6 * PL.TPQ) bad.push(name + ': its second chord comes in at quaver ' + lay.meter.half / PL.TPQ + ', not on the third beat (6)');
                 if (j.type === 'slide' && lay.meter.phrase !== 4) bad.push(name + ': its phrase is ' + lay.meter.phrase + ' long bars, not 4');
+                if (j.type === 'waltz') {
+                  var dirs = first.map(function (x) { return x.d; }).join('');
+                  if (dirs !== 'BTT') bad.push(name + ': its guitar plays ' + dirs + ' in a bar, not the bass note then the chord twice (BTT)');
+                  if (lay.meter.half !== 4 * PL.TPQ) bad.push(name + ': its second chord comes in at quaver ' + lay.meter.half / PL.TPQ + ', not on the third beat (4)');
+                  if (!/, slip jigs and waltzes$/.test(PP.PLAYABLE)) bad.push('the page says “' + PP.PLAYABLE + '” can be played');
+                }
               });
             });
           });
@@ -3290,6 +3300,24 @@
           });
         });
       });
+    });
+
+  check('Session Buddies', 'A waltz’s oom is the bass note alone, its pa-pa the top of the chord',
+    'Backing a waltz, the guitar plays the bass note alone on the first beat and the chord on the other two. The bass stroke (B) strikes only the shape’s lowest string; the chord stroke (T) goes down through its top four, high strings last; in both tunings.',
+    function () {
+      var bad = [];
+      [['standard', 'G'], ['standard', 'Em'], ['dadgad', 'D'], ['dadgad', 'A']].forEach(function (x) {
+        var v = PL.voicing(x[0], x[1]), o = new OfflineAudioContext(1, 4800, 48000), g = new window.GTR.Guitar(o, o.destination), hit = [];
+        g._string = function (k) { hit.push(k); };
+        var played = [];
+        v.forEach(function (m, k) { if (m != null) played.push(k); });
+        g.strum(v, 0.01, 'B', 1, 4);
+        if (hit.join() !== String(played[0])) bad.push(x.join(' ') + ': the bass stroke struck strings ' + hit.join(', ') + ', not ' + played[0] + ' alone');
+        hit = [];
+        g.strum(v, 0.05, 'T', 0.6, 4);
+        if (hit.join() !== played.slice(-4).join()) bad.push(x.join(' ') + ': the chord stroke struck ' + hit.join(', ') + ', not ' + played.slice(-4).join(', '));
+      });
+      expect(bad.length === 0, bad.join('\n'));
     });
 
   check('Session Buddies', 'A hornpipe’s swing is set by ear, and kept',
@@ -3771,7 +3799,7 @@
     });
 
   check('Session Buddies', 'Finding a tune asks the Session, offers only what it can play, and folds away',
-    'The search goes to thesession.org’s own API, from the page. Jigs, reels, hornpipes, polkas, slides and slip jigs can be picked; other types (a waltz, say) are listed but not yet playable. Once one is picked the list folds under one line, so it no longer pushes the tune far down the page.',
+    'The search goes to thesession.org’s own API, from the page. Jigs, reels, hornpipes, polkas, slides, slip jigs and waltzes can be picked; other types (a mazurka, say) are listed but not yet playable. Once one is picked the list folds under one line, so it no longer pushes the tune far down the page.',
     function () {
       return json(FIX + 'the-kesh.json').then(function (kesh) {
         return withBuddies(function (win, doc) {
@@ -3779,7 +3807,7 @@
           win.fetch = function (url) {
             asked.push(String(url));
             var body = /search/.test(url)
-              ? { tunes: [{ id: 55, name: 'The Kesh', type: 'jig' }, { id: 1, name: 'Some Waltz', type: 'waltz' }] }
+              ? { tunes: [{ id: 55, name: 'The Kesh', type: 'jig' }, { id: 1, name: 'Some Mazurka', type: 'mazurka' }] }
               : kesh;
             return Promise.resolve({ ok: true, json: function () { return Promise.resolve(body); } });
           };
@@ -3787,7 +3815,7 @@
           doc.getElementById('find-go').click();
           return wait(100).then(function () {
             var btns = doc.querySelectorAll('#results button'), box = doc.getElementById('matches');
-            var waltz = btns[1] && btns[1].disabled;
+            var other = btns[1] && btns[1].disabled;
             var openFirst = box.open && !box.hidden, sumFirst = doc.getElementById('matches-sum').textContent;
             btns[0].click();
             return wait(100).then(function () {
@@ -3795,7 +3823,7 @@
               expect(openFirst && /^2 found for “kesh”/.test(sumFirst), 'the matches were not shown: "' + sumFirst + '"');
               expect(!box.open && /^1 other match for “kesh”/.test(sumAfter), 'after picking one the matches did not fold away: "' + sumAfter + '"');
               expect(/^https:\/\/thesession\.org\/tunes\/search\?q=kesh&format=json/.test(asked[0] || ''), 'it asked ' + asked[0]);
-              expect(btns.length === 2 && waltz && !btns[0].disabled, 'the results were not two, with the jig playable and the waltz not');
+              expect(btns.length === 2 && other && !btns[0].disabled, 'the results were not two, with the jig playable and the mazurka not');
               expect(/^https:\/\/thesession\.org\/tunes\/55\?format=json/.test(asked[1] || ''), 'picking it fetched ' + asked[1]);
               expect(win.BUDDIES_PAGE.tune() && win.BUDDIES_PAGE.tune().meta.name === 'The Kesh', 'picking it did not load The Kesh');
             });
