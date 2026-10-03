@@ -458,6 +458,18 @@ The page at `/buddies/` has its own version number, shown next to its title.
 It was called Session Players, at `/players/`, until 1.8.0; the entries
 before that keep the old name.
 
+### Session Buddies 1.18.1 — 2026-10-03
+
+- **The bodhrán no longer leans toward a snare drum.** It went through a
+  9 dB lift around 2.5 kHz, from the guitar demo, added when the drum was
+  nearly all low thump and could hardly be picked out against the guitar.
+  On the new drum (1.15.0) the lift only tipped it toward a snare: five times
+  the share of its sound above 1.5 kHz, for 0.4 dB more loudness, and more
+  of a snare than the app, which has none. Now it has none either; its
+  level is raised 0.5 dB to keep its place against the guitar, and its stick
+  still sits 10 dB under the guitar in its own band, easily heard (the old
+  drum's sat 34 dB under).
+
 ### Session Buddies 1.18.0 — 2026-10-03 — Choose how the bodhrán plays
 
 - **Full, Simple or Pulse**, as in the app, under Backing feel while the

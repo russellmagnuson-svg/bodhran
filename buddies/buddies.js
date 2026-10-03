@@ -17,7 +17,7 @@
    * next to the title and at the foot. Bump it with every change pushed (the
    * last number for a fix, the middle for something new) and add it to the
    * "Session Buddies" sections of CHANGELOG.md and the release notes. */
-  var VERSION = '1.18.0';
+  var VERSION = '1.18.1';
 
   var $ = function (id) { return document.getElementById(id); };
   var P = window.BUDDIES, G = window.GTR, T = window.TRAD, TPQ = P.TPQ;
@@ -164,9 +164,18 @@
    * The concertina sits about 1 dB under the flute, each played as the page
    * plays it: a bright reed carries more than its level says. (Recorded
    * since 1.7.0: its notes, levelled to -18 dBFS, measured 2.8 dB under at
-   * the synthesised one's 0.16, hence 0.6.) */
-  var MIX = { guitar: 0.7, tune: 0.18, concertina: 0.6, drum: 0.7 };
-  var DRUM = { lift: { f: 2500, q: 0.7, gain: 9 } };
+   * the synthesised one's 0.16, hence 0.6.)
+   *
+   * The bodhrán had the demo's lift, 9 dB around 2.5 kHz, so the old drum,
+   * nearly all under 120 Hz, could be picked out against the guitar. The
+   * 1.10.0 drum has its own middle and slap, and the lift only tipped it
+   * toward a snare drum ("a touch too much of a snare", more than in the
+   * app, which has none): it put five times the share of its sound above
+   * 1.5 kHz while making it only 0.4 dB louder. Since 1.18.1 there is none;
+   * its stick still sits 10 dB under the guitar in its own band (the old
+   * drum's sat 34 under), and its level is raised 0.5 dB, 0.7 to 0.74, to
+   * stand against the guitar where it did. */
+  var MIX = { guitar: 0.7, tune: 0.18, concertina: 0.6, drum: 0.74 };
   // Saved settings keep their 'players.' names from before the rename, so
   // the last tune, volumes and tuning carry over to the new address.
   function stored(key, fallback) {
@@ -785,11 +794,7 @@
     guitar = new G.Guitar(ctx, run);
     guitar.sympathy = sympathy;
     prepareGuitar();
-    var lift = ctx.createBiquadFilter();
-    lift.type = 'peaking';
-    lift.frequency.value = DRUM.lift.f; lift.Q.value = DRUM.lift.q; lift.gain.value = DRUM.lift.gain;
-    lift.connect(run);
-    drum = new T.Bodhran(ctx, lift);
+    drum = new T.Bodhran(ctx, run);
     drum.setRoom(0.1);
     clicker = new T.Bodhran(ctx, run);
     clicker.setLevel(0.42); clicker.setRoom(0.1);

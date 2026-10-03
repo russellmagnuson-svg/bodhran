@@ -3773,6 +3773,56 @@
       });
     });
 
+  check('Session Buddies', 'The bodhrán has no snare-drum treble lift, and is still heard against the guitar',
+    'It had the guitar demo’s lift, 9 dB around 2.5 kHz, added so the old drum (nearly all under 120 Hz) could be picked out. On the new drum it put five times the share of its sound above 1.5 kHz, for 0.4 dB of loudness: “a touch too much of a snare drum”, more than in the app. Now none, its level raised 0.5 dB instead: as the page mixes them, the bodhrán within 2 dB of the guitar overall and its stick within 24 dB of the guitar at 1.5–5 kHz.',
+    function () {
+      return withBuddies(function (win, doc) {
+        var T = win.TRAD, Real = T.Bodhran, dests = [];
+        T.Bodhran = function (ctx, dest) { dests.push(dest); return new Real(ctx, dest); };
+        doc.getElementById('play').click();
+        return wait(300).then(function () {
+          doc.getElementById('play').click();
+          T.Bodhran = Real;
+          var d = dests[0], MIX = win.BUDDIES_PAGE.MIX;
+          expect(d, 'the page made no bodhrán');
+          expect(!(d.type === 'peaking' && d.gain && d.gain.value > 3), 'the bodhrán goes through a ' + (d.gain && round(d.gain.value)) + ' dB lift at ' + (d.frequency && Math.round(d.frequency.value)) + ' Hz');
+          var SRG = 48000, q = 60 / 100 / 3, K = window.KESH, len = Math.ceil(SRG * (8 * 6 * q + 2));
+          function level(x, lo, hi) {
+            var o = new OfflineAudioContext(1, x.length, SRG), b = o.createBuffer(1, x.length, SRG);
+            b.getChannelData(0).set(x);
+            var src = o.createBufferSource(); src.buffer = b; var node = src;
+            [[lo, 'highpass'], [lo, 'highpass'], [hi, 'lowpass'], [hi, 'lowpass']].forEach(function (f) {
+              if (!f[0]) return;
+              var bq = o.createBiquadFilter(); bq.type = f[1]; bq.frequency.value = f[0]; node.connect(bq); node = bq;
+            });
+            node.connect(o.destination); src.start();
+            return o.startRendering().then(function (r) { var y = r.getChannelData(0), e = 0; for (var i = 0; i < y.length; i++) e += y[i] * y[i]; return 10 * Math.log10(e / y.length); });
+          }
+          var og = new OfflineAudioContext(1, len, SRG), g = new window.GTR.Guitar(og, og.destination), notes = {};
+          g.level.gain.value = MIX.guitar;
+          ['G', 'D', 'C'].forEach(function (c) { K.voicing(c, 'dadgad').forEach(function (m) { if (m != null) notes[m] = 1; }); });
+          g.prepare(Object.keys(notes).map(Number));
+          var od = new OfflineAudioContext(1, len, SRG), drum = new TRAD.Bodhran(od, od.destination);
+          drum.master.gain.value = MIX.drum; drum.setRoom(0.1);
+          var t = 0.05;
+          ['G', 'D', 'C', 'D', 'G', 'D', 'C', 'G'].forEach(function (c) {
+            var v = K.voicing(c, 'dadgad');
+            g.strum(v, t, 'D', 1); g.strum(v, t + 2 * q, 'U', 0.5, 4); g.strum(v, t + 3 * q, 'D', 0.8); g.strum(v, t + 5 * q, 'U', 0.5, 4);
+            drum.hit('bass', t, 1); drum.hit('treble', t + 2 * q, 0.46); drum.hit('bass', t + 3 * q, 1); drum.hit('treble', t + 5 * q, 0.46);
+            t += 6 * q;
+          });
+          return Promise.all([og.startRendering(), od.startRendering()]).then(function (r) {
+            var gd = r[0].getChannelData(0), dd = r[1].getChannelData(0);
+            return Promise.all([level(gd), level(dd), level(gd, 1500, 5000), level(dd, 1500, 5000)]);
+          }).then(function (L) {
+            var overall = L[1] - L[0], click = L[3] - L[2];
+            expect(overall > -2, 'the bodhrán is ' + round(-overall) + ' dB under the guitar overall');
+            expect(click > -24, 'its stick is ' + round(-click) + ' dB under the guitar at 1.5–5 kHz');
+          });
+        });
+      });
+    });
+
   check('Session Buddies', 'The bodhrán plays Full, Simple or Pulse as you choose, and Full phrases like a player',
     'The bodhrán always played one plain bar, where the app lets you choose. Now, while it is ticked, it offers the app’s three: Full (where it starts) changes pattern bar to bar by its Busyness, with fills only at the end of a phrase of the tune or half way (most often at the end), and a player’s scatter; Simple the one plain bar; Pulse one low stroke per beat. Busyness weights the patterns from sparse to busy, and both are kept for next time.',
     function () {
