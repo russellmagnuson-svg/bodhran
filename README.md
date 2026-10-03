@@ -160,14 +160,20 @@ Three reasons, and the third is the one that decided it:
 ## How the rhythm works
 
 There are no audio samples. Every bodhrán hit is synthesised in
-[`js/bodhran.js`](js/bodhran.js) from oscillators and filtered noise — a
-pitched membrane thump that drops in pitch as the skin relaxes, an inharmonic
-second mode, and a noise transient for the tipper striking the skin. Down
-strokes, up strokes and ghost notes all share that one skin model and differ
-only in the stroke: the up stroke is lighter, with less fundamental, less pitch
-bend, a shorter ring and relatively more stick; a ghost is lighter again, a
-faint thump and a soft tick about 22dB under a down stroke. That means
-nothing to download or license, and the drum can be re-tuned live.
+[`js/bodhran.js`](js/bodhran.js) from oscillators and filtered noise — the
+skin ringing (its fundamental and the next five modes of a round drumhead, at
+1.59, 2.14, 2.30, 2.65 and 2.92 times it, each a little different from stroke
+to stroke and dying away sooner the higher it is, all settling a few percent
+in pitch as the struck skin relaxes), the goatskin's slap (band-passed noise
+in its middle register, through the same tone filter), and a noise transient
+for the tipper striking the skin. Down strokes, up strokes and ghost notes all
+share that one skin model and differ only in the stroke (`Bodhran.STROKES`):
+the up stroke is lighter, with less fundamental, less pitch bend, a shorter
+ring and relatively more stick; a ghost is lighter again, a faint thump and a
+soft tick about 22dB under a down stroke. Until 1.10.0 a dum swooped down
+almost an octave in 55 ms, the electronic kick drum's recipe, nearly all of it
+under 120 Hz. That means nothing to download or license, and the drum can be
+re-tuned live.
 
 **Back hand** brings in the player's other hand, pressing on the skin from
 inside: at full pressure the pitch rises about a fourth (5 semitones) and the
@@ -373,7 +379,7 @@ npx wrangler pages deploy . --project-name=bodhran
   open `/tests/sound.html` in the stuck tab and press A; if A is silent,
   press F (the nudge alone), then A again. That shows whether the nudge
   wakes it. First, though, read the **Sound check** line under Play
-  (`TRAD.soundCheck`, an analyser on the limiter at the end of
+  (`TRAD.soundCheck`, an analyser on the limiter and trim at the end of
   `TRAD.makeOutput`): "making sound" while nothing is heard means Safari is
   losing it; "no sound" or "broken" means the fault is in the page. On 29
   September the stuck tab said "making sound", and in it the sound page's
@@ -517,7 +523,11 @@ of the app and of Session Buddies switches between the two.
   out over 60 ms, the join matched over 10 ms and blended over 100 ms) for
   long notes; recordings that waver in pitch on their own (`wobble` in
   samples.json over 1.5 cents: F♯4, A♯3, A♯4, G♯5) are played from the
-  steadier neighbour a semitone away; `ConcertinaSynth`, the synthesised one, plays until they load.
+  steadier neighbour a semitone away; `ConcertinaSynth`, the synthesised one, plays until they load,
+  at their level (`Concertina.STAND_IN`). Each recording loads on its own, tried twice; what arrives is
+  kept, a missing note is borrowed from a neighbour up to two semitones away (else the stand-in), the
+  missing ones are tried again at Play (`retry()`), and `status` (loading, ready, partial, failed)
+  drives the line under the mixer.
 - `buddies/flute.js`, `buddies/concertina.js` — the two melody instruments,
   each `new X(ctx, dest)` with `.note(t, dur, midi, vel)` and `.cancelFrom(t)`.
   The flute is the demo's, with a lighter vibrato (`VIBRATO`: ±4 cents on

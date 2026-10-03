@@ -722,13 +722,24 @@
     });
 
   check('Sound', 'Stroke levels stay where they were set',
-    'Tak about 12 dB and ghost about 22 dB under an accented dum. Change these on purpose? Update the numbers here too.',
+    'Tak about 11 dB and ghost about 22 dB under an accented dum, each the loudest moment of three strokes. Measured once the drum’s compressor has settled: in its first third of a second it is still coming up to strength, which until 1.10.0 this check measured through (it read the tak at 12). Change these on purpose? Update the numbers here too.',
     function () {
-      return Promise.all([soloHit('bass', TRAD.VELOCITY.D), soloHit('treble', TRAD.VELOCITY.t),
-                          soloHit('ghost', TRAD.VELOCITY.g)]).then(function (r) {
-        var tak = db(peak(r[1]), peak(r[0])), ghost = db(peak(r[2]), peak(r[0]));
-        expect(tak > -15 && tak < -9, 'tak is ' + round(tak) + ' dB (expected about -12)');
-        expect(ghost > -25.5 && ghost < -18.5, 'ghost is ' + round(ghost) + ' dB (expected about -22)');
+      function settled(voice, vel) {
+        return render(1.0, 1, function (oc) {
+          var b = new TRAD.Bodhran(oc, oc.destination);
+          b.setRoom(0);
+          b.hit(voice, 0.4, vel);
+        }).then(function (buf) { return 20 * Math.log10(peak(buf.getChannelData(0))); });
+      }
+      function three(voice, vel) {
+        return Promise.all([0, 1, 2].map(function () { return settled(voice, vel); }))
+          .then(function (r) { return (r[0] + r[1] + r[2]) / 3; });
+      }
+      return Promise.all([three('bass', TRAD.VELOCITY.D), three('treble', TRAD.VELOCITY.t),
+                          three('ghost', TRAD.VELOCITY.g)]).then(function (r) {
+        var tak = r[1] - r[0], ghost = r[2] - r[0];
+        expect(tak > -14 && tak < -8, 'tak is ' + round(tak) + ' dB (expected about -11)');
+        expect(ghost > -25 && ghost < -18.5, 'ghost is ' + round(ghost) + ' dB (expected about -22)');
       });
     });
 
@@ -748,6 +759,34 @@
         expect(semis > 4 && semis < 6, 'full pressure moves the pitch ' + round(semis) + ' semitones (' + open + ' → ' + pressed + ' Hz)');
         expect(ringEnd(r[1]) < ringEnd(r[0]) * 0.75, 'pressed rings ' + round(ringEnd(r[1]), 2) + ' s, open ' + round(ringEnd(r[0]), 2) + ' s');
         expect(up / pressed > 0.9 && up / pressed < 1.1, 'the up stroke does not feel the hand: ' + up + ' Hz against ' + pressed + ' Hz');
+      });
+    });
+
+  check('Sound', 'The dum settles a little, as a goatskin does: no electronic swoop',
+    'Each dum used to drop almost an octave in its first 55 ms (148 Hz to the skin’s 78), the recipe of an electronic kick drum, nearly all of it under 120 Hz, so a phone’s speaker heard little but the click. A struck goatskin settles a few percent, and its higher modes and slap give it a middle. Its note 15–45 ms in must be within a semitone of where it settles, and above 300 Hz (about where a phone’s speaker starts) must carry more than 1/30 of its first 100 ms.',
+    function () {
+      function hit(chain) {
+        return render(1.0, 1, function (oc) {
+          var dest = oc.destination;
+          chain.slice().reverse().forEach(function (x) {
+            var f = oc.createBiquadFilter(); f.type = x[0]; f.frequency.value = x[1]; f.Q.value = x[2]; f.connect(dest); dest = f;
+          });
+          var b = new TRAD.Bodhran(oc, dest);
+          b.setRoom(0);
+          b.hit('bass', 0.02, TRAD.VELOCITY.D);
+        }).then(function (buf) { return buf.getChannelData(0); });
+      }
+      function freq(d, a, z) {       // from its upward zero crossings
+        var zc = [];
+        for (var i = Math.floor(a * SR) + 1; i < Math.floor(z * SR); i++) if (d[i - 1] < 0 && d[i] >= 0) zc.push(i - d[i] / (d[i] - d[i - 1]));
+        return zc.length > 1 ? (zc.length - 1) * SR / (zc[zc.length - 1] - zc[0]) : 0;
+      }
+      function energy(d) { var s = 0; for (var i = Math.floor(0.02 * SR); i < Math.floor(0.12 * SR); i++) s += d[i] * d[i]; return s; }
+      return Promise.all([hit([['lowpass', 110, 0.6], ['lowpass', 110, 0.6]]), hit([]), hit([['highpass', 300, 0.7], ['highpass', 300, 0.7]])]).then(function (r) {
+        var early = freq(r[0], 0.035, 0.065), settled = freq(r[0], 0.12, 0.22), semis = 12 * Math.log2(early / settled);
+        var above = 10 * Math.log10(energy(r[2]) / energy(r[1]));
+        expect(semis < 1, 'it settles ' + round(semis) + ' semitones (' + Math.round(early) + ' Hz early on, ' + Math.round(settled) + ' Hz settled)');
+        expect(above > -15, 'above 300 Hz it has only ' + round(above) + ' dB of its sound');
       });
     });
 
@@ -2500,6 +2539,86 @@
               expect(loaded, 'the recordings did not load');
               expect(synth === 0, 'the synthesised concertina played ' + synth + ' notes after the recordings had loaded');
             });
+          });
+        });
+      });
+    });
+
+  check('Session Buddies', 'The concertina’s stand-in plays at the recordings’ level',
+    'Until the recordings arrive (or if they never do) a synthesised concertina stands in. It played at its own old level, 12 dB over the recordings: on a slow first load the first bars came in loud and buzzy over everything, then dropped and changed sound. A phrase on each now sits within 2 dB.',
+    function () {
+      var SRG = 48000, notes = [62, 64, 66, 67, 69, 71, 74, 76, 78, 74, 71, 69, 67, 66, 64, 62], q = 0.2, retry = PL.Concertina.RETRY;
+      function phrase(base) {
+        var o = new OfflineAudioContext(1, Math.ceil(SRG * (notes.length * q + 1)), SRG);
+        var inst = new PL.Concertina(o, o.destination, base);
+        return inst.ready.then(function (loaded) {
+          notes.forEach(function (m, i) { inst.note(0.05 + i * q, q, m, i % 3 ? 0.7 : 0.9); });
+          return o.startRendering().then(function (b) { return { loaded: loaded, d: b.getChannelData(0) }; });
+        });
+      }
+      function level(d) { var s = 0; for (var i = 0; i < d.length; i++) s += d[i] * d[i]; return 10 * Math.log10(s / d.length); }
+      PL.Concertina.RETRY = 0.05;
+      return Promise.all([phrase(), phrase('../buddies/concertina/not-here/')]).then(function (r) {
+        expect(r[0].loaded, 'the recordings did not load');
+        expect(!r[1].loaded, 'recordings loaded from a folder that has none');
+        var gap = level(r[1].d) - level(r[0].d);
+        expect(Math.abs(gap) < 2, 'the stand-in is ' + round(gap) + ' dB against the recordings');
+      }).finally(function () { PL.Concertina.RETRY = retry; });
+    });
+
+  check('Session Buddies', 'A recording lost on bad wifi costs one note, not the concertina',
+    'The 34 recordings loaded as one bundle: one lost on patchy wifi lost them all, and the stand-in played for the rest of the visit with nothing said. Now each comes on its own and is tried a second time, what arrives is kept, a note whose recording is missing is borrowed from a neighbour, and the missing ones are tried again at the next Play.',
+    function () {
+      var realFetch = window.fetch, tries = {}, down = { 'c-62.m4a': Infinity, 'c-64.m4a': 1 }, retry = PL.Concertina.RETRY;
+      window.fetch = function (url) {
+        var f = String(url).split('/').pop();
+        tries[f] = (tries[f] || 0) + 1;
+        if (down[f] && tries[f] <= down[f]) return Promise.reject(new TypeError('Load failed'));
+        return realFetch.apply(this, arguments);
+      };
+      PL.Concertina.RETRY = 0.05;
+      var o = new OfflineAudioContext(1, 48000 * 2, 48000), inst = new PL.Concertina(o, o.destination);
+      var synth = 0, sn = inst.synth.note;
+      inst.synth.note = function () { synth++; return sn.apply(this, arguments); };
+      return inst.ready.then(function (loaded) {
+        var have = (inst.samples || []).map(function (s) { return s.midi; });
+        expect(loaded, 'one lost recording lost them all');
+        expect(have.indexOf(64) >= 0 && tries['c-64.m4a'] === 2, 'a recording that failed once was not tried again (' + tries['c-64.m4a'] + ' tries)');
+        expect(have.indexOf(62) < 0 && inst.status === 'partial' && inst.missing.join() === '62',
+               'with D4 lost: ' + inst.status + ', missing ' + inst.missing.join(', '));
+        inst.note(0.1, 0.3, 62, 0.8);
+        expect(synth === 0, 'the missing D4 went to the stand-in, not to a neighbour a semitone away');
+        down = {};
+        return inst.retry();
+      }).then(function () {
+        expect(inst.status === 'ready' && !inst.missing.length && inst.samples.some(function (s) { return s.midi === 62; }),
+               'trying again did not bring D4 back: ' + inst.status);
+      }).finally(function () { window.fetch = realFetch; PL.Concertina.RETRY = retry; });
+    });
+
+  check('Session Buddies', 'The page says when the stand-in concertina is playing, and tries again at Play',
+    'Lost recordings used to be silent: you heard the old “keyboard” concertina all session and thought the recordings had been undone. Now a line under the mixer says so, and pressing Play tries again; once they arrive the line goes.',
+    function () {
+      return json(FIX + 'the-kesh.json').then(function (j) {
+        return withBuddies(function (win, doc) {
+          var realFetch = win.fetch, cut = true;
+          win.fetch = function (url) {
+            if (cut && /concertina\//.test(String(url))) return Promise.reject(new TypeError('Load failed'));
+            return realFetch.apply(win, arguments);
+          };
+          win.BUDDIES.Concertina.RETRY = 0.05;
+          win.BUDDIES_PAGE.loadTune(j, 0);
+          doc.getElementById('on-concertina').click();
+          var note = doc.getElementById('concertina-note'), inst = win.BUDDIES_PAGE.audio().concertina;
+          return inst.ready.then(function (loaded) {
+            expect(!loaded && inst.status === 'failed', 'with the recordings cut off, the concertina reports “' + inst.status + '”, not “failed”');
+            expect(!note.hidden && /stand-in/.test(note.textContent), 'nothing said: “' + note.textContent + '”');
+            cut = false;
+            doc.getElementById('play').click();
+            return inst.ready;
+          }).then(function (loaded) {
+            expect(loaded && inst.status === 'ready', 'pressing Play did not try again: ' + inst.status);
+            expect(note.hidden, 'the line stayed once the recordings arrived: “' + note.textContent + '”');
           });
         });
       });

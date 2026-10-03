@@ -4,6 +4,30 @@ What changed in each version of Bodhrán, newest first. The version shows next
 to the title in the app; bump it at the top of `js/app.js` with every change
 that gets pushed (the last number for a fix, the middle one for a feature).
 
+## 1.10.0 — 2026-10-02 — A less electronic drum
+
+- **The dum no longer swoops.** Each down stroke used to drop almost an
+  octave in its first 55 ms (from 148 Hz to the skin's 78), a pure tone with
+  a triangle wave swooping under it: the recipe of an electronic kick drum,
+  nearly all of it under 120 Hz, so a phone's speaker heard little but the
+  click. A struck goatskin settles a few percent at most; now it settles 4.5%
+  on a full stroke, less on lighter ones.
+- **It rings like a drumhead.** Under the fundamental, the next five modes of
+  a round skin ring and die away, the higher ones sooner, each a little
+  different from stroke to stroke as the tipper never lands in quite the same
+  place; and the goatskin's own slap sits in its middle register, through the
+  Tone control like the rest. The tak and the ghost are the same skin,
+  lighter, as before. Listen for woodier, less zip.
+- Same loudness as before (measured on a reel at 112), the same balance of
+  dum, tak and ghost, and about 4 dB more of it through a phone's speaker.
+- **No clipping at full volume.** The output limiter follows a smoothed level,
+  so single samples ran about 0.8 dB over where it aims: at full volume and
+  room the old drum came within 0.2 dB of clipping, and the new one, a touch
+  more lively at the strike, went over. A fixed trim after the limiter keeps
+  it clear; everything is 0.6 dB quieter, the balance unchanged.
+- Session Buddies (1.15.0) and the guitar demo (1.12.0) have the new drum
+  too.
+
 ## 1.9.2 — 2026-10-02
 
 The offline copy made safe on bad wifi (from the audit):
@@ -234,6 +258,11 @@ The offline copy made safe on bad wifi (from the audit):
 
 The page at `/guitar/` has its own version number, shown next to its title.
 
+### Guitar demo 1.12.0 — 2026-10-02
+
+- The app's new bodhrán (1.10.0): no swoop, a skin that rings like a
+  drumhead.
+
 ### Guitar demo 1.11.1 — 2026-10-02
 
 - The phone's screen stays on while the demo plays (it could lock itself and
@@ -428,6 +457,24 @@ The page at `/guitar/` has its own version number, shown next to its title.
 The page at `/buddies/` has its own version number, shown next to its title.
 It was called Session Players, at `/players/`, until 1.8.0; the entries
 before that keep the old name.
+
+### Session Buddies 1.15.0 — 2026-10-02 — A less electronic drum; the concertina loads safely
+
+- **The app's new bodhrán** (1.10.0): no swoop, a skin that rings like a
+  drumhead. Listen for woodier, less zip.
+- **One lost recording no longer loses the concertina.** Its 34 recordings
+  loaded as one bundle: one lost on patchy wifi lost them all, and the old
+  synthesised "keyboard" concertina played for the rest of the visit, with
+  nothing said. Now each loads on its own and is tried a second time; what
+  arrives is kept; a note whose recording is missing is borrowed from a
+  neighbour (as unrecorded notes already were) or, if none is near, played by
+  the stand-in; and the missing ones are tried again when you next press
+  Play. A line under the mixer says when the stand-in is playing.
+- **The stand-in is no longer 12 dB too loud.** While the recordings load on
+  a slow first visit, the synthesised concertina stands in. It played at its
+  own old level, 12 dB over the recordings (the concertina was turned up to
+  suit them), so the first bars came in loud and buzzy over everything, then
+  dropped and changed sound. It now plays at the recordings' level.
 
 ### Session Buddies 1.14.0 — 2026-10-02 — Backing feel
 

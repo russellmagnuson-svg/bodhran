@@ -17,7 +17,7 @@
    * next to the title and at the foot. Bump it with every change pushed (the
    * last number for a fix, the middle for something new) and add it to the
    * "Session Buddies" sections of CHANGELOG.md and the release notes. */
-  var VERSION = '1.14.0';
+  var VERSION = '1.15.0';
 
   var $ = function (id) { return document.getElementById(id); };
   var P = window.BUDDIES, G = window.GTR, T = window.TRAD, TPQ = P.TPQ;
@@ -781,6 +781,7 @@
     concBus = ctx.createGain(); concBus.gain.value = MIX.concertina * vol.concertina;
     concBus.connect(run);
     concertina = new P.Concertina(ctx, concBus);
+    concertina.onstatus = showConcertina;
     applyLevels();
     requestAnimationFrame(frame);
   }
@@ -1140,6 +1141,7 @@
     if (!tune) return;
     addRecent();
     ensureAudio();
+    if ($('on-concertina').checked) concertina.retry();   // any recordings that did not arrive
     run.gain.cancelScheduledValues(ctx.currentTime);
     run.gain.setTargetAtTime(1, ctx.currentTime, 0.01);
     playing = true;
@@ -1295,11 +1297,28 @@
     f.disabled = !playing || endAt != null;
     f.setAttribute('aria-pressed', String(playing && finishAt != null));
     f.textContent = playing && (finishAt != null || endAt != null) ? 'Finishing' : 'Finish';
+    showConcertina();
     if (!playing) {
       Array.prototype.forEach.call(document.querySelectorAll('.bar.on'), function (el) { el.classList.remove('on'); });
       $('where').textContent = '—';
       idleNow();
     }
+  }
+
+  /* A word when the concertina heard is not all recordings (concertina.js):
+   * while they load (only said while playing: on a good connection they are
+   * in before the count-in is), or when some or all did not arrive. */
+  var CONCERTINA_SAYS = {
+    loading: 'The concertina’s recordings are still loading. Until they arrive, a stand-in plays.',
+    partial: 'A few of the concertina’s recordings didn’t arrive, so those notes are borrowed from their neighbours or played by a stand-in. They’ll be tried again when you next press Play.',
+    failed: 'The concertina’s recordings didn’t arrive, so a stand-in is playing. They’ll be tried again when you next press Play.'
+  };
+  function showConcertina() {
+    var st = concertina && $('on-concertina').checked ? concertina.status : 'ready';
+    if (st === 'loading' && !playing) st = 'ready';
+    var el = $('concertina-note');
+    el.hidden = !CONCERTINA_SAYS[st];
+    el.textContent = CONCERTINA_SAYS[st] || '';
   }
 
   /* ---------- wiring ---------- */
@@ -1373,7 +1392,7 @@
       box.addEventListener('change', show);
       // Ticking the concertina builds the audio at once, so its recordings
       // load while you get ready rather than after the first notes.
-      if (k === 'concertina') box.addEventListener('change', function () { if (box.checked) ensureAudio(); });
+      if (k === 'concertina') box.addEventListener('change', function () { if (box.checked) ensureAudio(); showConcertina(); });
     });
     Array.prototype.forEach.call($('sympathy').children, function (b) {
       b.setAttribute('aria-checked', String((b.dataset.sympathy === 'on') === sympathy));

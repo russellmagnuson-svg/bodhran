@@ -144,29 +144,79 @@
     this.ctx = ctx;
     this.out = ctx.createGain();
     this.out.connect(dest);
-    this.synth = new ConcertinaSynth(ctx, dest);
+    // The stand-in at the recordings' level. Until Session Buddies 1.15.0 it
+    // played at its own old level, 12 dB over them (the bus was raised to
+    // suit the recordings): the first bars of a slow first load came in loud
+    // and buzzy, over everything, then dropped and changed sound.
+    this.standIn = ctx.createGain();
+    this.standIn.gain.value = Concertina.STAND_IN;
+    this.standIn.connect(dest);
+    this.synth = new ConcertinaSynth(ctx, this.standIn);
     this.samples = null;          // [{ midi, cents, wobble, buf, start, lead, ls, le }] once loaded
+    this.wanted = null;           // the notes it means to play, from samples.json
+    this.missing = [];            // of those, the ones that have not arrived
+    this.status = 'loading';      // then 'ready', 'partial' (some missing) or 'failed' (none)
+    this.onstatus = null;
     this.queued = [];
-    this.ready = this.load(base || P.CONCERTINA_SAMPLES);
+    this.base = base || P.CONCERTINA_SAMPLES;
+    this.ready = this.load();
   }
+  Concertina.STAND_IN = 0.25;       // -12 dB: measured, a phrase on each, the stand-in 11.6-12.3 dB over
+  Concertina.RETRY = 1.5;           // seconds before a second try at a recording
 
-  Concertina.prototype.load = function (base) {
-    var ctx = this.ctx, self = this;
+  /* Loading. Each recording is fetched on its own and, failing, tried once
+   * more a moment later, and whatever arrives is kept; any still missing
+   * are tried again at the next Play (retry). Until Session Buddies 1.15.0
+   * they came as one bundle: one note lost on patchy wifi lost them all,
+   * and the stand-in played for the rest of the visit, with nothing said.
+   * Resolves true once there are recordings to play. */
+  Concertina.prototype.load = function () {
+    var ctx = this.ctx, self = this, base = this.base;
     function decode(ab) {          // the promise form, and Safari's older callback form
       return new Promise(function (ok, bad) {
         var p = ctx.decodeAudioData(ab, ok, bad);
         if (p && p.then) p.then(ok, bad);
       });
     }
-    return fetch(base + 'samples.json').then(function (r) { return r.json(); }).then(function (meta) {
-      return Promise.all(Concertina.steady(meta.notes).map(function (n) {
-        return fetch(base + 'c-' + n.midi + '.m4a').then(function (r) { return r.arrayBuffer(); })
-          .then(decode).then(function (buf) { return prepare(buf, n); });
+    function get(url, how) {
+      return fetch(url).then(function (r) { if (!r.ok) throw new Error(url + ': ' + r.status); return r[how](); });
+    }
+    function twice(fn) {
+      return fn().catch(function () {
+        return new Promise(function (ok) { setTimeout(ok, Concertina.RETRY * 1000); }).then(fn);
+      });
+    }
+    this.loading = true;
+    this.tell('loading');
+    var meta = this.wanted ? Promise.resolve(this.wanted) :
+      twice(function () { return get(base + 'samples.json', 'json'); }).then(function (m) { return (self.wanted = Concertina.steady(m.notes)); });
+    return meta.then(function (wanted) {
+      var have = (self.samples || []).map(function (s) { return s.midi; });
+      return Promise.all(wanted.filter(function (n) { return have.indexOf(n.midi) < 0; }).map(function (n) {
+        return twice(function () { return get(base + 'c-' + n.midi + '.m4a', 'arrayBuffer').then(decode); })
+          .then(function (buf) { return prepare(buf, n); }, function () { return null; });
       }));
     }).then(function (list) {
-      self.samples = list.sort(function (a, b) { return a.midi - b.midi; });
-      return true;
-    }, function () { return false; });   // unreachable: the synthesised one carries on
+      var got = (self.samples || []).concat(list.filter(Boolean));
+      if (got.length) self.samples = got.sort(function (a, b) { return a.midi - b.midi; });
+    }, function () {}).then(function () {
+      var have = (self.samples || []).map(function (s) { return s.midi; });
+      self.missing = (self.wanted || []).map(function (n) { return n.midi; }).filter(function (m) { return have.indexOf(m) < 0; });
+      self.loading = false;
+      self.tell(!self.samples ? 'failed' : self.missing.length || !self.wanted ? 'partial' : 'ready');
+      return !!self.samples;   // without any, the synthesised one carries on
+    });
+  };
+
+  /* Try again for whatever did not arrive: the page calls it at Play. */
+  Concertina.prototype.retry = function () {
+    if (this.loading || this.status === 'ready') return this.ready;
+    return (this.ready = this.load());
+  };
+
+  Concertina.prototype.tell = function (status) {
+    this.status = status;
+    if (this.onstatus) this.onstatus(status);
   };
 
   /* The recorded notes worth playing. A few waver in pitch on their own
@@ -260,9 +310,20 @@
     return best;
   };
 
+  /* With some recordings missing, a note is borrowed from a neighbour at
+   * most two semitones away (as notes never recorded already are); further
+   * than that, and further than the full set would have gone, it would be
+   * stretched out of its voice, so the stand-in plays it. */
+  Concertina.prototype.tooFar = function (midi) {
+    if (!this.missing.length) return false;
+    var near = Math.abs(this.pick(midi).midi - midi);
+    var best = Math.min.apply(null, this.wanted.map(function (n) { return Math.abs(n.midi - midi); }));
+    return near > Math.max(2, best);
+  };
+
   /* One note: t start, dur seconds held, midi, vel 0-1 (as the synthesised one). */
   Concertina.prototype.note = function (t, dur, midi, vel) {
-    if (!this.samples) return this.synth.note(t, dur, midi, vel);
+    if (!this.samples || this.tooFar(midi)) return this.synth.note(t, dur, midi, vel);
     var ctx = this.ctx, s = this.pick(midi), end = t + dur, REL = this.REL;
     var rate = Math.pow(2, (midi - s.midi - s.cents / 100) / 12);
     var src = ctx.createBufferSource(), tone = ctx.createBiquadFilter(), amp = ctx.createGain();
