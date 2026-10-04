@@ -480,6 +480,13 @@ The page at `/buddies/` has its own version number, shown next to its title.
 It was called Session Players, at `/players/`, until 1.8.0; the entries
 before that keep the old name.
 
+### Session Buddies 1.23.1 — 2026-10-04
+
+- **The concertina is on to begin with**, playing the tune with the flute as
+  at a session. It was off on a first visit; anyone who has ticked or
+  unticked it keeps their choice, and Reset settings now turns it on. Its
+  recordings start loading at the first tap on the page.
+
 ### Session Buddies 1.23.0 — 2026-10-03 — Paste ABC, in place of Open a PDF
 
 - **Paste ABC** (where Open a PDF was) opens a box to paste a tune in ABC

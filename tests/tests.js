@@ -2312,13 +2312,17 @@
   var FIX = '../tests/fixtures/thesession-';
   function json(url) { return text(url).then(function (t) { return JSON.parse(t); }); }
   function layOf(j, i) { return PL.layout(j.settings[i || 0].abc, { key: j.settings[i || 0].key, meter: j.type === 'jig' ? '6/8' : '4/4' }); }
-  /* The Session Buddies page in a frame, its saved state put back after. */
-  function withBuddies(fn) {
+  /* The Session Buddies page in a frame, its saved state put back after.
+   * The concertina starts unticked, as it did on a first visit until 1.23.1,
+   * so the many checks that tick it, or hear the flute alone, still can;
+   * opts.fresh: exactly as a first visit, the concertina ticked. */
+  function withBuddies(fn, opts) {
     var keys = ['players.current', 'players.tuning', 'players.sympathy', 'players.volume', 'players.swing.hornpipe',
                 'buddies.favourites', 'buddies.recent', 'players.melody', 'players.yourturn', 'players.backing',
                 'players.drumstyle', 'players.drumbusy', 'players.voices', 'players.mineopen',
                 'players.ornaments', 'players.drumhand', 'players.hearopen'], saved = {};
     keys.forEach(function (k) { saved[k] = localStorage.getItem(k); localStorage.removeItem(k); });
+    if (!(opts && opts.fresh)) localStorage.setItem('players.voices', JSON.stringify({ concertina: false }));
     var frame = document.createElement('iframe');
     frame.src = '../buddies/';
     frame.style.cssText = 'position:absolute;left:-10000px;top:0;border:0;width:420px;height:900px';
@@ -2949,8 +2953,8 @@
       });
     });
 
-  check('Session Buddies', 'Ticking the concertina plays the tune on it',
-    'The concertina is a fourth voice in the mixer, off to begin with. Ticked, the tune is played on it; with the flute unticked, on it alone.',
+  check('Session Buddies', 'The concertina plays the tune, and is on to begin with',
+    'The concertina is a fourth voice in the mixer, off to begin with until 1.23.1 and on since (asked for: a first visit hears it with the flute, as at a session). Ticked, the tune is played on it; with the flute unticked, on it alone.',
     function () {
       return json(FIX + 'the-kesh.json').then(function (j) {
         return withBuddies(function (win, doc) {
@@ -2959,21 +2963,21 @@
           PLw.Concertina.prototype.note = function () { n.c++; return cn.apply(this, arguments); };
           PLw.Flute.prototype.note = function () { n.f++; return fn.apply(this, arguments); };
           PP.loadTune(j, 0);
-          var startsOff = !doc.getElementById('on-concertina').checked;
-          doc.getElementById('on-concertina').click();       // tick the concertina
+          var startsOn = doc.getElementById('on-concertina').checked;
+          if (!startsOn) doc.getElementById('on-concertina').click();
           doc.getElementById('on-tune').click();             // untick the flute
           doc.getElementById('play').click();
           return wait(3500).then(function () {
-            expect(startsOff, 'the concertina is ticked on a first visit');
+            expect(startsOn, 'the concertina is not ticked on a first visit');
             expect(n.c > 4, 'the concertina played ' + n.c + ' notes');
             expect(n.f === 0, 'the flute played ' + n.f + ' notes though unticked');
           });
-        });
+        }, { fresh: true });
       });
     });
 
   check('Session Buddies', 'A first visit opens with a tune ready to play',
-    'Someone pressed Play on a first visit, before finding a tune, and nothing played. A first visit now opens with The Kesh (the Session’s setting 1, kept in the page, so no search or network is needed) and says so, and Play plays it. A tune left on the page last time still comes back instead.',
+    'Someone pressed Play on a first visit, before finding a tune, and nothing played. A first visit now opens with The Kesh (the Session’s setting 1, kept in the page, so no search or network is needed) and says so, and Play plays it, the concertina with the flute (since 1.23.1). A tune left on the page last time still comes back instead.',
     function () {
       return Promise.all([json(FIX + 'the-kesh.json'), json(FIX + 'cooleys.json')]).then(function (r) {
         return withBuddies(function (win, doc) {
@@ -2981,6 +2985,7 @@
           expect(!!t && t.meta.name === 'The Kesh', 'a first visit opens with ' + (t ? t.meta.name : 'no tune'));
           expect(t.settings[0].abc === r[0].settings[0].abc && t.settings[0].key === r[0].settings[0].key, 'the starter is not the Session’s setting 1 of The Kesh');
           expect(!play.disabled, 'Play is not ready');
+          expect(doc.getElementById('on-concertina').checked && doc.getElementById('on-tune').checked, 'a first visit does not have the concertina and the flute both ticked');
           expect(/The Kesh/.test(doc.getElementById('find-status').textContent), 'the page does not say The Kesh is there to start with');
           play.click();
           return wait(1500).then(function () {
@@ -2992,7 +2997,7 @@
             var again = win.BUDDIES_PAGE.tune();
             expect(again && again.meta.name === r[1].name, 'reopened, the page has ' + (again ? again.meta.name : 'no tune') + ' instead of ' + r[1].name);
           });
-        });
+        }, { fresh: true });
       });
     });
 
@@ -3639,7 +3644,7 @@
             differ(mine, snap()).forEach(function (d) { bad.push('after Undo: ' + d); });
             expect(bad.length === 0, bad.join('\n'));
           });
-        });
+        }, { fresh: true });   // the page as it starts, so Reset can be held to it
       });
     });
 
