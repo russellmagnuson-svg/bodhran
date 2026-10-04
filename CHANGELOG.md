@@ -480,6 +480,11 @@ The page at `/buddies/` has its own version number, shown next to its title.
 It was called Session Players, at `/players/`, until 1.8.0; the entries
 before that keep the old name.
 
+### Session Buddies 1.23.2 — 2026-10-04
+
+- **The guitar starts in standard tuning**, on a first visit and after Reset
+  settings (DADGAD until now). A tuning you have chosen is kept.
+
 ### Session Buddies 1.23.1 — 2026-10-04
 
 - **The concertina is on to begin with**, playing the tune with the flute as

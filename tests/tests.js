@@ -2313,16 +2313,20 @@
   function json(url) { return text(url).then(function (t) { return JSON.parse(t); }); }
   function layOf(j, i) { return PL.layout(j.settings[i || 0].abc, { key: j.settings[i || 0].key, meter: j.type === 'jig' ? '6/8' : '4/4' }); }
   /* The Session Buddies page in a frame, its saved state put back after.
-   * The concertina starts unticked, as it did on a first visit until 1.23.1,
-   * so the many checks that tick it, or hear the flute alone, still can;
-   * opts.fresh: exactly as a first visit, the concertina ticked. */
+   * The concertina starts unticked and the guitar in DADGAD, as on a first
+   * visit until 1.23.1 and 1.23.2, so the many checks written for that still
+   * hold; opts.fresh: exactly as a first visit (concertina ticked, standard
+   * tuning). */
   function withBuddies(fn, opts) {
     var keys = ['players.current', 'players.tuning', 'players.sympathy', 'players.volume', 'players.swing.hornpipe',
                 'buddies.favourites', 'buddies.recent', 'players.melody', 'players.yourturn', 'players.backing',
                 'players.drumstyle', 'players.drumbusy', 'players.voices', 'players.mineopen',
                 'players.ornaments', 'players.drumhand', 'players.hearopen'], saved = {};
     keys.forEach(function (k) { saved[k] = localStorage.getItem(k); localStorage.removeItem(k); });
-    if (!(opts && opts.fresh)) localStorage.setItem('players.voices', JSON.stringify({ concertina: false }));
+    if (!(opts && opts.fresh)) {
+      localStorage.setItem('players.voices', JSON.stringify({ concertina: false }));
+      localStorage.setItem('players.tuning', 'dadgad');
+    }
     var frame = document.createElement('iframe');
     frame.src = '../buddies/';
     frame.style.cssText = 'position:absolute;left:-10000px;top:0;border:0;width:420px;height:900px';
@@ -2977,7 +2981,7 @@
     });
 
   check('Session Buddies', 'A first visit opens with a tune ready to play',
-    'Someone pressed Play on a first visit, before finding a tune, and nothing played. A first visit now opens with The Kesh (the Session’s setting 1, kept in the page, so no search or network is needed) and says so, and Play plays it, the concertina with the flute (since 1.23.1). A tune left on the page last time still comes back instead.',
+    'Someone pressed Play on a first visit, before finding a tune, and nothing played. A first visit now opens with The Kesh (the Session’s setting 1, kept in the page, so no search or network is needed) and says so, and Play plays it, the concertina with the flute (since 1.23.1), the guitar in standard tuning (since 1.23.2). A tune left on the page last time still comes back instead.',
     function () {
       return Promise.all([json(FIX + 'the-kesh.json'), json(FIX + 'cooleys.json')]).then(function (r) {
         return withBuddies(function (win, doc) {
@@ -2986,6 +2990,8 @@
           expect(t.settings[0].abc === r[0].settings[0].abc && t.settings[0].key === r[0].settings[0].key, 'the starter is not the Session’s setting 1 of The Kesh');
           expect(!play.disabled, 'Play is not ready');
           expect(doc.getElementById('on-concertina').checked && doc.getElementById('on-tune').checked, 'a first visit does not have the concertina and the flute both ticked');
+          var tn = doc.querySelector('#tunings [aria-checked="true"]');
+          expect(tn && tn.dataset.tuning === 'standard' && doc.getElementById('shapes-tuning').textContent === 'Standard', 'a first visit is in ' + (tn && tn.dataset.tuning) + ', not standard tuning');
           expect(/The Kesh/.test(doc.getElementById('find-status').textContent), 'the page does not say The Kesh is there to start with');
           play.click();
           return wait(1500).then(function () {
@@ -3628,7 +3634,7 @@
           click('#melody-mode [data-melody="turns"]'); click('#your-turn-level [data-level="quiet"]');
           click('#strums [data-strum="drive"]'); click('#backing-feel [data-backing="little"]');
           click('#drum-style [data-drum="pulse"]'); set('drum-busy', 0.8);
-          click('#tunings [data-tuning="standard"]'); click('#sympathy [data-sympathy="off"]');
+          click('#tunings [data-tuning="dadgad"]'); click('#sympathy [data-sympathy="off"]');
           var mine = snap();
           return reloaded(function () { fr.contentWindow.location.reload(); }).then(function () {
             differ(mine, snap()).forEach(function (d) { bad.push('after a reload: ' + d); });

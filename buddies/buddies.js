@@ -17,7 +17,7 @@
    * next to the title and at the foot. Bump it with every change pushed (the
    * last number for a fix, the middle for something new) and add it to the
    * "Session Buddies" sections of CHANGELOG.md and the release notes. */
-  var VERSION = '1.23.1';
+  var VERSION = '1.23.2';
 
   var $ = function (id) { return document.getElementById(id); };
   var P = window.BUDDIES, G = window.GTR, T = window.TRAD, TPQ = P.TPQ;
@@ -189,7 +189,8 @@
       if (typeof savedVol[k] === 'number' && savedVol[k] >= 0 && savedVol[k] <= 2) vol[k] = savedVol[k];
     });
   } catch (e) {}
-  var tuning = P.TUNINGS[stored('players.tuning', '')] ? stored('players.tuning') : 'dadgad';
+  // Standard tuning to begin with since 1.23.2 (asked for; DADGAD until then).
+  var tuning = P.TUNINGS[stored('players.tuning', '')] ? stored('players.tuning') : 'standard';
   var sympathy = stored('players.sympathy', 'on') !== 'off';
   var strum = 'lilt';
   /* The swing you have set for a type that swings, as the long quaver's
