@@ -471,7 +471,9 @@ only says so and forwards to `/buddies/`, for old bookmarks. Saved settings
 keep their `players.` names in local storage, so they carry over.
 
 A first visit opens with a starter tune, The Kesh (`STARTER` in buddies.js:
-the Session's setting 1, kept in the page), so Play plays before any search.
+the Session's setting 3 since 1.23.3, setting 1 before, kept in the page), so
+Play plays before any search; with the concertina ticked and the guitar in
+standard tuning (since 1.23.1 and 1.23.2).
 
 Backing feel (`backingFeel`: straight, little, tune; `players.backing`):
 `backingAt(s)` places the guitar's strums and the drum's strokes, straight

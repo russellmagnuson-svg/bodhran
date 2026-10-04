@@ -17,7 +17,7 @@
    * next to the title and at the foot. Bump it with every change pushed (the
    * last number for a fix, the middle for something new) and add it to the
    * "Session Buddies" sections of CHANGELOG.md and the release notes. */
-  var VERSION = '1.23.2';
+  var VERSION = '1.23.3';
 
   var $ = function (id) { return document.getElementById(id); };
   var P = window.BUDDIES, G = window.GTR, T = window.TRAD, TPQ = P.TPQ;
@@ -351,15 +351,18 @@
   }
 
   /* A tune on the page from the first visit, so that Play plays: someone
-   * pressed it with no tune found yet and heard nothing. The Kesh, the
-   * Session's setting 1 (the tune the guitar demo plays), kept here so it is
-   * ready with no search and no network. */
+   * pressed it with no tune found yet and heard nothing. The Kesh, kept here
+   * so it is ready with no search and no network: since 1.23.3 the Session's
+   * setting 3 (ceolachan's, with its rolls and turns; the user prefers it),
+   * until then setting 1, the tune the guitar demo played. STARTER_NUMBER:
+   * which setting it is, so it says so before the others arrive. */
   var STARTER = {
     id: 55, name: 'The Kesh', type: 'jig', url: 'https://thesession.org/tunes/55',
-    settings: [{ id: 55, url: 'https://thesession.org/tunes/55#setting55', key: 'Gmajor', date: '2001-05-25 02:54:11',
-      member: { name: 'Jeremy' },
-      abc: "|:G3 GAB|A3 ABd|edd gdd|edB dBA|! GAG GAB|ABA ABd|edd gdd|BAF G3:|! |:B2B d2d|ege dBA|B2B dBG|ABA AGA|! BAB d^cd|ege dBd|gfg aga|bgg g3:|" }]
+    settings: [{ id: 12493, url: 'https://thesession.org/tunes/55#setting12493', key: 'Gmajor', date: '2007-06-10 11:33:06',
+      member: { name: 'ceolachan' },
+      abc: "|:D|G2 G GAB|A2 A AB/c/d|edd gdd|edB dBA|! GAG G2 B|AA/A/A ABd|edd gdB|AGF G2:|! |:d|B2 B dB/c/d|e/f/ge dBA|~B3 BA^G|~A3 FGA|! B^AB d^cd|ege dBd|g2 g a^ga|bgf g2:|" }]
   };
+  var STARTER_NUMBER = 3;
 
   /* A tune as the Session's API gives it. */
   function loadTune(j, index) {
@@ -1814,7 +1817,8 @@
     // The tune left on the page last time; on a first visit, the starter.
     var last = stored('players.current', '');
     if (!(last && openText(last, true))) {
-      loadTune(STARTER, 0);
+      build({ id: STARTER.id, name: STARTER.name, type: STARTER.type, url: STARTER.url },
+            sessionSettings(STARTER), 0, { number: STARTER_NUMBER });
       fillSettings();
       $('find-status').textContent = 'The Kesh is ready to play, to start you off. Search above for any other tune.';
     }

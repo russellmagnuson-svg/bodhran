@@ -480,6 +480,13 @@ The page at `/buddies/` has its own version number, shown next to its title.
 It was called Session Players, at `/players/`, until 1.8.0; the entries
 before that keep the old name.
 
+### Session Buddies 1.23.3 — 2026-10-04
+
+- **A first visit opens with The Kesh, setting 3** (ceolachan's, with its
+  rolls and turns), in place of setting 1. It is kept in the page, so it is
+  ready with no search, and says "Setting 3" before the tune's other
+  settings arrive from the Session. A tune you have on the page is kept.
+
 ### Session Buddies 1.23.2 — 2026-10-04
 
 - **The guitar starts in standard tuning**, on a first visit and after Reset

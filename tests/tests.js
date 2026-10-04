@@ -2981,13 +2981,15 @@
     });
 
   check('Session Buddies', 'A first visit opens with a tune ready to play',
-    'Someone pressed Play on a first visit, before finding a tune, and nothing played. A first visit now opens with The Kesh (the Session’s setting 1, kept in the page, so no search or network is needed) and says so, and Play plays it, the concertina with the flute (since 1.23.1), the guitar in standard tuning (since 1.23.2). A tune left on the page last time still comes back instead.',
+    'Someone pressed Play on a first visit, before finding a tune, and nothing played. A first visit now opens with The Kesh (the Session’s setting 3 since 1.23.3, setting 1 before; kept in the page, so no search or network is needed) and says so, and Play plays it, the concertina with the flute (since 1.23.1), the guitar in standard tuning (since 1.23.2). A tune left on the page last time still comes back instead.',
     function () {
       return Promise.all([json(FIX + 'the-kesh.json'), json(FIX + 'cooleys.json')]).then(function (r) {
         return withBuddies(function (win, doc) {
           var PP = win.BUDDIES_PAGE, t = PP.tune(), play = doc.getElementById('play');
           expect(!!t && t.meta.name === 'The Kesh', 'a first visit opens with ' + (t ? t.meta.name : 'no tune'));
-          expect(t.settings[0].abc === r[0].settings[0].abc && t.settings[0].key === r[0].settings[0].key, 'the starter is not the Session’s setting 1 of The Kesh');
+          var s3 = r[0].settings[2], mine = t.settings[t.index];
+          expect(mine.abc === s3.abc && mine.key === s3.key && mine.id === s3.id, 'the starter is not the Session’s setting 3 of The Kesh');
+          expect(/Setting 3\b/.test(doc.getElementById('chosen-facts').textContent), 'the starter says “' + doc.getElementById('chosen-facts').textContent + '”, not setting 3');
           expect(!play.disabled, 'Play is not ready');
           expect(doc.getElementById('on-concertina').checked && doc.getElementById('on-tune').checked, 'a first visit does not have the concertina and the flute both ticked');
           var tn = doc.querySelector('#tunings [aria-checked="true"]');
