@@ -4,6 +4,18 @@ What changed in each version of Bodhrán, newest first. The version shows next
 to the title in the app; bump it at the top of `js/app.js` with every change
 that gets pushed (the last number for a fix, the middle one for a feature).
 
+## 1.10.3 — 2026-10-06
+
+- **Reels go up to 240.** The tempo is counted per crotchet, four to the
+  bar, and stopped at 160: only 80 counted two to the bar, as players count
+  a reel, where a fast session plays 104–120 (208–240 here). Asked for by a
+  player of Session Buddies, which has the same change (1.23.4). The other
+  types already reach a fast session.
+- **The drum damps at speed**, as a player's hand does: no stroke rings past
+  three quavers. At a reel of 240 a full dum rang into the next tak, which
+  rose only 3 dB over it (7 dB now); below a reel of about 195, a jig of 130
+  or a polka of 190, nothing changes.
+
 ## 1.10.2 — 2026-10-03
 
 - **Each drum stroke lets go once it has rung out.** Every stroke ended with
@@ -479,6 +491,24 @@ The page at `/guitar/` had its own version number, shown next to its title.
 The page at `/buddies/` has its own version number, shown next to its title.
 It was called Session Players, at `/players/`, until 1.8.0; the entries
 before that keep the old name.
+
+### Session Buddies 1.23.4 — 2026-10-06
+
+- **Fast session tempos.** Asked for by a player: "still pretty slow at
+  160". The tempo is counted as the page shows it (per crotchet for a reel,
+  four to the bar), so a reel's 160 was only 80 counted two to the bar, as
+  players count one; a fast session plays 104–120 that way, 208–240 here.
+  New tops, with a little headroom over a fast session: reels 240 (160),
+  jigs 145 (130), hornpipes 140 (120), slides 170 (160); polkas, slip jigs
+  and waltzes already reached it. At a reel's 240 the flute still plays its
+  written rolls: the note between a roll's cut and tap may now be as short as
+  35 ms (50 before), which a short roll at 240 needs (45 ms); below that a
+  roll is still played as the plain note. And the bodhrán damps at speed,
+  as a player's hand does: no stroke rings past three quavers. At 240 a full
+  dum used to ring into the next tak, which rose only 3 dB over it (7 dB
+  now); nothing changes at the tempos the page had before (a jig to 130, a
+  reel to about 195), only the new top speeds and the fastest slides. The
+  Bodhrán app's reels go to 240 too, with the same damping (1.10.3).
 
 ### Session Buddies 1.23.3 — 2026-10-04
 

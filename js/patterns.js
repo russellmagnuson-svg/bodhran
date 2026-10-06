@@ -29,7 +29,7 @@
   var TUNES = [
     {
       id: 'reel', name: 'Reel', meter: '4/4', beatsPerBar: 4,
-      beatUnit: 'crotchet', defaultBpm: 112, bpmRange: [60, 160], swing: 0,
+      beatUnit: 'crotchet', defaultBpm: 112, bpmRange: [60, 240], swing: 0,   // to 240 since 1.10.3: a fast session reel (160 until then)
       blurb: 'Continuous down-up quavers, leaning on 1 and 3.',
       grids: {
         pulse:  ['DdDd'],

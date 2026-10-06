@@ -823,12 +823,13 @@
     });
 
   check('Sound', 'Every tak is heard arriving, even at the fastest tempos',
-    'The tak now shares the dum’s register, so it must not get buried under the dum still ringing.',
+    'The tak now shares the dum’s register, so it must not get buried under the dum still ringing. Since 1.10.3 a reel goes to 240, where a full dum rang into the next tak and it rose only 3 dB over it: the drum is told the tempo and damps at speed, no stroke ringing past three quavers.',
     function () {
       function rises(id, grid, bpm) {
         var t = TRAD.tuneById(id), bar = (60 / bpm) * t.beatsPerBar, ups = [];
         return render(bar * 2 + 1, 1, function (oc) {
           var b = new TRAD.Bodhran(oc, oc.destination); b.setRoom(0.16);
+          b.setPace(TRAD.quaverSeconds(bpm, t.beatUnit));      // as the pages tell it (since 1.10.3)
           for (var n = 0; n < 2; n++) for (var i = 0; i < grid.length; i++) {
             var c = grid[i]; if (c === '-') continue;
             var at = 0.05 + n * bar + (i / grid.length) * bar;
@@ -840,8 +841,8 @@
           return Math.min.apply(null, ups.map(function (u) { return db(rms(d, u, u + 0.015), rms(d, u - 0.010, u)); }));
         });
       }
-      return Promise.all([rises('reel', 'DtdtDtdt', 160), rises('polka', 'Dtdt', 190)]).then(function (r) {
-        expect(r[0] > 5, 'reel at 160: weakest tak rises only ' + round(r[0]) + ' dB');
+      return Promise.all([rises('reel', 'DtdtDtdt', 240), rises('polka', 'Dtdt', 190)]).then(function (r) {
+        expect(r[0] > 5, 'reel at 240: weakest tak rises only ' + round(r[0]) + ' dB');
         expect(r[1] > 5, 'polka at 190: weakest tak rises only ' + round(r[1]) + ' dB');
       });
     });
@@ -1387,7 +1388,7 @@
     });
 
   check('The app', 'A tempo outside the range says so',
-    'Typing 200 for a reel used to turn it into 160 without a word.',
+    'Typing 200 for a reel used to turn it into 160 without a word. (Since 1.10.3 a reel goes to 240, so 300 is the one held back.)',
     function () {
       return withApp(function (win, doc) {
         function $(id) { return doc.getElementById(id); }
@@ -1395,15 +1396,15 @@
         doc.querySelector('.chip[data-id="reel"]').click();
         type(120);
         var quietInRange = !$('beat-unit').classList.contains('warn');
-        type(200);
+        type(300);
         var high = { value: +$('bpm-num').value, warn: $('beat-unit').classList.contains('warn'), text: $('beat-unit').textContent };
         doc.querySelector('.chip[data-id="hornpipe"]').click();
         var cleared = !$('beat-unit').classList.contains('warn') && /per/.test($('beat-unit').textContent);
         type(20);
         var low = +$('bpm-num').value, lowText = $('beat-unit').textContent;
         expect(quietInRange, 'a tempo inside the range was flagged');
-        expect(high.value === 160, 'typing 200 for a reel gave ' + high.value);
-        expect(high.warn && /60/.test(high.text) && /160/.test(high.text), 'nothing said why: "' + high.text + '"');
+        expect(high.value === 240, 'typing 300 for a reel gave ' + high.value);
+        expect(high.warn && /60/.test(high.text) && /240/.test(high.text), 'nothing said why: "' + high.text + '"');
         expect(+$('bpm-num').max === 130 && +$('bpm-num').min === 60, 'the box allows ' + $('bpm-num').min + '–' + $('bpm-num').max + ' for a hornpipe');
         expect(cleared, 'the note stayed up after changing tune');
         expect(low === 60 && /130/.test(lowText), 'typing 20 for a hornpipe gave ' + low + ', saying "' + lowText + '"');
@@ -2739,6 +2740,55 @@
             if (!(r[2].second > -10 && r[3].second < -10)) bad.push('the second harmonic is ' + round(r[2].second) + ' dB at low D and ' + round(r[3].second) + ' at high D: no reedy low octave');
             expect(bad.length === 0, bad.join('\n'));
           });
+        });
+      });
+    });
+
+  check('Session Buddies', 'A fast session’s tempo is in reach, in both pages',
+    'Asked for by a player: “still pretty slow at 160”. A reel counted per crotchet stopped at 160, which is 80 counted two to the bar, as players count a reel; a fast session plays 104–120 that way, 208–240 here. Since Session Buddies 1.23.4 and app 1.10.3 each type reaches the top of a fast session (reels 104–120 a half bar, jigs 112–135, polkas 120–140, slides 135–150, slip jigs 113–122, hornpipes 90–115). And at a reel’s 240 the flute’s rolls still fit (written ones are played, none crushed shorter than a flick), and the drum, told the tempo, damps at speed.',
+    function () {
+      var want = { reel: 240, jig: 135, polka: 140, slide: 150, 'slip jig': 122, hornpipe: 115 }, appIds = { 'slip jig': 'slipjig' };
+      return json(FIX + 'cooleys.json').then(function (j) {
+        return withBuddies(function (win, doc) {
+          var PP = win.BUDDIES_PAGE, bad = [];
+          Object.keys(want).forEach(function (k) {
+            if (PP.TYPES[k].bpm.max < want[k]) bad.push('Session Buddies: a ' + k + ' stops at ' + PP.TYPES[k].bpm.max + ', not ' + want[k]);
+            var a = TRAD.tuneById(appIds[k] || k);
+            if (a && a.bpmRange[1] < want[k]) bad.push('the app: a ' + k + ' stops at ' + a.bpmRange[1] + ', not ' + want[k]);
+          });
+          // Cooley's, setting 2, at the top of the reel's range: its rolls (bar 17 has one) still played, every part long enough.
+          PP.loadTune(j, 1);
+          var bpm = doc.getElementById('bpm'); bpm.value = 240; bpm.dispatchEvent(new win.Event('input'));
+          if (+bpm.value !== 240) bad.push('the reel’s tempo could not be set to 240: ' + bpm.value);
+          var flicks = 0, short = [];
+          for (var n = 0; n < 32; n++) PP.plan(n).filter(function (x) { return x.who === 'flute'; }).forEach(function (x) {
+            if (x.grace) flicks++;
+            if (!(x.dur > (x.grace ? 0.015 : 0.04))) short.push('bar ' + (n + 1) + ': ' + Math.round(x.dur * 1000) + ' ms');
+          });
+          if (!flicks) bad.push('at 240 the flute plays none of the written rolls');
+          if (short.length) bad.push('at 240 parts too short to hear: ' + short.slice(0, 5).join(', '));
+          // The drum is told the tempo, to damp at speed (js/bodhran.js, setPace): here, and in the app.
+          var paces = [], setPace = win.TRAD.Bodhran.prototype.setPace;
+          win.TRAD.Bodhran.prototype.setPace = function (q) { paces.push(q); return setPace.apply(this, arguments); };
+          doc.getElementById('play').click();
+          return wait(300).then(function () {
+            doc.getElementById('play').click();
+            var last = paces[paces.length - 1];
+            if (!(Math.abs(last - 0.125) < 0.001)) bad.push('Session Buddies’ drum was told a quaver of ' + last + ' s at 240, not 0.125');
+            return withApp(function (aw, ad) {
+              var got = [], sp = aw.TRAD.Bodhran.prototype.setPace;
+              aw.TRAD.Bodhran.prototype.setPace = function (q) { got.push(q); return sp.apply(this, arguments); };
+              ad.querySelector('.chip[data-id="reel"]').click();
+              var n = ad.getElementById('bpm-num'); n.value = 240; n.dispatchEvent(new aw.Event('change'));
+              if (+ad.getElementById('bpm').value !== 240) bad.push('the app’s reel could not be set to 240: ' + ad.getElementById('bpm').value);
+              ad.getElementById('play').click();
+              return wait(300).then(function () {
+                ad.getElementById('play').click();
+                var l = got[got.length - 1];
+                if (!(Math.abs(l - 0.125) < 0.001)) bad.push('the app’s drum was told a quaver of ' + l + ' s at 240, not 0.125');
+              });
+            });
+          }).then(function () { expect(bad.length === 0, bad.join('\n')); });
         });
       });
     });

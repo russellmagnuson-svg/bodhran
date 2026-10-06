@@ -17,7 +17,7 @@
    * next to the title and at the foot. Bump it with every change pushed (the
    * last number for a fix, the middle for something new) and add it to the
    * "Session Buddies" sections of CHANGELOG.md and the release notes. */
-  var VERSION = '1.23.3';
+  var VERSION = '1.23.4';
 
   var $ = function (id) { return document.getElementById(id); };
   var P = window.BUDDIES, G = window.GTR, T = window.TRAD, TPQ = P.TPQ;
@@ -48,10 +48,15 @@
     var t = T.tuneById && T.tuneById(id);
     return t && t.id === id && t.swing ? t.swing : fallback;
   }
+  /* Each type's tempo, counted as the page shows it (per crotchet, or per
+   * dotted crotchet). Since 1.23.4 the tops reach a fast session: a reel's
+   * 104–120 counted two to the bar is 208–240 here, where 160 stopped it
+   * (asked for by a player: "still pretty slow at 160"); jigs to 145,
+   * hornpipes to 140, slides to 170, with a little headroom. */
   var TYPES = {
     jig: {
       name: 'Jig', meter: '6/8', slots: 6, half: 3, per: 3, unit: 'per dotted crotchet',
-      bpm: { start: 100, min: 60, max: 130 }, grid: grid('jig', 'D-tD-t'),
+      bpm: { start: 100, min: 60, max: 145 }, grid: grid('jig', 'D-tD-t'),
       clicks: [[0, 0.9], [3, 0.55]], final: [0, 3],
       strums: {
         lilt: { text: 'Down on the beat and up on the third quaver of each group: DUM-da, DUM-da. ' +
@@ -64,7 +69,7 @@
     },
     reel: {
       name: 'Reel', meter: '4/4', slots: 8, half: 4, per: 2, unit: 'per crotchet',
-      bpm: { start: 100, min: 60, max: 160 }, grid: grid('reel', 'DtdtDtdt'),
+      bpm: { start: 100, min: 60, max: 240 }, grid: grid('reel', 'DtdtDtdt'),
       clicks: [[0, 0.9], [2, 0.55], [4, 0.7], [6, 0.55]], final: [0, 4],
       strums: {
         lilt: { text: 'Down on every beat, and up after the second and the fourth, leaning on 1 and 3: ' +
@@ -79,7 +84,7 @@
     },
     hornpipe: {
       name: 'Hornpipe', meter: '4/4', slots: 8, half: 4, per: 2, unit: 'per crotchet',
-      bpm: { start: 80, min: 50, max: 120 }, grid: grid('hornpipe', 'DtdtDtdt'), swing: appSwing('hornpipe', 0.84),
+      bpm: { start: 80, min: 50, max: 140 }, grid: grid('hornpipe', 'DtdtDtdt'), swing: appSwing('hornpipe', 0.84),
       clicks: [[0, 0.9], [2, 0.55], [4, 0.7], [6, 0.55]], final: [0, 2, 4],
       strums: {
         lilt: { text: 'Down on every beat, and up after the second and the fourth, swung long-short: ' +
@@ -105,7 +110,7 @@
     },
     slide: {
       name: 'Slide', meter: '12/8', slots: 12, half: 6, per: 3, unit: 'per dotted crotchet',
-      bpm: { start: 115, min: 60, max: 160 }, grid: grid('slide', 'D-tD-tD-tD-t'),
+      bpm: { start: 115, min: 60, max: 170 }, grid: grid('slide', 'D-tD-tD-tD-t'),
       clicks: [[0, 0.9], [3, 0.5], [6, 0.7], [9, 0.5]], final: [0, 6],
       strums: {
         lilt: { text: 'Down on each of the four beats and up on the third quaver of each, leaning on 1 and 3: ' +
@@ -862,6 +867,7 @@
     prepareGuitar();
     drum = new T.Bodhran(ctx, run);
     drum.setRoom(0.1);
+    if (tune) drum.setPace(quaver());
     clicker = new T.Bodhran(ctx, run);
     clicker.setLevel(0.42); clicker.setRoom(0.1);
     fluteBus = ctx.createGain(); fluteBus.gain.value = MIX.tune * vol.tune;
@@ -1088,7 +1094,10 @@
       var x = out[i], start = x.at * q + x.off;
       if (i < out.length - 1) { var nx = out[i + 1]; if (x.dur == null) x.dur = nx.at * q + nx.off - start + P.Flute.prototype.OVERLAP; }
       else { x.dur = end - start; x.art = { slur: x.art.slur, into: fart.into }; }
-      if (!(x.dur > (x.grace ? 0.015 : 0.05))) return null;            // too short to fit
+      // Too short to fit: played as the plain note. The note between the
+      // flicks may be as short as 35 ms (until 1.23.4, 50: a short roll in a
+      // reel came to 45 ms at 240, a fast session, and every roll dropped).
+      if (!(x.dur > (x.grace ? 0.015 : 0.035))) return null;
     }
     return out;
   }
@@ -1661,6 +1670,7 @@
     var ty = tune ? type() : TYPES.jig;
     v = Math.max(ty.bpm.min, Math.min(ty.bpm.max, Math.round(+v) || ty.bpm.start));
     $('bpm').value = v; $('bpm-num').value = v;
+    if (drum) drum.setPace(quaver());           // damped at speed (1.23.4; js/bodhran.js)
   }
 
   function init() {

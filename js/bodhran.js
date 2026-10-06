@@ -113,6 +113,20 @@
     this.master.gain.setTargetAtTime(v, this.ctx.currentTime, 0.02);
   };
 
+  /* How fast the tune goes: seconds to a quaver (0: not said). At speed a
+   * player damps the skin, and no stroke rings past RING_QUAVERS quavers.
+   * Until app 1.10.3 and Session Buddies 1.23.4 a stroke rang as long at any
+   * tempo, about half a second for a full dum; at a fast session's reel (240
+   * a crotchet) the next tak came an eighth of a second later into its ring,
+   * and rose only 3 dB over it; capped, 7 dB. Three quavers is longer than
+   * any stroke rings at the tempos the pages had before (a reel to about
+   * 195, a jig to 130, a polka to 190), so nothing changes there; only the
+   * new top speeds, and the fastest slides, are damped. */
+  var RING_QUAVERS = 3;
+  Bodhran.prototype.setPace = function (quaver) { this.pace = quaver > 0 ? quaver : 0; };
+  /* Seconds to a quaver, at bpm counted in beats of beatUnit. */
+  TRAD.quaverSeconds = function (bpm, beatUnit) { return 60 / bpm / (/dotted/.test(beatUnit || '') ? 3 : 2); };
+
   Bodhran.prototype.setRoom = function (v) {
     this.roomSend.gain.setTargetAtTime(v, this.ctx.currentTime, 0.02);
   };
@@ -230,6 +244,7 @@
     var f0 = this.tuning * s.pitch * (0.985 + Math.random() * 0.03) *
              Math.pow(2, p * PRESS_SEMITONES / 12);
     var dur = (s.len + s.lenVel * vel) * (1 - 0.45 * p);
+    if (this.pace) dur = Math.min(dur, RING_QUAVERS * this.pace);   // damped at speed: see setPace
     var out = this._strokeOut(time);
     out.gain.value = this.skinLevel;
 
