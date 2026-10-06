@@ -2793,6 +2793,71 @@
       });
     });
 
+  check('Session Buddies', 'At a fast reel the flute runs legato, not clipped',
+    'At a reel of 240 (since 1.23.4) the flute sounded “a bit clipped”: about half its notes were tongued, each with a swell, a release and a gap of fixed length, so it spent 18% of its time in the gaps, against 12% at 120. Chosen by ear (1.23.5): at speed the tongue is lighter and the gaps smaller, and above a reel of about 205 only beats 1 and 3 are tongued, the rest slurred, as flute players take a fast reel. At 160 it is tongued as before; at 240 it spends no more time in gaps than at 120.',
+    function () {
+      return json(FIX + 'cooleys.json').then(function (j) {
+        return withBuddies(function (win, doc) {
+          var PP = win.BUDDIES_PAGE, bad = [];
+          PP.loadTune(j, 1);
+          if (doc.querySelector('#ornaments [data-orn="written"]')) doc.querySelector('#ornaments [data-orn="written"]').click();
+          function at(bpm) { var b = doc.getElementById('bpm'); b.value = bpm; b.dispatchEvent(new win.Event('input')); return 60 / bpm / 2; }
+          function flute(bars) {
+            var out = [];
+            for (var n = 0; n < bars; n++) PP.plan(n).filter(function (x) { return x.who === 'flute'; }).forEach(function (x) { x.bar = n; out.push(x); });
+            return out;
+          }
+          // Tongued on beat 2 or 4, other than a repeated note (which takes the tongue at any speed).
+          function onTwoFour(bpm) {
+            var q = at(bpm), ns = flute(16), c = 0;
+            ns.forEach(function (x, i) {
+              if (x.slur || x.grace) return;
+              var p = ns[i - 1], b = x.t / q;
+              if ([2, 6].some(function (k) { return Math.abs(b - k) < 0.05; }) && !(p && p.midi === x.midi)) c++;
+            });
+            return c;
+          }
+          var slow = onTwoFour(160), fast = onTwoFour(240);
+          if (!slow) bad.push('at 160 nothing on beats 2 and 4 is tongued: it should be as before');
+          if (fast) bad.push('at 240, ' + fast + ' notes on beats 2 and 4 are still tongued');
+          // How much of its time the flute spends in the gaps, rendered as the page plays it.
+          function gaps(bpm) {
+            var q = at(bpm), L = 8 * q, ns = flute(16), t0 = 0.3, notes = [];
+            ns.forEach(function (x) { notes.push({ t: t0 + x.bar * L + x.t, dur: x.dur, midi: x.midi, w: x.w, slur: x.slur }); });
+            notes.forEach(function (n, i) { var nx = notes[i + 1]; n.into = !!nx && nx.slur && n.t + n.dur > nx.t; });
+            var SR = 22050, o = new OfflineAudioContext(1, Math.ceil(SR * (t0 + 16 * L + 0.5)), SR), fl = new win.BUDDIES.Flute(o, o.destination);
+            if (fl.setPace) fl.setPace(q);                 // as the page tells it
+            notes.forEach(function (n) { fl.note(n.t, n.dur, n.midi, n.w, 0, { slur: n.slur, into: n.into }); });
+            return o.startRendering().then(function (buf) {
+              var x = buf.getChannelData(0), win4 = Math.round(SR * 0.004), lv = [];
+              for (var i = Math.round(0.4 * SR); i + win4 < x.length - SR * 0.6; i += win4) {
+                var e = 0; for (var k = i; k < i + win4; k++) e += x[k] * x[k];
+                lv.push(10 * Math.log10(e / win4 + 1e-12));
+              }
+              var med = lv.slice().sort(function (a, b) { return a - b; })[Math.floor(lv.length * 0.6)];
+              return lv.filter(function (v) { return v < med - 12; }).length / lv.length;
+            });
+          }
+          return gaps(120).then(function (g120) {
+            return gaps(240).then(function (g240) {
+              if (g240 > g120) bad.push('at 240 the flute is in its gaps ' + Math.round(g240 * 100) + '% of the time, against ' + Math.round(g120 * 100) + '% at 120');
+              // And the page tells the flute the tempo.
+              var told = [], sp = win.BUDDIES.Flute.prototype.setPace;
+              win.BUDDIES.Flute.prototype.setPace = function (q) { told.push(q); return sp && sp.apply(this, arguments); };
+              at(240);
+              doc.getElementById('play').click();
+              return wait(300).then(function () {
+                doc.getElementById('play').click();
+                var last = told[told.length - 1];
+                if (!(Math.abs(last - 0.125) < 0.001)) bad.push('the flute was told a quaver of ' + last + ' s at 240, not 0.125');
+                expect(bad.length === 0, bad.join('\n'));
+              });
+            });
+          });
+        });
+      });
+    });
+
   check('Session Buddies', 'The flute plays the rolls and cuts a setting writes, and they can be turned off',
     'A roll (~) and grace notes ({g}, a cut) were read past: about one popular setting in five writes rolls. Now the reader keeps them on their notes, every note where it was; the flute plays a long roll (a dotted crotchet: the note, a cut on its second quaver to two steps above, a tap on its third to the step below), a short roll (a crotchet: the cut on its first quaver, the tap on its second) and a grace note as a flick on the note’s time, all under one breath, the flick heard; the concertina keeps to the plain notes; and Ornaments: Off plays the plain tune, the choice kept.',
     function () {

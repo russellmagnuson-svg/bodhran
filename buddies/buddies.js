@@ -17,7 +17,7 @@
    * next to the title and at the foot. Bump it with every change pushed (the
    * last number for a fix, the middle for something new) and add it to the
    * "Session Buddies" sections of CHANGELOG.md and the release notes. */
-  var VERSION = '1.23.4';
+  var VERSION = '1.23.5';
 
   var $ = function (id) { return document.getElementById(id); };
   var P = window.BUDDIES, G = window.GTR, T = window.TRAD, TPQ = P.TPQ;
@@ -873,6 +873,7 @@
     fluteBus = ctx.createGain(); fluteBus.gain.value = MIX.tune * vol.tune;
     fluteBus.connect(run);
     flutePlayer = new P.Flute(ctx, fluteBus);
+    if (tune) flutePlayer.setPace(quaver());
     concBus = ctx.createGain(); concBus.gain.value = MIX.concertina * vol.concertina;
     concBus.connect(run);
     concertina = new P.Concertina(ctx, concBus);
@@ -981,9 +982,13 @@
   // a moment early, the tongue's stop, at most 35 ms. Until then it let go of
   // every quaver at 82%: about 50 ms of silence between every two notes in a
   // reel, as a keyboard player lifts each key.
+  // A tongued note stops a little short of the next; at speed the gap shrinks
+  // with the notes (since 1.23.5, with the lighter tongue: flute.js, setPace).
   function fluteLength(len, lenQ, into) {
-    return into ? len + P.Flute.prototype.OVERLAP : len - Math.min(0.035, len * 0.15);
+    return into ? len + P.Flute.prototype.OVERLAP : len - Math.min(0.035, len * 0.15) * ease();
   }
+  // 1 at an easy pace; less, in step with the notes, faster than the flute's EASY (flute.js).
+  function ease() { return Math.min(1, quaver() / P.Flute.prototype.EASY); }
   // Since 1.7.1 the concertina's note ends as the next begins, and
   // its recorded reed stops quickly when let go (concertina.js): with 30 ms
   // and a slow fade, carried over for the synthesised one, its old note sat
@@ -1207,8 +1212,14 @@
    * between, one breath carrying the notes of a beat (a jig's DUM-da-da,
    * a reel's pairs), the first note of the run tongued too; a repeated
    * note, or one after a rest, tongued as it must be. [{ slur, into }]. */
+  /* A fast reel (above about 205; LEGATO) is tongued only on beats 1 and 3,
+   * the rest slurred, as flute players take one (since 1.23.5, chosen by ear
+   * over a lighter tongue alone: at 240 the flute spent 18% of its time in
+   * the gaps between tongued notes, 15% with the lighter tongue, 8% this way,
+   * against 12% at 120). */
+  var LEGATO = 0.95;
   function articulate(notes) {
-    var beat = type().per * TPQ;
+    var beat = type().per * TPQ * (type().slots === 8 && ease() < LEGATO ? 2 : 1);
     var slur = notes.map(function (n, i) {
       var p = notes[i - 1];
       return !!p && p.tick + p.dur === n.tick && p.midi !== n.midi && n.tick % beat !== 0;
@@ -1671,6 +1682,7 @@
     v = Math.max(ty.bpm.min, Math.min(ty.bpm.max, Math.round(+v) || ty.bpm.start));
     $('bpm').value = v; $('bpm-num').value = v;
     if (drum) drum.setPace(quaver());           // damped at speed (1.23.4; js/bodhran.js)
+    if (flutePlayer) flutePlayer.setPace(quaver());   // a lighter tongue at speed (1.23.5; flute.js)
   }
 
   function init() {

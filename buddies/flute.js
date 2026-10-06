@@ -82,6 +82,20 @@
   Flute.prototype.SLUR_OUT = 0.02;     // the note before it letting go, ending OVERLAP after it starts
   Flute.prototype.OVERLAP = 0.012;
 
+  /* A tongued note's swell and its release, seconds, at an easy pace; and
+   * the pace. setPace(quaver): seconds to a quaver of the tune. Faster than
+   * EASY (a reel of about 195, a jig of 130), the tongue's swell, release
+   * and lead shrink in step with the notes. Until Session Buddies 1.23.5
+   * they stayed 30 ms at any tempo: at a reel of 240 the flute spent 18% of
+   * its time in the gaps between tongued notes, against 12% at 120, and
+   * sounded clipped. Slower than EASY nothing changes. (The page also
+   * shortens the gap before a tongued note at speed, and above a reel of
+   * about 205 tongues only beats 1 and 3: buddies.js, fluteLength and
+   * articulate.) */
+  Flute.prototype.TONGUE = 0.03;
+  Flute.prototype.EASY = 0.154;
+  Flute.prototype.setPace = function (quaver) { this.pace = quaver > 0 ? quaver : 0; };
+
   /* Vibrato: until Session Players 1.7.3 every note over 0.4 s wavered
    * ±9 cents at 5.2 Hz, in full within 0.35 s. Against the recorded
    * concertina, which holds its pitch to a cent or two, the same note
@@ -101,8 +115,11 @@
     var ctx = this.ctx, f = hz(midi), end = t + dur, slur = !!art.slur, into = !!art.into;
     var V = this.VIBRATO, cents = V.cents * (vib == null ? 1 : vib);
     var x = Math.max(0, Math.min(1, (midi - 62) / 24));          // 0 at low D, 1 two octaves up
-    t = Math.max(ctx.currentTime, t - (slur ? this.LEAD_SLUR : this.LEAD));
-    var rel = into ? this.SLUR_OUT : 0.03;                       // a tongue stops the air quickly
+    // At speed the tongue is lighter: its swell, release and lead in step
+    // with the notes (setPace); at an easy pace as they always were.
+    var k = this.pace ? Math.min(1, this.pace / this.EASY) : 1, tongue = this.TONGUE * k;
+    t = Math.max(ctx.currentTime, t - (slur ? this.LEAD_SLUR : this.LEAD * k));
+    var rel = into ? this.SLUR_OUT : tongue;                     // a tongue stops the air quickly
 
     // The breath behind the note: its level, wandering a little (±0.5 dB),
     // and on a long note easing in and out.
@@ -112,9 +129,9 @@
       amp.gain.linearRampToValueAtTime(vel, t + this.SLUR_IN);
     } else {
       amp.gain.setValueAtTime(0.0001, t);
-      amp.gain.exponentialRampToValueAtTime(vel, t + 0.03);
+      amp.gain.exponentialRampToValueAtTime(vel, t + tongue);
     }
-    var held = Math.max(t + 0.031, end - rel);
+    var held = Math.max(t + tongue + 0.001, end - rel);
     if (end - t > 0.45) {                                          // a long note swells and eases
       amp.gain.linearRampToValueAtTime(vel * 1.05, t + (held - t) * 0.45);
       amp.gain.linearRampToValueAtTime(vel * 0.94, held);

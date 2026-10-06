@@ -492,6 +492,19 @@ The page at `/buddies/` has its own version number, shown next to its title.
 It was called Session Players, at `/players/`, until 1.8.0; the entries
 before that keep the old name.
 
+### Session Buddies 1.23.5 — 2026-10-06
+
+- **A fast reel's flute runs legato, not clipped.** At 240 the flute sounded
+  "a bit clipped": about half its notes were tongued, each with a swell, a
+  release and a gap of fixed length, so at 240 it spent 18% of its time in
+  the gaps between notes, against 12% at 120. Chosen by ear from two
+  versions: at speed the tongue is lighter (its swell, release and lead in
+  step with the notes) and the gap before a tongued note smaller; and above
+  a reel of about 205 only beats 1 and 3 are tongued, the rest slurred, as
+  flute players take a fast reel (a repeated note still takes the tongue).
+  At 240 it now spends 8% of its time in the gaps. Nothing changes below a
+  reel of about 195 or a jig of 130.
+
 ### Session Buddies 1.23.4 — 2026-10-06
 
 - **Fast session tempos.** Asked for by a player: "still pretty slow at
