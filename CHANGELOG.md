@@ -492,6 +492,25 @@ The page at `/buddies/` has its own version number, shown next to its title.
 It was called Session Players, at `/players/`, until 1.8.0; the entries
 before that keep the old name.
 
+### Session Buddies 1.24.0 — 2026-10-17 — The flute ornaments as a player would
+
+- **Ornaments: Player's own**, beside As written and Off (asked for by a flute
+  player). The flute keeps whatever the setting writes and adds ornaments
+  where an Irish flute player would, so a setting that writes none (most of
+  them) is no longer played plain:
+  - **rolls** on long notes on the beat: a long roll on a dotted crotchet (a
+    jig's), a short roll on a crotchet (a reel's);
+  - **crans** on long low Ds, and now and then Es: a flute cannot roll its
+    lowest note, so the D is cut by G, then F#, then E, one on each quaver
+    (three in a crotchet);
+  - **cuts** between repeated notes ("e**dd**"), and with Plenty, now and then
+    on a bar's first note.
+  **A few** or **Plenty** sets how many. The choices differ each time
+  through, so it never plays a part the same way twice running, but a bar is
+  ornamented the same whenever it is worked out. Too short to fit at the
+  tempo, an ornament is left out, as before. The concertina keeps to the
+  plain notes. Kept with your settings; As written stays the start.
+
 ### Session Buddies 1.23.5 — 2026-10-06
 
 - **A fast reel's flute runs legato, not clipped.** At 240 the flute sounded

@@ -2322,7 +2322,7 @@
     var keys = ['players.current', 'players.tuning', 'players.sympathy', 'players.volume', 'players.swing.hornpipe',
                 'buddies.favourites', 'buddies.recent', 'players.melody', 'players.yourturn', 'players.backing',
                 'players.drumstyle', 'players.drumbusy', 'players.voices', 'players.mineopen',
-                'players.ornaments', 'players.drumhand', 'players.hearopen'], saved = {};
+                'players.ornaments', 'players.drumhand', 'players.hearopen', 'players.ornadd'], saved = {};
     keys.forEach(function (k) { saved[k] = localStorage.getItem(k); localStorage.removeItem(k); });
     if (!(opts && opts.fresh)) {
       localStorage.setItem('players.voices', JSON.stringify({ concertina: false }));
@@ -2789,6 +2789,63 @@
               });
             });
           }).then(function () { expect(bad.length === 0, bad.join('\n')); });
+        });
+      });
+    });
+
+  check('Session Buddies', 'Player’s own: the flute adds rolls, crans and cuts, differently each time through',
+    'Asked for by a flute player (1.24.0): the flute ornaments as a player would, not only where a setting writes it. Ornaments: Player’s own keeps what is written and adds rolls on long notes on the beat, crans on long low Ds (a flute cannot roll its lowest note: the D cut by G, F♯ and E in turn), and cuts between repeated notes; A few or Plenty. Chosen afresh each time through, but the same whenever a bar is laid out; the concertina keeps to the plain notes; the choices kept.',
+    function () {
+      return json(FIX + 'the-kesh.json').then(function (kesh) {
+        return withBuddies(function (win, doc) {
+          var PP = win.BUDDIES_PAGE, bad = [];
+          function orn(o, a) { doc.querySelector('#ornaments [data-orn="' + o + '"]').click(); if (a) doc.querySelector('#orn-amount [data-amount="' + a + '"]').click(); }
+          function flute(n) { return PP.plan(n).filter(function (x) { return x.who === 'flute'; }); }
+          function flicks(n) { return flute(n).filter(function (x) { return x.grace; }); }
+          function sig(n) { return flute(n).map(function (x) { return x.midi + (x.grace ? '*' : ''); }).join(' '); }
+          function count(from, bars) { var c = 0; for (var n = from; n < from + bars; n++) c += flicks(n).length; return c; }
+          // The Kesh, setting 1, writes none.
+          PP.loadTune(kesh, 0);
+          var L = PP.form().length;
+          if (!doc.getElementById('orn-amount').hidden) bad.push('A few / Plenty shows with As written');
+          var written = count(0, L);
+          orn('player', 'light');
+          if (doc.getElementById('orn-amount').hidden) bad.push('A few / Plenty is hidden with Player’s own');
+          var few = count(0, L), again = count(0, L);
+          orn('player', 'plenty');
+          var plenty = count(0, L);
+          if (written) bad.push('As written adds ' + written + ' flicks to a setting that writes none');
+          if (few < 6) bad.push('Player’s own, a few: only ' + few + ' flicks in a time through');
+          if (few !== again) bad.push('the same bars laid out twice came out different: ' + few + ', ' + again);
+          if (!(plenty > few)) bad.push('Plenty (' + plenty + ') adds no more than a few (' + few + ')');
+          var differs = 0; for (var n = 0; n < L; n++) if (sig(n) !== sig(n + L)) differs++;
+          if (!differs) bad.push('every bar is ornamented the same way the second time through');
+          // Bar 1, G3 GAB: no flick below the tune's lowest note, and nothing added to a quaver run.
+          // A cran: a made-up jig with long low Ds, Plenty.
+          PP.loadTune({ id: 0, name: 'A cran check', type: 'jig', url: '', settings: [{ id: 0, url: '', key: 'Dmajor', date: '', member: { name: 'a check' },
+            abc: '|:D3 FED|A3 FED|D3 FAd|e2d dBA:|' }] }, 0);
+          var crans = 0, below = 0;
+          for (var m = 0; m < 16; m++) {
+            var f = flute(m);
+            f.forEach(function (x, i) {
+              if (x.grace && x.midi < 62) below++;
+              if (x.grace && x.midi === 67 && f[i + 1] && f[i + 1].midi === 62 && f[i + 2] && f[i + 2].grace && f[i + 2].midi === 66 &&
+                  f[i + 3] && f[i + 3].midi === 62 && f[i + 4] && f[i + 4].grace && f[i + 4].midi === 64) crans++;
+            });
+          }
+          if (!crans) bad.push('no cran (D cut by G, F♯ and E) on the long low Ds in 16 bars');
+          if (below) bad.push(below + ' flicks below the flute’s low D (a roll on it)');
+          // What is written is still played: The Kesh, setting 3, bar 19, ~B3, a long roll.
+          PP.loadTune(kesh, 2);
+          var b19 = flute(18);
+          if (!(b19[1] && b19[1].grace && b19[1].midi === 74)) bad.push('Player’s own lost the written roll on bar 19 of The Kesh, setting 3');
+          // The concertina keeps to the plain notes.
+          var conc = doc.getElementById('on-concertina'); if (!conc.checked) conc.click();
+          var plain = PP.plan(0).filter(function (x) { return x.who === 'concertina'; });
+          if (plain.some(function (x) { return x.grace; })) bad.push('the concertina plays ornaments');
+          conc.click();
+          if (win.localStorage.getItem('players.ornaments') !== 'player' || win.localStorage.getItem('players.ornadd') !== 'plenty') bad.push('the choice is not kept');
+          expect(bad.length === 0, bad.join('\n'));
         });
       });
     });

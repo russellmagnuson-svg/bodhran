@@ -505,7 +505,9 @@ there is no server of ours), fetched, and played with the guitar demo's
 guitar, flute and bodhrán, and a recorded concertina. Jigs, reels, hornpipes,
 polkas, slides, slip jigs and waltzes for now (rolls ~ and grace notes {g} read onto
 their notes, `orn`/`grace`, and played on the flute by `ornament()` unless Ornaments
-is Off; every choice kept under 'players.'
+is Off; with Player's own, `playerOrn()` adds rolls, crans and cuts where a flute
+player would, A few or Plenty (`players.ornadd`), by `chance(n, tick, salt)`: the
+same for a bar of a given time through, different between times; every choice kept under 'players.'
 in this browser, the ticks in `players.voices`; the bodhrán's Back hand, `pressAt()`,
 the app's arc over each four bars; a waltz's oom on the root and fifth by turns,
 `bassString()`; Reset settings clears them all and

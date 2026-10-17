@@ -17,7 +17,7 @@
    * next to the title and at the foot. Bump it with every change pushed (the
    * last number for a fix, the middle for something new) and add it to the
    * "Session Buddies" sections of CHANGELOG.md and the release notes. */
-  var VERSION = '1.23.5';
+  var VERSION = '1.24.0';
 
   var $ = function (id) { return document.getElementById(id); };
   var P = window.BUDDIES, G = window.GTR, T = window.TRAD, TPQ = P.TPQ;
@@ -1011,7 +1011,7 @@
       var fart = { slur: !!(art && art.slur), into: !!(art && art.into) && !finalNote };
       var fd = finalNote ? fl + ring : fluteLength(fl, fq, fart.into);
       // No vibrato with the concertina: against its steady reed it beat (flute.js).
-      var parts = ornaments === 'written' && orn ? ornament(orn, tick, dur, midi, w, fd, fart, fw, written) : null;
+      var parts = ornaments !== 'off' && orn && (orn.orn || orn.grace) ? ornament(orn, tick, dur, midi, w, fd, fart, fw, written) : null;
       if (parts) parts.forEach(function (x, i) {
         pending.push({ t: tBar + x.at * q + x.off, note: { who: 'flute', midi: x.midi, dur: x.dur, final: !!finalNote && i === parts.length - 1,
                                                           w: x.w, slur: x.art.slur, grace: !!x.grace, of: midi },
@@ -1044,12 +1044,47 @@
    *     softer), each followed by the note again. On a crotchet (a short
    *     roll, mostly reels): the cut on its first quaver and the tap on its
    *     second. On a quaver: a cut.
-   * Too short to fit (a fast tune, a short note), it is left plain. */
+   * Too short to fit (a fast tune, a short note), it is left plain.
+   *
+   * Player's own (since 1.24.0, asked for by a flute player): the written
+   * ones, and more where an Irish flute player would put them, chosen afresh
+   * each time through (playerOrn): rolls on long notes on the beat; crans on
+   * long low Ds (and some Es), where a flute cannot roll; cuts between
+   * repeated notes, and with Plenty now and then on a bar's first note. How
+   * many: A few or Plenty (players.ornadd). */
   var ORNAMENTS = {
     written: 'Rolls and cuts where the setting writes them, played on the flute; the concertina keeps to the plain notes.',
+    player: 'The flute ornaments as a player would, as well as anything written: rolls on long notes, crans on the low D, cuts between repeated notes, different each time through. The concertina keeps to the plain notes.',
     off: 'The plain tune, no ornaments.'
   };
   var ornaments = ORNAMENTS[stored('players.ornaments', '')] ? stored('players.ornaments') : 'written';
+  var ORN_AMOUNT = { light: 0.35, plenty: 0.7 };   // the chance of a long note being ornamented
+  var ornAmount = ORN_AMOUNT[stored('players.ornadd', '')] ? stored('players.ornadd') : 'light';
+  /* A repeatable chance, 0-1, for bar n (counted from the start, so each
+   * time through differs) and a place in it: the same whenever the bar is
+   * laid out (and for the checks). */
+  function chance(n, tick, salt) {
+    var x = Math.sin((n + 1) * 12.9898 + (tick + 1) * 78.233 + salt * 37.719) * 43758.5453;
+    return x - Math.floor(x);
+  }
+  /* What a flute player might do with one note of bar n (time through and
+   * all): { orn: 'roll' | 'cran' } or { grace: [cut] }, or the note as
+   * written. prev: the note before it, if it runs straight into this one. */
+  function playerOrn(note, prev, n, finalNote) {
+    if (note.orn || note.grace || finalNote) return note;
+    var ty = type(), beat = ty.per * TPQ, p = ORN_AMOUNT[ornAmount];
+    var onBeat = note.tick % beat === 0, long = note.dur >= beat;
+    var low = note.midi === 62 ? 1 : note.midi === 64 ? 0.5 : 0;        // low D, and less often E
+    if (onBeat && long) {
+      if (low) return chance(n, note.tick, 1) < p * low * 1.3 ? { orn: 'cran' } : note;
+      return chance(n, note.tick, 2) < p ? { orn: 'roll' } : note;
+    }
+    if (prev && prev.midi === note.midi) {
+      return chance(n, note.tick, 3) < Math.min(1, p + 0.3) ? { grace: [stepFrom(note.midi, 2)] } : note;
+    }
+    if (ornAmount === 'plenty' && note.tick === 0 && chance(n, note.tick, 4) < 0.25) return { grace: [stepFrom(note.midi, 2)] };
+    return note;
+  }
   var GRACE = 0.026, TAP = 0.032;
   function drawOrnaments() {
     Array.prototype.forEach.call($('ornaments').children, function (b) {
@@ -1066,6 +1101,10 @@
     var has = rolls || cuts ? 'This setting writes ' + [rolls ? n(rolls, 'roll') : '', cuts ? n(cuts, 'grace note') : ''].filter(Boolean).join(' and ') + '.'
                             : 'This setting writes none.';
     $('ornaments-desc').textContent = ORNAMENTS[ornaments] + ' ' + has;
+    $('orn-amount').hidden = ornaments !== 'player';
+    Array.prototype.forEach.call($('orn-amount').children, function (b) {
+      b.setAttribute('aria-checked', String(b.dataset.amount === ornAmount));
+    });
   }
   // The note n steps up (or down) the scale of the tune's key.
   function stepFrom(midi, n) {
@@ -1092,6 +1131,13 @@
       if (pulses >= 3) { main(at0, 0); flick(p1, 0, up, GRACE, 0.85); main(p1, GRACE); flick(p2, 0, down, TAP, 0.6); main(p2, TAP); }
       else if (pulses === 2) { flick(at0, 0, up, GRACE, 0.85); main(at0, GRACE); flick(p1, 0, down, TAP, 0.6); main(p1, TAP); }
       else { flick(at0, 0, up, GRACE, 0.85); main(at0, GRACE); }
+    } else if (orn.orn === 'cran') {
+      // A cran: the low note cut three times, by the notes three, two and one
+      // steps above (on D: G, F#, E), one on each of its quavers; on a
+      // crotchet, three in its two quavers.
+      var c = [stepFrom(midi, 3), stepFrom(midi, 2), stepFrom(midi, 1)], beats = Math.round(dur / TPQ);
+      var at = beats >= 3 ? [0, TPQ, 2 * TPQ] : [0, Math.round(TPQ * 2 / 3), Math.round(TPQ * 4 / 3)];
+      at.forEach(function (d, i) { var a = warp(tick + d, who, written); flick(a, 0, c[i], GRACE, 0.8); main(a, GRACE); });
     } else return null;
     // Each part held to the next one's start (just past it, under one breath); the last as the plain note would be.
     var end = at0 * q + fd;
@@ -1374,11 +1420,18 @@
     var kept = again ? tb.notes.filter(function (nt) { return nt.tick < cutAt; }) : tb.notes;
     if (atEnd && last && tail.length) kept = endWithout(tb.notes, cutAt, asPickup);
     var written = asWritten(tb.notes), mine = yourTurn(n), art = articulate(kept);
+    var before = FORM[k - 1] && FORM[k - 1].notes[FORM[k - 1].notes.length - 1];
     kept.forEach(function (note, i) {
       var dur = again ? Math.min(note.dur, cutAt - note.tick) : note.dur;
       var nx = kept[i + 1] || (again ? pk[0] : FORM[(k + 1) % FORM.length].notes[0]);
+      var finalNote = last && i === kept.length - 1, orn = note;
+      if (ornaments === 'player') {
+        var pv = kept[i - 1] ? (kept[i - 1].tick + kept[i - 1].dur === note.tick ? kept[i - 1] : null)
+                             : (note.tick === 0 && before && before.tick + before.dur >= L * TPQ ? before : null);
+        orn = playerOrn({ tick: note.tick, dur: dur, midi: note.midi, orn: note.orn, grace: note.grace }, pv, n, finalNote);
+      }
       melody(t0, note.tick, dur, note.midi, weight(note.tick, k),
-             last && i === kept.length - 1, nx && nx.midi === note.midi, written, mine, art[i], note);
+             finalNote, nx && nx.midi === note.midi, written, mine, art[i], orn);
     });
     if (again) pickupInto(t0 + L * q, q, mine);
 
@@ -1813,6 +1866,11 @@
         ornaments = b.dataset.orn; store('players.ornaments', ornaments); drawOrnaments();
       });
     });
+    Array.prototype.forEach.call($('orn-amount').children, function (b) {
+      b.addEventListener('click', function () {               // heard from the next bar
+        ornAmount = b.dataset.amount; store('players.ornadd', ornAmount); drawOrnaments();
+      });
+    });
     drawOrnaments();
     Array.prototype.forEach.call($('drum-style').children, function (b) {
       b.addEventListener('click', function () {               // heard from the next bar
@@ -1949,7 +2007,8 @@
     if (melody) {
       var m = [chosenText('melody-mode')];
       if (!$('your-turn-box').hidden) m.push(chosenText('your-turn-level').replace(/^Your turn: (.*)$/, '$1 on your turn'));
-      if ($('on-tune').checked) m.push('flute ornaments ' + chosenText('ornaments').toLowerCase());
+      if ($('on-tune').checked) m.push('flute ornaments ' + chosenText('ornaments').toLowerCase() +
+        (ornaments === 'player' ? ' (' + chosenText('orn-amount').toLowerCase() + ')' : ''));
       rows.push(['Melody', m.join(' · ')]);
     } else rows.push(['Melody', 'Yours: the flute and concertina are off', true]);
     if ($('on-guitar').checked) {

@@ -197,7 +197,13 @@
     <h3 class="sub-h">Ornaments</h3>
     <div id="ornaments" class="modes" role="radiogroup" aria-label="Ornaments">
       <button class="mode" type="button" role="radio" data-orn="written" aria-checked="true">As written</button>
+      <button class="mode" type="button" role="radio" data-orn="player" aria-checked="false">Player’s own</button>
       <button class="mode" type="button" role="radio" data-orn="off" aria-checked="false">Off</button>
+    </div>
+    <!-- Only with Player's own: how many it adds. -->
+    <div id="orn-amount" class="modes" role="radiogroup" aria-label="How many ornaments the flute adds" hidden>
+      <button class="mode" type="button" role="radio" data-amount="light" aria-checked="true">A few</button>
+      <button class="mode" type="button" role="radio" data-amount="plenty" aria-checked="false">Plenty</button>
     </div>
     <p id="ornaments-desc" class="blurb"></p>
     <h3 class="sub-h">Strum</h3>
