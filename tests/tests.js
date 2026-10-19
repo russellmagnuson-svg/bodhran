@@ -2793,6 +2793,87 @@
       });
     });
 
+  check('Session Buddies', 'The mandolin plays the tune as a mandolin player would',
+    'Asked for in 1.25.0 by a mandolin player: a mandolin in the mixer, off to begin with, playing the tune with (or instead of) the flute and concertina, in step with them. Picked down on the beat and up between (a jig D-U-D in each beat); a picked triplet in place of a roll; tremolo on a waltz’s long notes. Its sound set against the player’s own F-style mandolin: a plucked string’s overtones (not the first version’s twang: 5.5 dB more above 2 kHz than below 1 kHz, the real one -25), a quick drop after the pick, no two picks alike, an open string ringing on. As loud as the concertina, 2 dB under the flute; the tick and the level kept.',
+    function () {
+      return json(FIX + 'the-kesh.json').then(function (kesh) {
+        return withBuddies(function (win, doc) {
+          var PP = win.BUDDIES_PAGE, P = win.BUDDIES, bad = [];
+          function $(id) { return doc.getElementById(id); }
+          function who(n, w) { return PP.plan(n).filter(function (x) { return x.who === w; }); }
+          PP.loadTune(kesh, 2);                                 // setting 3: G2 G GAB, and a roll in bar 19
+          if (!$('on-mandolin')) { expect(false, 'there is no mandolin in the mixer'); }
+          if ($('on-mandolin').checked || who(0, 'mandolin').length) bad.push('the mandolin plays to begin with');
+          $('on-mandolin').click();
+          var m1 = who(0, 'mandolin');
+          var picks = m1.map(function (x) { return x.midi + (x.up ? 'u' : 'd'); }).join(' ');
+          if (picks !== '67d 67d 67d 69u 71d') bad.push('bar 1 (G2 G GAB) is picked ' + picks + ', not G down, G down, G down, A up, B down');
+          var b19 = who(18, 'mandolin');
+          if (!(b19[0] && b19[0].midi === 71 && b19[0].picks === 3)) bad.push('the roll on bar 19’s B is not a picked triplet: ' + JSON.stringify(b19[0]));
+          // In step: the flute's lilt alone, the concertina's when it plays.
+          var fl = who(0, 'tune').length ? who(0, 'tune') : who(0, 'flute');
+          var same = function (a, b) { return a.length && a.every(function (x, i) { return b[i] && Math.abs(x.t - b[i].t) < 0.002; }); };
+          var plainF = fl.filter(function (x) { return !x.grace; });
+          if (!same(m1.slice(1), plainF.slice(1))) bad.push('the mandolin is not in step with the flute');
+          $('on-concertina').click();
+          if (!same(who(0, 'mandolin'), who(0, 'concertina'))) bad.push('the mandolin is not in step with the concertina');
+          $('on-concertina').click();
+          // A waltz: a minim played tremolo, a crotchet not.
+          PP.loadTune({ id: 0, name: 'A waltz check', type: 'waltz', url: '', settings: [{ id: 0, url: '', key: 'Dmajor', date: '', member: { name: 'a check' }, abc: '|:d2 f2 a2|F4 A2|d2 f2 a2|d6:|' }] }, 0);
+          var w2 = who(1, 'mandolin');
+          if (!(w2[0] && w2[0].tremolo && w2[1] && !w2[1].tremolo)) bad.push('in a waltz the minim is not tremolo, or the crotchet is: ' + JSON.stringify(w2));
+          // The summary, and what is kept.
+          if (!/Mandolin/.test(win.BUDDIES_PAGE.hearRows()[0][1])) bad.push('the summary leaves the mandolin out');
+          var v = $('vol-mandolin'); v.value = 1.3; v.dispatchEvent(new win.Event('input'));
+          var kept = JSON.parse(win.localStorage.getItem('players.voices') || '{}'), vols = JSON.parse(win.localStorage.getItem('players.volume') || '{}');
+          if (kept.mandolin !== true || vols.mandolin !== 1.3) bad.push('the tick or the level is not kept: ' + JSON.stringify(kept) + ' ' + JSON.stringify(vols));
+          // The sound, rendered: an open D and a fretted E, each picked twice, and Cooley's-like run of notes.
+          var SR = 44100, o = new OfflineAudioContext(1, SR * 6, SR), md = new P.Mandolin(o, o.destination);
+          var seq = [67, 69, 71, 72, 74, 76, 74, 71, 69, 67, 66, 67];   // a run, in G
+          md.note(0.1, 0.25, 62, 0.9, {}); md.note(1.6, 0.25, 64, 0.9, {}); md.note(3.1, 0.25, 64, 0.9, {});
+          return o.startRendering().then(function (buf) {
+            var x = buf.getChannelData(0);
+            function lv(a, b) { var s2 = 0; for (var i = Math.round(a * SR); i < Math.round(b * SR); i++) s2 += x[i] * x[i]; return 10 * Math.log10(s2 / ((b - a) * SR) + 1e-12); }
+            var drop = lv(0.12, 0.14) - lv(0.35, 0.37);
+            if (!(drop > 5)) bad.push('no quick drop after the pick: ' + round(drop) + ' dB in the first quarter second');
+            var openRing = lv(0.7, 0.8), frettedRing = lv(2.2, 2.3);
+            if (!(openRing - frettedRing > 15)) bad.push('the open D does not ring on past its note (' + round(openRing) + ' dB) where the fretted E stops (' + round(frettedRing) + ' dB)');
+            var diff = 0, e = 0; for (var i = 0; i < SR * 0.2; i++) { var a = x[Math.round(1.6 * SR) + i], b = x[Math.round(3.1 * SR) + i]; diff += (a - b) * (a - b); e += a * a; }
+            if (!(10 * Math.log10(diff / e) > -30)) bad.push('two picks of the same note are alike: they differ by only ' + round(10 * Math.log10(diff / e)) + ' dB');
+            // Not twangy: across a run of notes, far more below 1 kHz than above 2 kHz.
+            var o2 = new OfflineAudioContext(1, SR * 4, SR), m2 = new P.Mandolin(o2, o2.destination);
+            seq.forEach(function (m, i) { m2.note(0.2 + i * 0.25, 0.26, m, 0.85, { up: i % 2 === 1 }); });
+            return o2.startRendering();
+          }).then(function (buf) {
+            var y = buf.getChannelData(0);
+            function bandE(type, f) {
+              var oc = new OfflineAudioContext(1, y.length, SR), bb = oc.createBuffer(1, y.length, SR); bb.getChannelData(0).set(y);
+              var src = oc.createBufferSource(); src.buffer = bb; var node = src;
+              for (var k = 0; k < 3; k++) { var q = oc.createBiquadFilter(); q.type = type; q.frequency.value = f; node.connect(q); node = q; }
+              node.connect(oc.destination); src.start();
+              return oc.startRendering().then(function (r) { var z = r.getChannelData(0), s3 = 0; for (var i = 0; i < z.length; i++) s3 += z[i] * z[i]; return s3; });
+            }
+            return Promise.all([bandE('highpass', 2000), bandE('lowpass', 1000)]).then(function (r) {
+              var tilt = 10 * Math.log10(r[0] / r[1]);
+              if (!(tilt < -15)) bad.push('twangy: only ' + round(-tilt) + ' dB less above 2 kHz than below 1 kHz (the real mandolin: 25)');
+              // As loud as the concertina: within 1.5 dB of 2 dB under the flute, as the page mixes them.
+              var o3 = new OfflineAudioContext(1, SR * 3, SR), fb = o3.createGain(), mb = o3.createGain(), MIX = PP.MIX;
+              var o4 = new OfflineAudioContext(1, SR * 3, SR); fb = o4.createGain(); fb.gain.value = MIX.tune; fb.connect(o4.destination);
+              mb.gain.value = MIX.mandolin; mb.connect(o3.destination);
+              var fl2 = new P.Flute(o4, fb), m3 = new P.Mandolin(o3, mb);
+              seq.slice(0, 8).forEach(function (m, i) { fl2.note(0.2 + i * 0.3, 0.3, m, 0.85, 0, { slur: i % 3 !== 0 }); m3.note(0.2 + i * 0.3, 0.3, m, 0.85, { up: i % 2 === 1 }); });
+              return Promise.all([o3.startRendering(), o4.startRendering()]);
+            });
+          }).then(function (rr) {
+            function kdb(b) { var z = b.getChannelData(0), s4 = 0; for (var i = 0; i < z.length; i++) s4 += z[i] * z[i]; return 10 * Math.log10(s4 / z.length); }
+            var rel = kdb(rr[0]) - kdb(rr[1]);
+            if (!(rel > -5 && rel < 1)) bad.push('the mandolin is ' + round(rel) + ' dB against the flute, not about 2 dB under it');
+            expect(bad.length === 0, bad.join('\n'));
+          });
+        });
+      });
+    });
+
   check('Session Buddies', 'Player’s own: the flute adds rolls, crans and cuts, differently each time through',
     'Asked for by a flute player (1.24.0): the flute ornaments as a player would, not only where a setting writes it. Ornaments: Player’s own keeps what is written and adds rolls on long notes on the beat, crans on long low Ds (a flute cannot roll its lowest note: the D cut by G, F♯ and E in turn), and cuts between repeated notes; A few or Plenty. Chosen afresh each time through, but the same whenever a bar is laid out; the concertina keeps to the plain notes; the choices kept.',
     function () {

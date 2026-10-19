@@ -17,7 +17,7 @@
    * next to the title and at the foot. Bump it with every change pushed (the
    * last number for a fix, the middle for something new) and add it to the
    * "Session Buddies" sections of CHANGELOG.md and the release notes. */
-  var VERSION = '1.24.0';
+  var VERSION = '1.25.0';
 
   var $ = function (id) { return document.getElementById(id); };
   var P = window.BUDDIES, G = window.GTR, T = window.TRAD, TPQ = P.TPQ;
@@ -180,14 +180,16 @@
    * its stick still sits 10 dB under the guitar in its own band (the old
    * drum's sat 34 under), and its level is raised 0.5 dB, 0.7 to 0.74, to
    * stand against the guitar where it did. */
-  var MIX = { guitar: 0.7, tune: 0.18, concertina: 0.6, drum: 0.74 };
+  // The mandolin (1.25.0) set where the concertina sits, 2 dB under the flute
+  // (measured on The Kesh's A part, K-weighted near enough).
+  var MIX = { guitar: 0.7, tune: 0.18, concertina: 0.6, drum: 0.74, mandolin: 0.46 };
   // Saved settings keep their 'players.' names from before the rename, so
   // the last tune, volumes and tuning carry over to the new address.
   function stored(key, fallback) {
     try { var v = localStorage.getItem(key); return v == null ? fallback : v; } catch (e) { return fallback; }
   }
   function store(key, value) { try { localStorage.setItem(key, value); } catch (e) {} }
-  var vol = { guitar: 1, tune: 1, concertina: 1, drum: 1 };
+  var vol = { guitar: 1, tune: 1, concertina: 1, drum: 1, mandolin: 1 };
   try {
     var savedVol = JSON.parse(stored('players.volume', '{}'));
     Object.keys(vol).forEach(function (k) {
@@ -256,7 +258,7 @@
     tune.savedNumber = saved && saved.number;
     tune.fromFile = !!(saved && saved.fromFile);
     FORM = lay.timeline;
-    prepareGuitar();
+    prepareGuitar(); prepareMandolin();
     var options = (saved && saved.options) || {};
     if (keepBpm && !options.bpm) options = Object.assign({}, options, { bpm: keepBpm });
     showTune(options);
@@ -268,6 +270,13 @@
   }
 
   /* Every note any chord of this tune could need, in both tunings. */
+  // The mandolin's notes, rendered ahead (only once it is ticked: they take a moment).
+  function prepareMandolin() {
+    if (!mandolin || !tune || !$('on-mandolin').checked) return;
+    var all = {};
+    tune.lay.timeline.forEach(function (tb) { tb.notes.forEach(function (n) { all[n.midi] = 1; }); });
+    mandolin.prepare(Object.keys(all).map(Number));
+  }
   function prepareGuitar() {
     if (!guitar || !tune) return;
     var all = {};
@@ -817,6 +826,7 @@
   /* ---------- audio, built on the first press of Play ---------- */
   var ctx = null, run = null, guitar = null, drum = null, clicker = null, fluteBus = null;
   var concBus = null, concertina = null, flutePlayer = null;   // the instruments: flute.js, concertina.js
+  var mandoBus = null, mandolin = null;                         // and mandolin.js (since 1.25.0)
 
   function roomImpulse(seconds, decay) {
     var len = Math.floor(ctx.sampleRate * seconds), buf = ctx.createBuffer(2, len, ctx.sampleRate);
@@ -831,6 +841,7 @@
     guitar.setLevel(MIX.guitar * vol.guitar);
     fluteBus.gain.setTargetAtTime(MIX.tune * vol.tune, ctx.currentTime, 0.03);
     concBus.gain.setTargetAtTime(MIX.concertina * vol.concertina, ctx.currentTime, 0.03);
+    mandoBus.gain.setTargetAtTime(MIX.mandolin * vol.mandolin, ctx.currentTime, 0.03);
     drum.setLevel(MIX.drum * vol.drum);
   }
 
@@ -878,6 +889,10 @@
     concBus.connect(run);
     concertina = new P.Concertina(ctx, concBus);
     concertina.onstatus = showConcertina;
+    mandoBus = ctx.createGain(); mandoBus.gain.value = MIX.mandolin * vol.mandolin;
+    mandoBus.connect(run);
+    mandolin = new P.Mandolin(ctx, mandoBus);
+    prepareMandolin();
     applyLevels();
     requestAnimationFrame(frame);
   }
@@ -1026,6 +1041,27 @@
       var cw = Math.max(0.3, Math.min(1, 0.8 + (w - 0.8) * 1.4));   // the bellows lean harder
       pending.push({ t: tBar + ca * q, note: { who: 'concertina', midi: midi, dur: cd, final: !!finalNote, w: cw },
                      fn: function (t) { concertina.note(t, cd, midi, cw); } });
+    }
+    if ($('on-mandolin').checked) {
+      /* The mandolin (since 1.25.0): in step with the others (the
+       * concertina's lilt when it plays, else the flute's), picked down on
+       * the beat and on every other quaver, up between. A fretted note is
+       * held to the next one's start and damped. In place of a roll or a
+       * cran (written, or the player's own) a mandolin player picks a
+       * triplet on the note, filling its first crotchet; a cut it leaves
+       * out. A long note in a waltz, and a waltz's last, is played tremolo. */
+      var mwho = $('on-concertina').checked ? 'concertina' : 'flute';
+      var ma = warp(tick, mwho, written), mq = warp(tick + dur, mwho, written) - ma, ml = mq * q;
+      var md = finalNote ? ml + ring * 0.6 : ml + 0.01;
+      var mvel = Math.max(0.35, Math.min(1, 0.8 + (w - 0.8) * 1.2));
+      var mart = { up: Math.round((tick % (type().per * TPQ)) / TPQ) % 2 === 1 };
+      if (ornaments !== 'off' && orn && (orn.orn === 'roll' || orn.orn === 'cran') && dur >= 2 * TPQ) {
+        var third = (warp(tick + 2 * TPQ, mwho, written) - ma) * q / 3;
+        if (third > 0.045) mart.picks = [0, third, 2 * third];
+      } else if (type() === TYPES.waltz && (dur >= 4 * TPQ || finalNote)) mart.tremolo = true;
+      pending.push({ t: tBar + ma * q, note: { who: 'mandolin', midi: midi, dur: md, final: !!finalNote, w: mvel, up: mart.up,
+                                               picks: mart.picks ? mart.picks.length : 1, tremolo: !!mart.tremolo },
+                     fn: function (t) { mandolin.note(t, md, midi, mvel, mart); } });
     }
   }
 
@@ -1521,7 +1557,7 @@
     if (ctx) {
       var now = ctx.currentTime;
       if (!ended) run.gain.setTargetAtTime(0, now, 0.04);
-      guitar.cancelFrom(now); flutePlayer.cancelFrom(now); concertina.cancelFrom(now);
+      guitar.cancelFrom(now); flutePlayer.cancelFrom(now); concertina.cancelFrom(now); mandolin.cancelFrom(now);
       drum.cancelFrom(now); clicker.cancelFrom(now);
       guitar.silence(now + (ended ? 0 : 0.05));
       T.restAudio(ctx, function () { return playing; });
@@ -1791,7 +1827,7 @@
     // back to guitar, flute and bodhrán).
     var ticked = {};
     try { ticked = JSON.parse(stored('players.voices', '{}')) || {}; } catch (e) {}
-    ['guitar', 'tune', 'concertina', 'drum'].forEach(function (k) {
+    ['guitar', 'tune', 'concertina', 'mandolin', 'drum'].forEach(function (k) {
       var el = $('vol-' + k), box = $('on-' + k);
       if (typeof ticked[k] === 'boolean') box.checked = ticked[k];
       box.addEventListener('change', function () { ticked[k] = box.checked; store('players.voices', JSON.stringify(ticked)); });
@@ -1809,6 +1845,7 @@
       // Ticking the concertina builds the audio at once, so its recordings
       // load while you get ready rather than after the first notes.
       if (k === 'concertina') box.addEventListener('change', function () { if (box.checked) ensureAudio(); showConcertina(); });
+      if (k === 'mandolin') box.addEventListener('change', function () { if (box.checked) { ensureAudio(); prepareMandolin(); } });
     });
     // Ticked (from last time, or on a first visit: on to begin with since
     // 1.23.1), the concertina's recordings start loading at your first tap
@@ -1997,20 +2034,21 @@
   function hearRows() {
     var rows = [], who = [];
     [['on-guitar', 'vol-guitar-out', 'Guitar'], ['on-tune', 'vol-tune-out', 'Flute'],
-     ['on-concertina', 'vol-concertina-out', 'Concertina'], ['on-drum', 'vol-drum-out', 'Bodhrán']].forEach(function (v) {
+     ['on-concertina', 'vol-concertina-out', 'Concertina'], ['on-mandolin', 'vol-mandolin-out', 'Mandolin'],
+     ['on-drum', 'vol-drum-out', 'Bodhrán']].forEach(function (v) {
       if (!$(v[0]).checked) return;
       var level = $(v[1]).textContent.trim();
       who.push(v[2] + (level && level !== '100%' ? ' ' + level : ''));
     });
     rows.push(['Playing', who.length ? who.join(' · ') : 'Nobody: you play alone', !who.length]);
-    var melody = $('on-tune').checked || $('on-concertina').checked;
+    var melody = $('on-tune').checked || $('on-concertina').checked || $('on-mandolin').checked;
     if (melody) {
       var m = [chosenText('melody-mode')];
       if (!$('your-turn-box').hidden) m.push(chosenText('your-turn-level').replace(/^Your turn: (.*)$/, '$1 on your turn'));
       if ($('on-tune').checked) m.push('flute ornaments ' + chosenText('ornaments').toLowerCase() +
         (ornaments === 'player' ? ' (' + chosenText('orn-amount').toLowerCase() + ')' : ''));
       rows.push(['Melody', m.join(' · ')]);
-    } else rows.push(['Melody', 'Yours: the flute and concertina are off', true]);
+    } else rows.push(['Melody', 'Yours: the flute, concertina and mandolin are off', true]);
     if ($('on-guitar').checked) {
       rows.push(['Guitar', [chosenText('strums') + ' strum', chosenText('tunings'),
         chosenText('sympathy') === 'On' ? 'open strings ring' : 'open strings quiet'].join(' · ')]);
@@ -2082,7 +2120,8 @@
       try {
         layBar(n, 0);
         return pending.filter(function (x) { return x.note; }).map(function (x) {
-          return { t: x.t, who: x.note.who, midi: x.note.midi, dur: x.note.dur, final: x.note.final, w: x.note.w, slot: x.note.slot, slur: x.note.slur, grace: x.note.grace, press: x.note.press, bass: x.note.bass };
+          return { t: x.t, who: x.note.who, midi: x.note.midi, dur: x.note.dur, final: x.note.final, w: x.note.w, slot: x.note.slot, slur: x.note.slur, grace: x.note.grace, press: x.note.press, bass: x.note.bass,
+                   up: x.note.up, picks: x.note.picks, tremolo: x.note.tremolo };
         }).sort(function (a, b) { return a.t - b.t; });
       } finally { pending = keep.p; shown = keep.s; endAt = keep.e; }
     }, saveText: saveText, setChord: setChord,

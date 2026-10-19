@@ -492,6 +492,30 @@ The page at `/buddies/` has its own version number, shown next to its title.
 It was called Session Players, at `/players/`, until 1.8.0; the entries
 before that keep the old name.
 
+### Session Buddies 1.25.0 — 2026-10-19 — A mandolin
+
+- **A mandolin** in What you hear (asked for by a mandolin player): a fourth
+  voice for the tune, off to begin with, playing with or instead of the flute
+  and concertina and in step with them (the concertina's lilt when it plays,
+  else the flute's), as loud as the concertina, 2 dB under the flute.
+- **Played as a mandolin player plays:** picked down on the beat and up
+  between (a jig's D-U-D in each beat, a reel's down-up), up-strokes a touch
+  lighter; a picked triplet in place of a roll or a cran (written or the
+  flute's own); tremolo on a waltz's long notes and its last.
+- **Its sound, set against the player's own F-style mandolin** (a recording
+  of The Kesh, setting 3, and its open strings), and chosen by ear over
+  several rounds of clips. Synthesised, as the guitar is: each note a pair of
+  strings a cent apart, starting from the bend a pick leaves, so the D and A
+  strings are nearly pure and the E brighter; a quick drop of about 10 dB in
+  the first quarter second, then a long ring; a faint pick scratch and a
+  pitch a few cents sharp at the pick; a small body strongest around 400 Hz.
+  And a player's touch: no two picks alike, each a shade off in time,
+  strength and pitch, a note stopping when its own string is picked again
+  and an open string ringing on under a run. The first version, from the
+  guitar's strum, was "too twangy" (5.5 dB more above 2 kHz than below
+  1 kHz across a tune, against the real mandolin's -25; now about -26), then
+  "like a piano" (no quick drop), then "too clean a strike" in runs.
+
 ### Session Buddies 1.24.0 — 2026-10-17 — The flute ornaments as a player would
 
 - **Ornaments: Player's own**, beside As written and Off (asked for by a flute

@@ -566,6 +566,16 @@ open or folded kept in `players.hearopen`.
   kept, a missing note is borrowed from a neighbour up to two semitones away (else the stand-in), the
   missing ones are tried again at Play (`retry()`), and `status` (loading, ready, partial, failed)
   drives the line under the mixer.
+- `buddies/mandolin.js` — the mandolin (since 1.25.0), a third melody
+  instrument, off to begin with: each note a pair of strings built with the
+  guitar's string loop (`GTR.thumbString`, shared from guitar.js) from a
+  pick-shaped bend, its sound (`Mandolin.prototype.TONE`) set against a
+  recording of a real F-style mandolin and chosen by ear; four renderings per
+  note, each pick varied in time, strength and pitch, notes damped by string
+  (an open string rings on). buddies.js `melody()` picks it down/up by the
+  quaver's place in the beat, plays a roll or cran as a picked triplet and a
+  waltz's long notes tremolo; `MIX.mandolin` sits it with the concertina,
+  2 dB under the flute.
 - `buddies/flute.js`, `buddies/concertina.js` — the two melody instruments,
   each `new X(ctx, dest)` with `.note(t, dur, midi, vel)` and `.cancelFrom(t)`.
   The flute (since 1.17.0 its own, no longer the demo's) is a wooden one:

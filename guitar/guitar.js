@@ -155,6 +155,7 @@
     return out;
   }
 
+  GTR.thumbString = thumbString;  // shared with Session Buddies' mandolin
   function pluckThumb(sr, f, seed) {
     // The bend: a triangle peaking 0.23 of the way along, its corner rounded
     // by the width of the thumb, a few per cent of the string's length. (The

@@ -172,14 +172,20 @@
         <output id="vol-concertina-out" for="vol-concertina">100%</output>
       </div>
       <div class="voice">
+        <label class="toggle"><input id="on-mandolin" type="checkbox"> Mandolin <small>(the tune)</small></label>
+        <input id="vol-mandolin" type="range" min="0" max="2" step="0.05" value="1" aria-label="Mandolin volume">
+        <output id="vol-mandolin-out" for="vol-mandolin">100%</output>
+      </div>
+      <div class="voice">
         <label class="toggle"><input id="on-drum" type="checkbox" checked> Bodhrán</label>
         <input id="vol-drum" type="range" min="0" max="2" step="0.05" value="1" aria-label="Bodhrán volume">
         <output id="vol-drum-out" for="vol-drum">100%</output>
       </div>
     </div>
     <p id="concertina-note" class="blurb warn" role="status" hidden></p>
-    <p class="blurb">The flute and the concertina both play the tune: tick either, or both
-    together as at a session. Untick both to play the tune yourself over the backing.</p>
+    <p class="blurb">The flute, the concertina and the mandolin all play the tune: tick any of
+    them, or several together as at a session. Untick them all to play the tune yourself over
+    the backing.</p>
     <h3 class="sub-h">Melody</h3>
     <div id="melody-mode" class="modes" role="radiogroup" aria-label="When the melody plays">
       <button class="mode" type="button" role="radio" data-melody="every" aria-checked="true">Every time</button>
@@ -333,8 +339,8 @@
   <div class="about-body">
     <p class="lede">A session in your pocket. Name a tune and it is fetched from
     thesession.org and given a guitar and bodhr&aacute;n backing. The flute plays the
-    melody, and the concertina can join it or play it alone. Turn both off to play
-    the tune yourself.</p>
+    melody, and the concertina and the mandolin can join it or play it alone. Turn
+    them all off to play the tune yourself.</p>
 
     <h3>Getting going</h3>
     <ol>
@@ -387,6 +393,7 @@
 <script src="shapes.js"></script>
 <script src="flute.js"></script>
 <script src="concertina.js"></script>
+<script src="mandolin.js"></script>
 <script src="buddies.js"></script>
 </body>
 </html>
