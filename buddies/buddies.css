@@ -56,7 +56,10 @@
 .chosen-facts { margin-top: 3px; font-size: 13.5px; color: var(--text); }
 .chosen .setting-row { margin-top: 10px; }
 .setting-row { margin-top: 12px; }
-.setting-row select { max-width: 100%; }
+/* A select is as wide as its longest choice; let the label and the box
+   shrink to the card so a long setting name cannot widen the page. */
+.setting-row label.inline { flex: 0 1 auto; min-width: 0; max-width: 100%; }
+.setting-row select { flex: 1 1 auto; min-width: 0; max-width: 100%; }
 .setting-link { font-size: 13px; color: var(--accent); }
 .warn { color: var(--accent); }
 .file-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }

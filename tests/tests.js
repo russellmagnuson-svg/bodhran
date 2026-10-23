@@ -4389,6 +4389,25 @@
       });
     });
 
+  check('Session Buddies', 'It fits a phone’s width, however long a setting’s name',
+    'Fixed in 1.25.2: the Setting box took the width of its longest choice (The Kesh’s setting 27 is “Fernando Durbán Galnares · has chords”), ran out past the tune’s card and made the whole page scroll sideways on an iPhone. It now fits the card, and the page fits the phone, at 320 and 375 points wide.',
+    function () {
+      return withBuddies(function (win, doc) {
+        var fr = win.frameElement, bad = [], sel = doc.getElementById('setting');
+        var long = doc.createElement('option');
+        long.textContent = 'Setting 99 · E dorian · a player with a very long name indeed · has chords';
+        sel.appendChild(long);
+        [320, 375].forEach(function (w) {
+          fr.style.width = w + 'px';
+          var card = box(doc.getElementById('chosen')), s = box(sel);
+          if (doc.documentElement.scrollWidth > win.innerWidth) bad.push('at ' + w + ' wide the page is ' + doc.documentElement.scrollWidth + ' wide and scrolls sideways');
+          if (s.right > card.right) bad.push('at ' + w + ' wide the Setting box ends ' + Math.round(s.right - card.right) + ' past the card');
+          if (s.width < 120) bad.push('at ' + w + ' wide the Setting box is squeezed to ' + Math.round(s.width));
+        });
+        expect(bad.length === 0, bad.join('\n'));
+      });
+    });
+
   check('Session Buddies', 'It shows its own version, and the notes cover it',
     'Session Buddies has its own version number. Bump it? Add it to CHANGELOG.md and the release notes in the same change.',
     function () {

@@ -492,6 +492,14 @@ The page at `/buddies/` has its own version number, shown next to its title.
 It was called Session Players, at `/players/`, until 1.8.0; the entries
 before that keep the old name.
 
+### Session Buddies 1.25.2 — 2026-10-23
+
+- **The Setting box fits a phone.** It took the width of its longest
+  choice, so a tune with a long setting name (The Kesh's setting 27,
+  "Fernando Durbán Galnares · has chords"; Whiskey Before Breakfast too)
+  ran it out past the tune's card and made the whole page scroll sideways
+  on an iPhone. It now shrinks to the card, and the page fits the phone.
+
 ### Session Buddies 1.25.1 — 2026-10-22
 
 - **A mandolin you can hear on a phone.** On an iPhone the mandolin seemed
