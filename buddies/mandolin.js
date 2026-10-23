@@ -19,7 +19,8 @@
  *     shimmer; a faint scratch of pick; a pitch a few cents sharp at the
  *     pick, settling;
  *   - a small body: little below 120 Hz, its strongest around 400 Hz, a dip
- *     near 1 kHz;
+ *     near 1 kHz, and (since 1.25.1) some presence near 2.2 kHz, so it
+ *     carries on a phone's speaker;
  *   - a player's touch: no two picks alike (four renderings of each note,
  *     each struck a little differently), each a shade off in time, strength
  *     and pitch; a note stops when its own string is picked again, a
@@ -134,10 +135,16 @@
    *   touch: jitter (seconds), detune (cents), vary (share of strength), from
    *     pick to pick; openRing (how long an open string rings on before it
    *     fades), lift (a fretted note held after the next is picked). */
+  /* Since 1.25.1 a little presence (the peak near 2.2 kHz, a crisper pick):
+   * warm as it was, the mandolin vanished under the others on an iPhone's
+   * speaker, which passes little below 700 Hz. Through a phone speaker's
+   * response it was 4.7 dB under the flute (the concertina 1 dB over); now
+   * 1.9 under. Its top against its bottom went from -23 to -17.5 dB, still
+   * far from the first version's twang (+5.5). Chosen by ear, on the phone. */
   Mandolin.prototype.TONE = {
-    pos: 0.18, width: 0.08, widthSlope: 0.7, click: 0.08, sharp: 6,
+    pos: 0.18, width: 0.07, widthSlope: 0.7, click: 0.16, sharp: 6,
     cut: 10000, sustain: 6, highSustain: 0.9, drop: 0.68, dropTime: 0.09, cents: 1, mix: 0.62,
-    hp: 120, peaks: [[400, 0.9, 4], [1000, 1.4, -6]], air: 6000,
+    hp: 120, peaks: [[400, 0.9, 3], [1000, 1.4, -3], [2200, 0.8, 6]], air: 6000,
     jitter: 0.004, detune: 1.5, vary: 0.12, openRing: 0.35, lift: 0.025
   };
   Mandolin.prototype.TREMOLO = 0.075;   // seconds between strokes of a tremolo, about 13 a second

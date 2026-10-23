@@ -492,6 +492,20 @@ The page at `/buddies/` has its own version number, shown next to its title.
 It was called Session Players, at `/players/`, until 1.8.0; the entries
 before that keep the old name.
 
+### Session Buddies 1.25.1 — 2026-10-22
+
+- **A mandolin you can hear on a phone.** On an iPhone the mandolin seemed
+  not to work: it played (heard alone, with the sound check on), but its
+  warm tone, nearly all between 300 and 1000 Hz, was lost on a phone's small
+  speaker, which passes little below about 700 Hz, under the flute,
+  concertina and guitar. Through a phone speaker's response it was 4.7 dB
+  under the flute while the concertina was 1 dB over it. It now has a little
+  presence, a lift near 2.2 kHz and a crisper pick, as a real mandolin's
+  attack carries in a session: 1.9 dB under the flute on a phone, about level
+  with it on full-range speakers, and its top against its bottom -17.5 dB,
+  still far from the first version's twang (+5.5). Chosen by ear on the
+  phone, from clips of the full band.
+
 ### Session Buddies 1.25.0 — 2026-10-19 — A mandolin
 
 - **A mandolin** in What you hear (asked for by a mandolin player): a fourth

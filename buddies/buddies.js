@@ -17,7 +17,7 @@
    * next to the title and at the foot. Bump it with every change pushed (the
    * last number for a fix, the middle for something new) and add it to the
    * "Session Buddies" sections of CHANGELOG.md and the release notes. */
-  var VERSION = '1.25.0';
+  var VERSION = '1.25.1';
 
   var $ = function (id) { return document.getElementById(id); };
   var P = window.BUDDIES, G = window.GTR, T = window.TRAD, TPQ = P.TPQ;
@@ -181,7 +181,9 @@
    * drum's sat 34 under), and its level is raised 0.5 dB, 0.7 to 0.74, to
    * stand against the guitar where it did. */
   // The mandolin (1.25.0) set where the concertina sits, 2 dB under the flute
-  // (measured on The Kesh's A part, K-weighted near enough).
+  // (measured on The Kesh's A part, K-weighted near enough); with 1.25.1's
+  // presence about level with the flute on full-range speakers, and 2 dB
+  // under it on a phone's, where it had been lost.
   var MIX = { guitar: 0.7, tune: 0.18, concertina: 0.6, drum: 0.74, mandolin: 0.46 };
   // Saved settings keep their 'players.' names from before the rename, so
   // the last tune, volumes and tuning carry over to the new address.

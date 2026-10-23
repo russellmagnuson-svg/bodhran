@@ -2794,7 +2794,7 @@
     });
 
   check('Session Buddies', 'The mandolin plays the tune as a mandolin player would',
-    'Asked for in 1.25.0 by a mandolin player: a mandolin in the mixer, off to begin with, playing the tune with (or instead of) the flute and concertina, in step with them. Picked down on the beat and up between (a jig D-U-D in each beat); a picked triplet in place of a roll; tremolo on a waltz’s long notes. Its sound set against the player’s own F-style mandolin: a plucked string’s overtones (not the first version’s twang: 5.5 dB more above 2 kHz than below 1 kHz, the real one -25), a quick drop after the pick, no two picks alike, an open string ringing on. As loud as the concertina, 2 dB under the flute; the tick and the level kept.',
+    'Asked for in 1.25.0 by a mandolin player: a mandolin in the mixer, off to begin with, playing the tune with (or instead of) the flute and concertina, in step with them. Picked down on the beat and up between (a jig D-U-D in each beat); a picked triplet in place of a roll; tremolo on a waltz’s long notes. Its sound set against the player’s own F-style mandolin: a plucked string’s overtones (not the first version’s twang: 5.5 dB more above 2 kHz than below 1 kHz, the real one -25), a quick drop after the pick, no two picks alike, an open string ringing on. Within a few dB of the flute, and (since 1.25.1, given some presence) not lost under it on a phone’s speaker; the tick and the level kept.',
     function () {
       return json(FIX + 'the-kesh.json').then(function (kesh) {
         return withBuddies(function (win, doc) {
@@ -2867,8 +2867,21 @@
           }).then(function (rr) {
             function kdb(b) { var z = b.getChannelData(0), s4 = 0; for (var i = 0; i < z.length; i++) s4 += z[i] * z[i]; return 10 * Math.log10(s4 / z.length); }
             var rel = kdb(rr[0]) - kdb(rr[1]);
-            if (!(rel > -5 && rel < 1)) bad.push('the mandolin is ' + round(rel) + ' dB against the flute, not about 2 dB under it');
-            expect(bad.length === 0, bad.join('\n'));
+            if (!(rel > -6 && rel < 1.5)) bad.push('the mandolin is ' + round(rel) + ' dB against the flute, not within a few dB of it');
+            // And on a phone's speaker, which passes little below 700 Hz: there the
+            // warm 1.25.0 mandolin lost 2.5 dB more than the flute (on this short
+            // run, 6.3-6.8 dB under it), and was lost in the mix; 1.25.1's 3.8-4.3.
+            function phone(b) {
+              var oc = new OfflineAudioContext(1, b.length, SR), bb = oc.createBuffer(1, b.length, SR); bb.getChannelData(0).set(b.getChannelData(0));
+              var src = oc.createBufferSource(); src.buffer = bb; var node = src;
+              [700, 700].forEach(function (f) { var q = oc.createBiquadFilter(); q.type = 'highpass'; q.frequency.value = f; node.connect(q); node = q; });
+              node.connect(oc.destination); src.start(); return oc.startRendering();
+            }
+            return Promise.all([phone(rr[0]), phone(rr[1])]).then(function (pp) {
+              var onPhone = kdb(pp[0]) - kdb(pp[1]);
+              if (!(onPhone > -5.3)) bad.push('on a phone’s speaker the mandolin is ' + round(onPhone) + ' dB against the flute: lost under it');
+              expect(bad.length === 0, bad.join('\n'));
+            });
           });
         });
       });
