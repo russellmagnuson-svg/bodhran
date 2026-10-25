@@ -492,6 +492,12 @@ The page at `/buddies/` has its own version number, shown next to its title.
 It was called Session Players, at `/players/`, until 1.8.0; the entries
 before that keep the old name.
 
+### Session Buddies 1.26.1 — 2026-10-25
+
+- **sessionbuddies.ceardlann.dev opens Session Buddies too**, just as
+  sessionbuddies.shedworks.app does (1.26.0), with its Bodhrán link going to
+  the Bodhrán's own address.
+
 ### Session Buddies 1.26.0 — 2026-10-25 — Its own address
 
 - **sessionbuddies.shedworks.app opens Session Buddies.** The bare domain

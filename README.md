@@ -356,9 +356,11 @@ The site is one Cloudflare Worker, `bodhran`, deployed from this folder on
 every push to main (`wrangler.jsonc`). It answers at two addresses:
 
 - **bodhran.russellmagnuson.workers.dev** opens the Bodhrán at `/`.
-- **sessionbuddies.shedworks.app** (a custom domain, attached in the
-  dashboard under the Worker's Settings → Domains & Routes) opens Session
-  Buddies: `worker/index.js` forwards its bare `/` to `/buddies/`.
+- **sessionbuddies.shedworks.app** and **sessionbuddies.ceardlann.dev**
+  (custom domains, attached in the dashboard under the Worker's Settings →
+  Domains & Routes) open Session Buddies: `worker/index.js` forwards their
+  bare `/` to `/buddies/`. A new one goes in `BUDDIES_HOSTS` there and in
+  `BODHRAN_AT` in `buddies/buddies.js`.
 
 Everything else is served as plain files; the Worker runs only for `/`.
 `.assetsignore` keeps git's folder, the Worker and its settings off the

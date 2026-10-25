@@ -4409,7 +4409,7 @@
     });
 
   check('Session Buddies', 'Its own address opens it, and its Bodhrán link goes to the Bodhrán’s',
-    'Since 1.26.0: sessionbuddies.shedworks.app opens Session Buddies (worker/index.js forwards the bare domain to /buddies/), while the Bodhrán’s own address still opens the Bodhrán. There the foot’s Bodhrán link must go to the Bodhrán’s address, not ../, which would come straight back. The Worker is kept off the live site (.assetsignore), so its part of this check runs where it is served: on the Mac.',
+    'Since 1.26.0: sessionbuddies.shedworks.app (and since 1.26.1 sessionbuddies.ceardlann.dev) opens Session Buddies (worker/index.js forwards the bare domain to /buddies/), while the Bodhrán’s own address still opens the Bodhrán. There the foot’s Bodhrán link must go to the Bodhrán’s address, not ../, which would come straight back. The Worker is kept off the live site (.assetsignore), so its part of this check runs where it is served: on the Mac.',
     function () {
       return withBuddies(function (win, doc) {
         var bad = [], B = win.BUDDIES_PAGE, link = doc.getElementById('app-bodhran');
@@ -4439,6 +4439,11 @@
             }).then(function (t) {
               if (t[0] !== 'file /buddies/') bad.push('its page itself is not the file: ' + t[0]);
               if (t[1] !== 'file /') bad.push('the Bodhrán’s address no longer opens the Bodhrán: ' + t[1]);
+              return Promise.all(hosts.map(function (h) { return ask('https://' + h + '/'); }));
+            }).then(function (rs) {
+              rs.forEach(function (r, i) {
+                if (r.status !== 302 || r.headers.get('location') !== 'https://' + hosts[i] + '/buddies/') bad.push(hosts[i] + ' gives ' + r.status + ' ' + r.headers.get('location'));
+              });
             });
           });
         }).then(function () { expect(bad.length === 0, bad.join('\n')); });

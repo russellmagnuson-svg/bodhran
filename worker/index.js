@@ -1,6 +1,7 @@
 /* worker/index.js — the one thing the site does that a plain folder of files
- * cannot: on Session Buddies' own address, the bare domain opens Session
- * Buddies rather than the Bodhrán (since Session Buddies 1.26.0).
+ * cannot: on Session Buddies' own addresses, the bare domain opens Session
+ * Buddies rather than the Bodhrán (since Session Buddies 1.26.0; the second
+ * address since 1.26.1).
  *
  * Every other request goes straight to the files. wrangler.jsonc runs this
  * only for "/", so a page's own files never pass through it. Any other
@@ -8,7 +9,7 @@
  * "/". The forward is a 302 (temporary), so a browser never remembers it
  * and it can be changed later; it keeps any ?query, such as ?soundcheck.
  */
-var BUDDIES_HOSTS = ['sessionbuddies.shedworks.app'];
+var BUDDIES_HOSTS = ['sessionbuddies.shedworks.app', 'sessionbuddies.ceardlann.dev'];
 
 export default {
   fetch: function (request, env) {
