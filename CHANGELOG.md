@@ -492,6 +492,14 @@ The page at `/buddies/` has its own version number, shown next to its title.
 It was called Session Players, at `/players/`, until 1.8.0; the entries
 before that keep the old name.
 
+### Session Buddies 1.27.2 — 2026-10-25
+
+- **The mandolin plays on a first visit**, with the guitar, flute, concertina
+  and bodhrán, so the first Play is the whole band (asked for; it was off to
+  begin with since it came in 1.25.0). Anyone who has unticked it keeps it
+  unticked. Its notes are built as sound first starts, as before: about a
+  tenth of a second on a Mac.
+
 ### Session Buddies 1.27.1 — 2026-10-25
 
 - **sessionbuddies.ceardlann.app opens Session Buddies too**, at the plain

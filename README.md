@@ -503,8 +503,8 @@ keep their `players.` names in local storage, so they carry over.
 
 A first visit opens with a starter tune, The Kesh (`STARTER` in buddies.js:
 the Session's setting 3 since 1.23.3, setting 1 before, kept in the page), so
-Play plays before any search; with the concertina ticked and the guitar in
-standard tuning (since 1.23.1 and 1.23.2).
+Play plays before any search; with the concertina and mandolin ticked and
+the guitar in standard tuning (since 1.23.1, 1.27.2 and 1.23.2).
 
 Backing feel (`backingFeel`: straight, little, tune; `players.backing`):
 `backingAt(s)` places the guitar's strums and the drum's strokes, straight
@@ -598,7 +598,7 @@ open or folded kept in `players.hearopen`.
   missing ones are tried again at Play (`retry()`), and `status` (loading, ready, partial, failed)
   drives the line under the mixer.
 - `buddies/mandolin.js` — the mandolin (since 1.25.0), a third melody
-  instrument, off to begin with: each note a pair of strings built with the
+  instrument, on to begin with since 1.27.2 (off before): each note a pair of strings built with the
   guitar's string loop (`GTR.thumbString`, shared from guitar.js) from a
   pick-shaped bend, its sound (`Mandolin.prototype.TONE`) set against a
   recording of a real F-style mandolin and chosen by ear; four renderings per

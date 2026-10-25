@@ -2314,10 +2314,11 @@
   function json(url) { return text(url).then(function (t) { return JSON.parse(t); }); }
   function layOf(j, i) { return PL.layout(j.settings[i || 0].abc, { key: j.settings[i || 0].key, meter: j.type === 'jig' ? '6/8' : '4/4' }); }
   /* The Session Buddies page in a frame, its saved state put back after.
-   * The concertina starts unticked and the guitar in DADGAD, as on a first
-   * visit until 1.23.1 and 1.23.2, so the many checks written for that still
-   * hold; opts.fresh: exactly as a first visit (concertina ticked, standard
-   * tuning). */
+   * The concertina and mandolin start unticked and the guitar in DADGAD, as
+   * on a first visit until 1.23.1, 1.27.2 and 1.23.2, so the many checks
+   * written for that still hold; opts.fresh: exactly as a first visit
+   * (concertina and mandolin ticked, standard tuning); opts.srcdoc: the
+   * page from its text, away from /buddies/. */
   function withBuddies(fn, opts) {
     var keys = ['players.current', 'players.tuning', 'players.sympathy', 'players.volume', 'players.swing.hornpipe',
                 'buddies.favourites', 'buddies.recent', 'players.melody', 'players.yourturn', 'players.backing',
@@ -2325,7 +2326,7 @@
                 'players.ornaments', 'players.drumhand', 'players.hearopen', 'players.ornadd'], saved = {};
     keys.forEach(function (k) { saved[k] = localStorage.getItem(k); localStorage.removeItem(k); });
     if (!(opts && opts.fresh)) {
-      localStorage.setItem('players.voices', JSON.stringify({ concertina: false }));
+      localStorage.setItem('players.voices', JSON.stringify({ concertina: false, mandolin: false }));
       localStorage.setItem('players.tuning', 'dadgad');
     }
     var frame = document.createElement('iframe');
@@ -2795,7 +2796,7 @@
     });
 
   check('Session Buddies', 'The mandolin plays the tune as a mandolin player would',
-    'Asked for in 1.25.0 by a mandolin player: a mandolin in the mixer, off to begin with, playing the tune with (or instead of) the flute and concertina, in step with them. Picked down on the beat and up between (a jig D-U-D in each beat); a picked triplet in place of a roll; tremolo on a waltz’s long notes. Its sound set against the player’s own F-style mandolin: a plucked string’s overtones (not the first version’s twang: 5.5 dB more above 2 kHz than below 1 kHz, the real one -25), a quick drop after the pick, no two picks alike, an open string ringing on. Within a few dB of the flute, and (since 1.25.1, given some presence) not lost under it on a phone’s speaker; the tick and the level kept.',
+    'Asked for in 1.25.0 by a mandolin player: a mandolin in the mixer (off to begin with until 1.27.2, on since: see the first-visit check), playing the tune with (or instead of) the flute and concertina, in step with them. Picked down on the beat and up between (a jig D-U-D in each beat); a picked triplet in place of a roll; tremolo on a waltz’s long notes. Its sound set against the player’s own F-style mandolin: a plucked string’s overtones (not the first version’s twang: 5.5 dB more above 2 kHz than below 1 kHz, the real one -25), a quick drop after the pick, no two picks alike, an open string ringing on. Within a few dB of the flute, and (since 1.25.1, given some presence) not lost under it on a phone’s speaker; the tick and the level kept.',
     function () {
       return json(FIX + 'the-kesh.json').then(function (kesh) {
         return withBuddies(function (win, doc) {
@@ -2804,7 +2805,8 @@
           function who(n, w) { return PP.plan(n).filter(function (x) { return x.who === w; }); }
           PP.loadTune(kesh, 2);                                 // setting 3: G2 G GAB, and a roll in bar 19
           if (!$('on-mandolin')) { expect(false, 'there is no mandolin in the mixer'); }
-          if ($('on-mandolin').checked || who(0, 'mandolin').length) bad.push('the mandolin plays to begin with');
+          if ($('on-mandolin').checked) bad.push('the check’s own start has the mandolin ticked');
+          if (who(0, 'mandolin').length) bad.push('unticked, the mandolin still plays');
           $('on-mandolin').click();
           var m1 = who(0, 'mandolin');
           var picks = m1.map(function (x) { return x.midi + (x.up ? 'u' : 'd'); }).join(' ');
@@ -3248,7 +3250,7 @@
     });
 
   check('Session Buddies', 'A first visit opens with a tune ready to play',
-    'Someone pressed Play on a first visit, before finding a tune, and nothing played. A first visit now opens with The Kesh (the Session’s setting 3 since 1.23.3, setting 1 before; kept in the page, so no search or network is needed) and says so, and Play plays it, the concertina with the flute (since 1.23.1), the guitar in standard tuning (since 1.23.2). A tune left on the page last time still comes back instead.',
+    'Someone pressed Play on a first visit, before finding a tune, and nothing played. A first visit now opens with The Kesh (the Session’s setting 3 since 1.23.3, setting 1 before; kept in the page, so no search or network is needed) and says so, and Play plays it, the concertina with the flute (since 1.23.1), the mandolin too (since 1.27.2), the guitar in standard tuning (since 1.23.2). A tune left on the page last time still comes back instead.',
     function () {
       return Promise.all([json(FIX + 'the-kesh.json'), json(FIX + 'cooleys.json')]).then(function (r) {
         return withBuddies(function (win, doc) {
@@ -3259,6 +3261,9 @@
           expect(/Setting 3\b/.test(doc.getElementById('chosen-facts').textContent), 'the starter says “' + doc.getElementById('chosen-facts').textContent + '”, not setting 3');
           expect(!play.disabled, 'Play is not ready');
           expect(doc.getElementById('on-concertina').checked && doc.getElementById('on-tune').checked, 'a first visit does not have the concertina and the flute both ticked');
+          var bar1 = PP.plan(0).map(function (x) { return x.who; });
+          expect(doc.getElementById('on-mandolin').checked && bar1.indexOf('mandolin') !== -1, 'a first visit does not have the mandolin ticked and playing');
+          expect(/Mandolin/.test(PP.hearRows()[0][1]), 'a first visit’s summary leaves the mandolin out: ' + PP.hearRows()[0][1]);
           var tn = doc.querySelector('#tunings [aria-checked="true"]');
           expect(tn && tn.dataset.tuning === 'standard' && doc.getElementById('shapes-tuning').textContent === 'Standard', 'a first visit is in ' + (tn && tn.dataset.tuning) + ', not standard tuning');
           expect(/The Kesh/.test(doc.getElementById('find-status').textContent), 'the page does not say The Kesh is there to start with');

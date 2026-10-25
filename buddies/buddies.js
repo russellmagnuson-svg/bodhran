@@ -17,7 +17,7 @@
    * next to the title and at the foot. Bump it with every change pushed (the
    * last number for a fix, the middle for something new) and add it to the
    * "Session Buddies" sections of CHANGELOG.md and the release notes. */
-  var VERSION = '1.27.1';
+  var VERSION = '1.27.2';
 
   var $ = function (id) { return document.getElementById(id); };
   var P = window.BUDDIES, G = window.GTR, T = window.TRAD, TPQ = P.TPQ;
@@ -1862,7 +1862,9 @@
     });
     // Ticked (from last time, or on a first visit: on to begin with since
     // 1.23.1), the concertina's recordings start loading at your first tap
-    // anywhere, as ticking it would (sound can only start at one).
+    // anywhere, as ticking it would (sound can only start at one). The
+    // mandolin, on to begin with since 1.27.2, is readied by the same
+    // ensureAudio (prepareMandolin).
     if ($('on-concertina').checked) {
       var early = function () { document.removeEventListener('click', early, true); ensureAudio(); showConcertina(); };
       document.addEventListener('click', early, true);
