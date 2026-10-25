@@ -1,8 +1,9 @@
 # Kept off the live site: git's own folder (it was being published), the
-# Worker's settings and code, and macOS's folder notes.
+# Worker's settings and code, the local tools, and macOS's folder notes.
 .git
 .wrangler
 node_modules
 wrangler.jsonc
 worker
+tools
 .DS_Store

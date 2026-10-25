@@ -2329,7 +2329,8 @@
       localStorage.setItem('players.tuning', 'dadgad');
     }
     var frame = document.createElement('iframe');
-    frame.src = '../buddies/';
+    if (opts && opts.srcdoc) frame.srcdoc = opts.srcdoc;   // the page away from /buddies/
+    else frame.src = '../buddies/';
     frame.style.cssText = 'position:absolute;left:-10000px;top:0;border:0;width:420px;height:900px';
     document.body.appendChild(frame);
     return new Promise(function (resolve, reject) {
@@ -4199,7 +4200,7 @@
         var app = foot(r[0]), pl = foot(r[1]);
         expect(/<a href="buddies\/">Session Buddies<\/a>/.test(app) && /aria-current="page">Bodhrán</.test(app),
                'the app’s foot does not offer Session Buddies beside itself');
-        expect(/<a [^>]*href="\.\.\/"[^>]*>Bodhrán<\/a>/.test(pl) && /aria-current="page">Session Buddies</.test(pl),
+        expect(/<a [^>]*href="\/"[^>]*>Bodhrán<\/a>/.test(pl) && /aria-current="page">Session Buddies</.test(pl),
                'Session Buddies’ foot does not offer the app beside itself');
         expect(pl.indexOf('guitar/') === -1, 'Session Buddies’ foot still links to the Kesh demo');
       });
@@ -4408,44 +4409,101 @@
       });
     });
 
-  check('Session Buddies', 'Its own address opens it, and its Bodhrán link goes to the Bodhrán’s',
-    'Since 1.26.0: sessionbuddies.shedworks.app (and since 1.26.1 sessionbuddies.ceardlann.dev) opens Session Buddies (worker/index.js forwards the bare domain to /buddies/), while the Bodhrán’s own address still opens the Bodhrán. There the foot’s Bodhrán link must go to the Bodhrán’s address, not ../, which would come straight back. The Worker is kept off the live site (.assetsignore), so its part of this check runs where it is served: on the Mac.',
+  check('Session Buddies', 'Its own addresses open it as the site’s root, and its Bodhrán link goes to the Bodhrán’s',
+    'Since 1.27.0, sessionbuddies.shedworks.app and sessionbuddies.ceardlann.dev show Session Buddies at / itself, the address left plain (1.26.x forwarded to /buddies/); /buddies/ there forwards to /, and their /sw.js retires the Bodhrán’s offline copy, which would otherwise answer a slow page load there with the Bodhrán. The Bodhrán’s own address is untouched. On Session Buddies’ addresses the foot’s Bodhrán link goes to the Bodhrán’s address. The Worker is kept off the live site (.assetsignore), so its part of this check runs where it is served: on the Mac.',
     function () {
       return withBuddies(function (win, doc) {
-        var bad = [], B = win.BUDDIES_PAGE, link = doc.getElementById('app-bodhran');
-        if (B.bodhranLink('sessionbuddies.shedworks.app') !== 'https://bodhran.russellmagnuson.workers.dev/') bad.push('on its own address the Bodhrán link is ' + B.bodhranLink('sessionbuddies.shedworks.app'));
-        if (B.bodhranLink('bodhran.russellmagnuson.workers.dev') !== '../') bad.push('on the Bodhrán’s address the link is ' + B.bodhranLink('bodhran.russellmagnuson.workers.dev'));
-        if (!link || link.href !== new URL('../', win.location.href).href) bad.push('here the foot links to ' + (link && link.href));
+        var bad = [], B = win.BUDDIES_PAGE, link = doc.getElementById('app-bodhran'), BODHRAN = 'https://bodhran.russellmagnuson.workers.dev/';
+        if (B.bodhranLink('bodhran.russellmagnuson.workers.dev') !== '/') bad.push('on the Bodhrán’s address the link is ' + B.bodhranLink('bodhran.russellmagnuson.workers.dev'));
+        if (!link || link.href !== new URL('/', win.location.href).href) bad.push('here the foot links to ' + (link && link.href));
         return fetch('../worker/index.js', { cache: 'no-store' }).then(function (r) {
           if (!r.ok) {
             if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) bad.push('worker/index.js is missing');
             return;
           }
           return Promise.all([r.text(), text('../wrangler.jsonc'), text('../.assetsignore'), import('../worker/index.js')]).then(function (got) {
-            var src = got[0], conf = got[1], ignore = got[2].split('\n'), w = got[3].default;
+            var src = got[0], conf = JSON.parse(got[1].replace(/^\s*\/\/.*$/gm, '')), ignore = got[2].split('\n'), w = got[3].default;
             var hosts = JSON.parse((/BUDDIES_HOSTS = (\[[^\]]*\])/.exec(src) || [, '[]'])[1].replace(/'/g, '"'));
-            if (!hosts.length) bad.push('the Worker names no address of its own');
-            hosts.forEach(function (h) { if (B.bodhranLink(h) === '../') bad.push('on ' + h + ' the Bodhrán link would come straight back'); });
-            if (!/"main":\s*"worker\/index\.js"/.test(conf) || !/"run_worker_first":\s*\["\/"\]/.test(conf) || !/"name":\s*"bodhran"/.test(conf)) bad.push('wrangler.jsonc does not run worker/index.js, for "/" only, as the bodhran Worker');
-            ['.git', 'wrangler.jsonc', 'worker'].forEach(function (f) { if (ignore.indexOf(f) === -1) bad.push(f + ' would be published'); });
-            var env = { ASSETS: { fetch: function (q) { return Promise.resolve(new Response('file ' + new URL(q.url).pathname)); } } };
+            if (hosts.length < 2) bad.push('the Worker names ' + hosts.length + ' addresses of Session Buddies’ own');
+            hosts.forEach(function (h) { if (B.bodhranLink(h) !== BODHRAN) bad.push('on ' + h + ' the Bodhrán link is ' + B.bodhranLink(h)); });
+            if (conf.name !== 'bodhran' || conf.main !== 'worker/index.js' || JSON.stringify(conf.assets.run_worker_first) !== '["/","/buddies/","/sw.js"]')
+              bad.push('wrangler.jsonc does not run worker/index.js, as the bodhran Worker, for /, /buddies/ and /sw.js only');
+            ['.git', 'wrangler.jsonc', 'worker', 'tools'].forEach(function (f) { if (ignore.indexOf(f) === -1) bad.push(f + ' would be published'); });
+            var env = { ASSETS: { fetch: function (q) { var u = new URL(q.url); return Promise.resolve(new Response('file ' + u.pathname + u.search, { headers: { 'Cache-Control': 'no-store' } })); } } };
             function ask(u) { return Promise.resolve(w.fetch(new Request(u), env)); }
-            return Promise.all([
-              ask('https://' + hosts[0] + '/?soundcheck'), ask('https://' + hosts[0] + '/buddies/'),
-              ask('https://bodhran.russellmagnuson.workers.dev/')
-            ]).then(function (rs) {
-              if (rs[0].status !== 302 || rs[0].headers.get('location') !== 'https://' + hosts[0] + '/buddies/?soundcheck') bad.push('its own address gives ' + rs[0].status + ' ' + rs[0].headers.get('location'));
-              return Promise.all([rs[1].text(), rs[2].text()]);
-            }).then(function (t) {
-              if (t[0] !== 'file /buddies/') bad.push('its page itself is not the file: ' + t[0]);
-              if (t[1] !== 'file /') bad.push('the Bodhrán’s address no longer opens the Bodhrán: ' + t[1]);
-              return Promise.all(hosts.map(function (h) { return ask('https://' + h + '/'); }));
-            }).then(function (rs) {
-              rs.forEach(function (r, i) {
-                if (r.status !== 302 || r.headers.get('location') !== 'https://' + hosts[i] + '/buddies/') bad.push(hosts[i] + ' gives ' + r.status + ' ' + r.headers.get('location'));
+            function body(u) { return ask(u).then(function (res) { return res.text().then(function (t) { return { res: res, t: t }; }); }); }
+            var own = hosts.map(function (h) {
+              var at = 'https://' + h;
+              return Promise.all([body(at + '/'), body(at + '/?soundcheck'), ask(at + '/buddies/?x=1'), body(at + '/sw.js'), body(at + '/release-notes/')]).then(function (r) {
+                if (r[0].res.status !== 200 || r[0].t !== 'file /buddies/') bad.push(h + '/ gives ' + r[0].res.status + ' “' + r[0].t + '”, not Session Buddies’ page');
+                if (r[0].res.headers.get('cache-control') !== 'public, max-age=0, must-revalidate') bad.push(h + '/ may be kept stale: ' + r[0].res.headers.get('cache-control'));
+                if (r[1].t !== 'file /buddies/?soundcheck') bad.push(h + '/?soundcheck loses its ?: ' + r[1].t);
+                if (r[2].status !== 302 || r[2].headers.get('location') !== at + '/?x=1') bad.push(h + '/buddies/ gives ' + r[2].status + ' ' + r[2].headers.get('location'));
+                if (r[4].t !== 'file /release-notes/') bad.push(h + ' no longer serves its other files: ' + r[4].t);
+                return retires(h, r[3]);
               });
             });
+            // The stand-in sw.js, run against a pretend browser: it must take
+            // over at once, delete the Bodhrán's offline copies and nothing
+            // else, unregister itself, and answer no requests meanwhile.
+            function retires(h, r) {
+              if (!/javascript/.test(r.res.headers.get('content-type') || '')) { bad.push(h + '/sw.js is not a script'); return; }
+              var on = {}, deleted = [], skipped = false, gone = false, waits = [];
+              var fakeSelf = { addEventListener: function (t, f) { on[t] = f; },
+                               skipWaiting: function () { skipped = true; return Promise.resolve(); },
+                               registration: { unregister: function () { gone = true; return Promise.resolve(true); } } };
+              var fakeCaches = { keys: function () { return Promise.resolve(['bodhran-offline-1792950000000', 'bodhran-v1', 'something-else']); },
+                                 'delete': function (k) { deleted.push(k); return Promise.resolve(true); } };
+              try { new Function('self', 'caches', r.t)(fakeSelf, fakeCaches); } catch (e) { bad.push(h + '/sw.js does not run: ' + e.message); return; }
+              if (on.fetch) bad.push(h + '/sw.js still answers requests');
+              if (!on.install || !on.activate) { bad.push(h + '/sw.js does not install and activate'); return; }
+              on.install({ waitUntil: function (p) { waits.push(p); } });
+              on.activate({ waitUntil: function (p) { waits.push(p); } });
+              return Promise.all(waits).then(function () {
+                if (!skipped) bad.push(h + '/sw.js waits for the old one to close');
+                if (deleted.join() !== 'bodhran-offline-1792950000000,bodhran-v1') bad.push(h + '/sw.js deleted ' + (deleted.join(', ') || 'nothing'));
+                if (!gone) bad.push(h + '/sw.js does not unregister itself');
+              });
+            }
+            var theirs = Promise.all([body(BODHRAN), body(BODHRAN + 'buddies/'), body(BODHRAN + 'sw.js')]).then(function (r) {
+              if (r[0].t !== 'file /') bad.push('the Bodhrán’s address no longer opens the Bodhrán: ' + r[0].t);
+              if (r[1].t !== 'file /buddies/') bad.push('the Bodhrán’s address no longer has Session Buddies at /buddies/: ' + r[1].t);
+              if (r[2].t !== 'file /sw.js') bad.push('the Bodhrán’s offline copy is retired on its own address: ' + r[2].t.slice(0, 60));
+            });
+            return Promise.all(own.concat([theirs]));
           });
+        }).then(function () { expect(bad.length === 0, bad.join('\n')); });
+      });
+    });
+
+  check('Session Buddies', 'It works from any address, not only /buddies/',
+    'Since 1.27.0 the page is served at / on its own addresses, as well as at /buddies/: so every file it names is named from the site’s root (/buddies/abc.js), never from its folder (abc.js), which would be looked for in the wrong place at /. Checked by the file names and by starting the page up away from /buddies/.',
+    function () {
+      return text('../buddies/').then(function (html) {
+        var bad = [], names = [], m, re = /\s(?:src|href)="([^"]*)"/g;
+        while ((m = re.exec(html))) names.push(m[1]);
+        var own = names.filter(function (n) { return !/^(#|https?:|mailto:)/.test(n); });
+        own.forEach(function (n) { if (n.charAt(0) !== '/') bad.push('“' + n + '” is named from the page’s folder'); });
+        if (own.length < 15) bad.push('only ' + own.length + ' files named');
+        return Promise.all(own.filter(function (n) { return n.charAt(0) === '/'; }).map(function (n) {
+          var u = n.replace(/#.*$/, '');
+          return fetch(u, { method: 'HEAD', cache: 'no-store' }).then(function (r) { if (!r.ok) bad.push(u + ' is not there (' + r.status + ')'); });
+        })).then(function () {
+          // Started up from its own text, as if it were at /tests/: anything
+          // named from the folder would be looked for under /tests/.
+          return withBuddies(function (win, doc) {
+            var B = win.BUDDIES_PAGE;
+            if (!B || B.VERSION !== doc.getElementById('buddies-version').textContent.slice(1)) bad.push('the page did not start up away from /buddies/');
+            Array.prototype.forEach.call(doc.querySelectorAll('link[rel="stylesheet"]'), function (l) {
+              var n = 0; try { n = l.sheet.cssRules.length; } catch (e) {}
+              if (!n) bad.push('its style ' + l.getAttribute('href') + ' did not load');
+            });
+            var logo = doc.querySelector('.head img.logo');
+            if (!logo || !logo.complete || !logo.naturalWidth) bad.push('its icon did not load');
+            var samples = win.BUDDIES && win.BUDDIES.CONCERTINA_SAMPLES;
+            if (samples !== location.origin + '/buddies/concertina/') bad.push('the concertina is looked for at ' + samples);
+            if (doc.getElementById('app-bodhran').href !== location.origin + '/') bad.push('the Bodhrán link goes to ' + doc.getElementById('app-bodhran').href);
+          }, { srcdoc: html });
         }).then(function () { expect(bad.length === 0, bad.join('\n')); });
       });
     });
@@ -4512,9 +4570,10 @@
     var passed = 0, failed = 0, failures = [];
     window.TEST_RESULTS = { done: false, passed: 0, failed: 0, failures: failures };
     var chain = Promise.resolve();
-    // tests/#part of a name|part of another: run only the checks named so.
+    // tests/#part of a name|part of another: run only the checks named so;
+    // a group's whole name (#Session Buddies) runs that group.
     var want = decodeURIComponent(location.hash.slice(1)).split('|').filter(Boolean);
-    if (want.length) tests = tests.filter(function (t) { return want.some(function (w) { return t.name.indexOf(w) !== -1; }); });
+    if (want.length) tests = tests.filter(function (t) { return want.some(function (w) { return t.name.indexOf(w) !== -1 || t.group === w; }); });
     tests.forEach(function (t, i) {
       chain = chain.then(function () {
         mark(t, 'run');

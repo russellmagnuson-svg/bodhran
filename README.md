@@ -358,13 +358,27 @@ every push to main (`wrangler.jsonc`). It answers at two addresses:
 - **bodhran.russellmagnuson.workers.dev** opens the Bodhrán at `/`.
 - **sessionbuddies.shedworks.app** and **sessionbuddies.ceardlann.dev**
   (custom domains, attached in the dashboard under the Worker's Settings →
-  Domains & Routes) open Session Buddies: `worker/index.js` forwards their
-  bare `/` to `/buddies/`. A new one goes in `BUDDIES_HOSTS` there and in
-  `BODHRAN_AT` in `buddies/buddies.js`.
+  Domains & Routes) have Session Buddies as the site's root: `worker/index.js`
+  serves its page at `/`, forwards `/buddies/` to `/`, and gives them a
+  `/sw.js` that retires the Bodhrán's offline copy there. A new address goes
+  in `BUDDIES_HOSTS` there and in `BODHRAN_AT` in `buddies/buddies.js`.
 
-Everything else is served as plain files; the Worker runs only for `/`.
-`.assetsignore` keeps git's folder, the Worker and its settings off the
-site. Browsers keep saved tunes and choices per address.
+Everything else is served as plain files; the Worker runs only for `/`,
+`/buddies/` and `/sw.js` (`run_worker_first`). Session Buddies' page names
+its files from the site's root, so it works at `/` and at `/buddies/`.
+`.assetsignore` keeps git's folder, the Worker, its settings and `tools/` off
+the site. Browsers keep saved tunes and choices per address.
+
+To check a change to the Worker before it goes live, run the site as it is
+served on Session Buddies' addresses (the real Worker, with Cloudflare's file
+handling), then open its checks at `/tests/#Session Buddies`:
+
+```bash
+node tools/worker-dev.mjs 8779
+```
+
+On those addresses the Bodhrán's own checks cannot run (the root is Session
+Buddies), so run the full set at the Bodhrán's address or on `serve.py`.
 
 ### After it is live
 

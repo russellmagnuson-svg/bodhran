@@ -492,6 +492,26 @@ The page at `/buddies/` has its own version number, shown next to its title.
 It was called Session Players, at `/players/`, until 1.8.0; the entries
 before that keep the old name.
 
+### Session Buddies 1.27.0 — 2026-10-25 — The address stays plain
+
+- **Session Buddies is the site itself on its own addresses.**
+  sessionbuddies.shedworks.app and sessionbuddies.ceardlann.dev show it at
+  `/`, the address left as typed; 1.26.x forwarded them to `/buddies/`.
+  A `/buddies/` link there (a bookmark from 1.26.x) comes to `/`, and your
+  tunes and choices are the same at either, as it is the same site. The
+  Bodhrán's own address is unchanged, with Session Buddies at `/buddies/`.
+- The page names every file it uses from the site's root (`/buddies/abc.js`,
+  `/css/app.css`), not from its own folder, so it works at either address.
+  A check starts it up away from `/buddies/` to keep it so.
+- A browser that opened one of these addresses while it still showed the
+  Bodhrán (before 1.26.0) kept the Bodhrán's offline copy, which would
+  answer a slow page load there with the Bodhrán. On these addresses only,
+  the offline helper is now replaced by one that deletes that copy and
+  removes itself. The Bodhrán's own offline copy is untouched.
+- `tools/worker-dev.mjs` runs the site on the Mac as Cloudflare serves it on
+  these addresses, to check the Worker before it goes live; the checks page
+  can now run a whole group (`tests/#Session Buddies`).
+
 ### Session Buddies 1.26.1 — 2026-10-25
 
 - **sessionbuddies.ceardlann.dev opens Session Buddies too**, just as
