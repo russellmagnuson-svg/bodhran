@@ -4415,7 +4415,7 @@
       return withBuddies(function (win, doc) {
         var bad = [], B = win.BUDDIES_PAGE, link = doc.getElementById('app-bodhran'), BODHRAN = 'https://bodhran.russellmagnuson.workers.dev/';
         if (B.bodhranLink('bodhran.russellmagnuson.workers.dev') !== '/') bad.push('on the Bodhrán’s address the link is ' + B.bodhranLink('bodhran.russellmagnuson.workers.dev'));
-        if (!link || link.href !== new URL('/', win.location.href).href) bad.push('here the foot links to ' + (link && link.href));
+        if (!link || link.href !== new URL(B.bodhranLink(win.location.hostname), win.location.href).href) bad.push('here the foot links to ' + (link && link.href));
         return fetch('../worker/index.js', { cache: 'no-store' }).then(function (r) {
           if (!r.ok) {
             if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) bad.push('worker/index.js is missing');
