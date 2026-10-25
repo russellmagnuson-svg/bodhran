@@ -17,7 +17,7 @@
    * next to the title and at the foot. Bump it with every change pushed (the
    * last number for a fix, the middle for something new) and add it to the
    * "Session Buddies" sections of CHANGELOG.md and the release notes. */
-  var VERSION = '1.27.0';
+  var VERSION = '1.27.1';
 
   var $ = function (id) { return document.getElementById(id); };
   var P = window.BUDDIES, G = window.GTR, T = window.TRAD, TPQ = P.TPQ;
@@ -1781,7 +1781,8 @@
    * other the Bodhrán is the root. */
   var BODHRAN_AT = {
     'sessionbuddies.shedworks.app': 'https://bodhran.russellmagnuson.workers.dev/',
-    'sessionbuddies.ceardlann.dev': 'https://bodhran.russellmagnuson.workers.dev/'
+    'sessionbuddies.ceardlann.dev': 'https://bodhran.russellmagnuson.workers.dev/',
+    'sessionbuddies.ceardlann.app': 'https://bodhran.russellmagnuson.workers.dev/'
   };
   function bodhranLink(host) { return BODHRAN_AT[host] || '/'; }
 

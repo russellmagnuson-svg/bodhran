@@ -19,7 +19,7 @@
  * Session Buddies' page names its files from the root (/buddies/abc.js), so
  * it works at / as it does at /buddies/.
  */
-var BUDDIES_HOSTS = ['sessionbuddies.shedworks.app', 'sessionbuddies.ceardlann.dev'];
+var BUDDIES_HOSTS = ['sessionbuddies.shedworks.app', 'sessionbuddies.ceardlann.dev', 'sessionbuddies.ceardlann.app'];
 
 var RETIRE_SW = [
   '/* Session Buddies\' address (worker/index.js): no offline copy of the Bodhrán here. */',

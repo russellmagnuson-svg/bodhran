@@ -12,6 +12,7 @@
     "binding": "ASSETS",
     "run_worker_first": ["/", "/buddies/", "/sw.js"]
   }
-  // The custom domains (sessionbuddies.shedworks.app, sessionbuddies.ceardlann.dev)
+  // The custom domains (sessionbuddies.shedworks.app, sessionbuddies.ceardlann.dev,
+  // sessionbuddies.ceardlann.app)
   // are attached in the Cloudflare dashboard (Worker → Settings → Domains & Routes), not here.
 }

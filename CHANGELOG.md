@@ -492,6 +492,11 @@ The page at `/buddies/` has its own version number, shown next to its title.
 It was called Session Players, at `/players/`, until 1.8.0; the entries
 before that keep the old name.
 
+### Session Buddies 1.27.1 — 2026-10-25
+
+- **sessionbuddies.ceardlann.app opens Session Buddies too**, at the plain
+  address, as the other two do (1.27.0).
+
 ### Session Buddies 1.27.0 — 2026-10-25 — The address stays plain
 
 - **Session Buddies is the site itself on its own addresses.**

@@ -356,7 +356,8 @@ The site is one Cloudflare Worker, `bodhran`, deployed from this folder on
 every push to main (`wrangler.jsonc`). It answers at two addresses:
 
 - **bodhran.russellmagnuson.workers.dev** opens the Bodhrán at `/`.
-- **sessionbuddies.shedworks.app** and **sessionbuddies.ceardlann.dev**
+- **sessionbuddies.shedworks.app**, **sessionbuddies.ceardlann.dev** and
+  **sessionbuddies.ceardlann.app**
   (custom domains, attached in the dashboard under the Worker's Settings →
   Domains & Routes) have Session Buddies as the site's root: `worker/index.js`
   serves its page at `/`, forwards `/buddies/` to `/`, and gives them a
