@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f1411">
+<!-- A listening page for a mandolin teacher (October 2026): Session Buddies'
+     mandolin now and two new versions, made after the teacher said it sounded
+     "like striking a piano key". Linked from nowhere, and kept out of search
+     engines; the site's code is public, so it is unlisted, not secret. -->
+<meta name="robots" content="noindex, nofollow">
+<title>Mandolin samples</title>
+<link rel="icon" href="/buddies/icons/icon-192.png" sizes="192x192" type="image/png">
+<link rel="stylesheet" href="/css/app.css">
+<style>
+  .listen { max-width: 36rem; margin: 0 auto; }
+  .listen h1 { color: var(--skin); font-size: 1.5rem; margin: 0 0 6px; }
+  .clip { margin-top: 14px; }
+  .clip b { color: var(--text); font-weight: 600; }
+  .clip span { color: var(--muted); font-size: 13px; }
+  .clip audio { display: block; width: 100%; margin-top: 6px; }
+</style>
+</head>
+<body>
+<main class="app listen">
+  <section class="panel">
+    <h1>Mandolin samples</h1>
+    <p class="blurb">The Kesh, setting 3, played by Session Buddies’ mandolin, which is built
+    from code, not recordings. <b>A</b> is the mandolin as it is now. <b>B</b> and <b>C</b> are
+    two new versions, made to sound more plucked and less like a struck piano key. Which sounds
+    most like a mandolin being picked?</p>
+  </section>
+  <section class="panel">
+    <h2>The mandolin alone</h2>
+    <p class="blurb">Part A at 72 bpm. All three are at the same loudness, so only the sound differs.</p>
+    <div class="clip"><b>A</b> <span>the mandolin now</span><audio controls preload="metadata" src="alone-A.m4a"></audio></div>
+    <div class="clip"><b>B</b> <span>new, brighter</span><audio controls preload="metadata" src="alone-B.m4a"></audio></div>
+    <div class="clip"><b>C</b> <span>new, warmer</span><audio controls preload="metadata" src="alone-C.m4a"></audio></div>
+  </section>
+  <section class="panel">
+    <h2>With the band</h2>
+    <p class="blurb">Guitar, flute, concertina and mandolin, at 100 bpm: how it is usually heard.</p>
+    <div class="clip"><b>A</b> <span>the mandolin now</span><audio controls preload="metadata" src="band-A.m4a"></audio></div>
+    <div class="clip"><b>B</b> <span>new, brighter</span><audio controls preload="metadata" src="band-B.m4a"></audio></div>
+    <div class="clip"><b>C</b> <span>new, warmer</span><audio controls preload="metadata" src="band-C.m4a"></audio></div>
+  </section>
+</main>
+<script>
+  // One clip at a time: starting one pauses the others.
+  document.addEventListener('play', function (e) {
+    Array.prototype.forEach.call(document.querySelectorAll('audio'), function (a) { if (a !== e.target) a.pause(); });
+  }, true);
+</script>
+</body>
+</html>
