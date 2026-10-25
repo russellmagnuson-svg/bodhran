@@ -350,6 +350,20 @@ means dragging it again.
 npx wrangler pages deploy . --project-name=bodhran
 ```
 
+### Addresses
+
+The site is one Cloudflare Worker, `bodhran`, deployed from this folder on
+every push to main (`wrangler.jsonc`). It answers at two addresses:
+
+- **bodhran.russellmagnuson.workers.dev** opens the Bodhrán at `/`.
+- **sessionbuddies.shedworks.app** (a custom domain, attached in the
+  dashboard under the Worker's Settings → Domains & Routes) opens Session
+  Buddies: `worker/index.js` forwards its bare `/` to `/buddies/`.
+
+Everything else is served as plain files; the Worker runs only for `/`.
+`.assetsignore` keeps git's folder, the Worker and its settings off the
+site. Browsers keep saved tunes and choices per address.
+
 ### After it is live
 
 - `_headers` is already set so HTML, CSS and JS revalidate on each load.

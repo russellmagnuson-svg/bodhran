@@ -1,0 +1,17 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "bodhran",
+  // Runs only for "/" (run_worker_first below): on Session Buddies' own address
+  // the bare domain opens Session Buddies. Everything else is served as files.
+  "main": "worker/index.js",
+  "compatibility_date": "2026-10-01",
+  "assets": {
+    // The whole folder is the site, as before; .assetsignore keeps back the
+    // little that is not (git's own folder, this file, the worker).
+    "directory": ".",
+    "binding": "ASSETS",
+    "run_worker_first": ["/"]
+  }
+  // The custom domain sessionbuddies.shedworks.app is attached in the Cloudflare
+  // dashboard (Worker → Settings → Domains & Routes), not here.
+}

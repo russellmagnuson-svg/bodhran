@@ -492,6 +492,21 @@ The page at `/buddies/` has its own version number, shown next to its title.
 It was called Session Players, at `/players/`, until 1.8.0; the entries
 before that keep the old name.
 
+### Session Buddies 1.26.0 — 2026-10-25 — Its own address
+
+- **sessionbuddies.shedworks.app opens Session Buddies.** The bare domain
+  opened the Bodhrán, as the site's root is the Bodhrán's page; a small
+  Worker (`worker/index.js`, run only for `/`) now forwards it to
+  `/buddies/`, keeping any `?query`. The Bodhrán's own address,
+  bodhran.russellmagnuson.workers.dev, opens the Bodhrán as before.
+- On the new address the Bodhrán link at the foot goes to the Bodhrán's
+  own address, rather than back round to Session Buddies.
+- Your tunes and choices are kept per address by the browser, so the new
+  address starts as a first visit; a tune saved to a file opens there.
+- The live site no longer publishes git's own folder (`.git`), which the
+  plain-folder deploy had been serving: nothing private was in it, as the
+  code is public on GitHub, but it was never meant to be there.
+
 ### Session Buddies 1.25.2 — 2026-10-23
 
 - **The Setting box fits a phone.** It took the width of its longest

@@ -17,7 +17,7 @@
    * next to the title and at the foot. Bump it with every change pushed (the
    * last number for a fix, the middle for something new) and add it to the
    * "Session Buddies" sections of CHANGELOG.md and the release notes. */
-  var VERSION = '1.25.2';
+  var VERSION = '1.26.0';
 
   var $ = function (id) { return document.getElementById(id); };
   var P = window.BUDDIES, G = window.GTR, T = window.TRAD, TPQ = P.TPQ;
@@ -1776,9 +1776,15 @@
     if (flutePlayer) flutePlayer.setPace(quaver());   // a lighter tongue at speed (1.23.5; flute.js)
   }
 
+  /* On Session Buddies' own address the bare domain opens Session Buddies
+   * (worker/index.js), so the Bodhrán is at its own address (1.26.0). */
+  var BODHRAN_AT = { 'sessionbuddies.shedworks.app': 'https://bodhran.russellmagnuson.workers.dev/' };
+  function bodhranLink(host) { return BODHRAN_AT[host] || '../'; }
+
   function init() {
     $('buddies-version').textContent = 'v' + VERSION;
     $('foot-version').textContent = 'Session Buddies version ' + VERSION + '.';
+    $('app-bodhran').href = bodhranLink(location.hostname);
     $('find').addEventListener('submit', function (e) { e.preventDefault(); find($('q').value); });
     // The box shows the tune on the page; a click selects it, so typing starts a new search.
     $('q').addEventListener('focus', function () { var q = this; setTimeout(function () { q.select(); }, 0); });
@@ -2114,6 +2120,7 @@
     tune: function () { return tune; },
     form: function () { return FORM; },
     STARTER: STARTER, loadTune: loadTune, openText: openText, listText: listText,
+    bodhranLink: bodhranLink,
     // The tune's notes bar n would hand over (count-in bars below 0), laid
     // from time 0, without playing anything.
     plan: function (n) {

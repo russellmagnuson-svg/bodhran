@@ -4199,7 +4199,7 @@
         var app = foot(r[0]), pl = foot(r[1]);
         expect(/<a href="buddies\/">Session Buddies<\/a>/.test(app) && /aria-current="page">Bodhrán</.test(app),
                'the app’s foot does not offer Session Buddies beside itself');
-        expect(/<a href="\.\.\/">Bodhrán<\/a>/.test(pl) && /aria-current="page">Session Buddies</.test(pl),
+        expect(/<a [^>]*href="\.\.\/"[^>]*>Bodhrán<\/a>/.test(pl) && /aria-current="page">Session Buddies</.test(pl),
                'Session Buddies’ foot does not offer the app beside itself');
         expect(pl.indexOf('guitar/') === -1, 'Session Buddies’ foot still links to the Kesh demo');
       });
@@ -4405,6 +4405,43 @@
           if (s.width < 120) bad.push('at ' + w + ' wide the Setting box is squeezed to ' + Math.round(s.width));
         });
         expect(bad.length === 0, bad.join('\n'));
+      });
+    });
+
+  check('Session Buddies', 'Its own address opens it, and its Bodhrán link goes to the Bodhrán’s',
+    'Since 1.26.0: sessionbuddies.shedworks.app opens Session Buddies (worker/index.js forwards the bare domain to /buddies/), while the Bodhrán’s own address still opens the Bodhrán. There the foot’s Bodhrán link must go to the Bodhrán’s address, not ../, which would come straight back. The Worker is kept off the live site (.assetsignore), so its part of this check runs where it is served: on the Mac.',
+    function () {
+      return withBuddies(function (win, doc) {
+        var bad = [], B = win.BUDDIES_PAGE, link = doc.getElementById('app-bodhran');
+        if (B.bodhranLink('sessionbuddies.shedworks.app') !== 'https://bodhran.russellmagnuson.workers.dev/') bad.push('on its own address the Bodhrán link is ' + B.bodhranLink('sessionbuddies.shedworks.app'));
+        if (B.bodhranLink('bodhran.russellmagnuson.workers.dev') !== '../') bad.push('on the Bodhrán’s address the link is ' + B.bodhranLink('bodhran.russellmagnuson.workers.dev'));
+        if (!link || link.href !== new URL('../', win.location.href).href) bad.push('here the foot links to ' + (link && link.href));
+        return fetch('../worker/index.js', { cache: 'no-store' }).then(function (r) {
+          if (!r.ok) {
+            if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) bad.push('worker/index.js is missing');
+            return;
+          }
+          return Promise.all([r.text(), text('../wrangler.jsonc'), text('../.assetsignore'), import('../worker/index.js')]).then(function (got) {
+            var src = got[0], conf = got[1], ignore = got[2].split('\n'), w = got[3].default;
+            var hosts = JSON.parse((/BUDDIES_HOSTS = (\[[^\]]*\])/.exec(src) || [, '[]'])[1].replace(/'/g, '"'));
+            if (!hosts.length) bad.push('the Worker names no address of its own');
+            hosts.forEach(function (h) { if (B.bodhranLink(h) === '../') bad.push('on ' + h + ' the Bodhrán link would come straight back'); });
+            if (!/"main":\s*"worker\/index\.js"/.test(conf) || !/"run_worker_first":\s*\["\/"\]/.test(conf) || !/"name":\s*"bodhran"/.test(conf)) bad.push('wrangler.jsonc does not run worker/index.js, for "/" only, as the bodhran Worker');
+            ['.git', 'wrangler.jsonc', 'worker'].forEach(function (f) { if (ignore.indexOf(f) === -1) bad.push(f + ' would be published'); });
+            var env = { ASSETS: { fetch: function (q) { return Promise.resolve(new Response('file ' + new URL(q.url).pathname)); } } };
+            function ask(u) { return Promise.resolve(w.fetch(new Request(u), env)); }
+            return Promise.all([
+              ask('https://' + hosts[0] + '/?soundcheck'), ask('https://' + hosts[0] + '/buddies/'),
+              ask('https://bodhran.russellmagnuson.workers.dev/')
+            ]).then(function (rs) {
+              if (rs[0].status !== 302 || rs[0].headers.get('location') !== 'https://' + hosts[0] + '/buddies/?soundcheck') bad.push('its own address gives ' + rs[0].status + ' ' + rs[0].headers.get('location'));
+              return Promise.all([rs[1].text(), rs[2].text()]);
+            }).then(function (t) {
+              if (t[0] !== 'file /buddies/') bad.push('its page itself is not the file: ' + t[0]);
+              if (t[1] !== 'file /') bad.push('the Bodhrán’s address no longer opens the Bodhrán: ' + t[1]);
+            });
+          });
+        }).then(function () { expect(bad.length === 0, bad.join('\n')); });
       });
     });
 
