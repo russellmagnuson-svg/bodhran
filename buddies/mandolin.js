@@ -4,30 +4,31 @@
  *
  * No recordings: each note is a pair of plucked strings, built as the
  * guitar's are (guitar.js, thumbString: a tuned string loop that loses its
- * top as it rings), and set against a real F-style mandolin recorded by the
- * user (The Kesh, setting 3, and its open strings, October 2026):
- *   - the string starts from the bend a pick leaves (bend), so its
- *     overtones fall away as a plucked string's do: on the D and A strings
- *     nearly pure, the 3rd harmonic 20 dB or more under the note, the higher
- *     strings a little brighter. (The first version started from smoothed
- *     noise, as the guitar's strum does: across a tune 5.5 dB more above
- *     2 kHz than below 1 kHz, against the real one's -25. "Too twangy.")
- *   - a quick drop of about 10 dB in the first quarter second, the light
- *     body taking the energy, then a long ring (6-9 dB a second); without
- *     it a note held and faded like a piano's;
- *   - the pair a cent apart, the second a hair after the first: a gentle
- *     shimmer; a faint scratch of pick; a pitch a few cents sharp at the
- *     pick, settling;
- *   - a small body: little below 120 Hz, its strongest around 400 Hz, a dip
- *     near 1 kHz, and (since 1.25.1) some presence near 2.2 kHz, so it
- *     carries on a phone's speaker;
- *   - a player's touch: no two picks alike (four renderings of each note,
- *     each struck a little differently), each a shade off in time, strength
- *     and pitch; a note stops when its own string is picked again, a
- *     fretted one just after the finger lifts, while an open string rings on
- *     under what follows. (Struck alike and cut clean, runs sounded "too
- *     clean".)
- * Chosen by ear, from clips, over several rounds.
+ * top as it rings). Since 1.28.0 it is set against the user's mandolin
+ * teacher's playing (The Kesh, part A, and open strings picked and strummed,
+ * October 2026), after he said the 1.25 mandolin sounded "like striking a
+ * piano key" rather than plucking a string. Measured against him, it was
+ * built like a struck string: nearly a pure tone (its overtones 20-30 dB
+ * under the note; on his, louder than the note at the pick), full at once,
+ * then the whole note falling 10 dB, a piano's two-stage fade. It had been
+ * matched to an earlier recording that turned out about 25 dB muffled. Now:
+ *   - the bridge feels the string's slope, not its shape (as guitar.js
+ *     learned for the thumb), so a pick is bright: its overtones as strong
+ *     as the note, fading 10-15 dB in the first quarter second while the
+ *     note itself holds (his: the same);
+ *   - the pick crosses the pair one string after the other, 8-14 ms apart
+ *     (longer on the heavier strings), so a note swells in over 15-30 ms;
+ *     and it meets the old note a moment before it lets go;
+ *   - the pitch starts sharp and settles over a tenth of a second, more on
+ *     the heavier strings (his: about 10 cents on A, 20 on G);
+ *   - the acoustic sound he asked for, as the guitar has: a body that rings
+ *     along with each pick, open strings humming in sympathy with the notes
+ *     they agree with, and a small room around it;
+ *   - a player's touch, as before: no two picks alike (four renderings of
+ *     each note), each a shade off in time, strength and pitch; a note stops
+ *     when its own string is picked again, a fretted one just after the
+ *     finger lifts, while an open string rings on under what follows.
+ * The teacher chose it by ear, from clips, over two rounds.
  *
  * art: { up: an up-stroke (a little lighter), picks: [seconds] re-picked at
  * these offsets from t (a triplet, in place of a roll), tremolo: picked
@@ -38,18 +39,13 @@
 
   function hz(midi) { return 440 * Math.pow(2, (midi - 69) / 12); }
 
-  var COURSE_LAG = 0.0025;  // the pick reaching the second string of the pair, seconds
   var VARIANTS = 4;         // renderings per note, each picked a little differently
   var SECONDS = 2.6;        // kept of each rendering (an open string rings about this long)
+  var OPEN = [55, 62, 69, 76];   // the open pairs: G D A E
 
   /* The string as the pick leaves it, one period at 1024 points: bent to a
    * triangle peaking `pos` of the way from the bridge, its corner rounded
-   * over `width` of the string (the pick's breadth and give). Its overtones
-   * fall away as a plucked string's do (each about a quarter of the one
-   * below: the 2nd 8 dB under the note, the 3rd 15), as measured on a real
-   * F-style mandolin's D and A strings. (Smoothed random noise, the guitar's
-   * pick, gave each note a random spread of overtones, the 3rd as strong as
-   * the note: the "twang".) */
+   * over `width` of the string (the pick's breadth and give). */
   function bend(pos, width, seed) {
     var R = 1024, tri = new Float32Array(R), out = new Float32Array(R), P = Math.max(1, Math.round(pos * R)), W = Math.max(1, Math.round(width * R)), i, mean = 0;
     for (i = 0; i < R; i++) tri[i] = i < P ? i / P : (R - i) / (R - P);
@@ -61,15 +57,30 @@
     return out;
   }
 
+  /* What the bridge, and so the body, feels: the bent string's slope. Its
+   * overtones fall away by 1/k, not the shape's 1/k squared; started from
+   * the shape (1.25.x) a note was nearly a pure tone. Struck a fifth of the
+   * way along, every fifth overtone is missing (his G string: the 5th
+   * 25 dB under its neighbours). */
+  function slope(shape) {
+    var R = shape.length, out = new Float32Array(R), e1 = 0, e2 = 0, i;
+    for (i = 0; i < R; i++) { out[i] = shape[(i + 1) % R] - shape[i]; e1 += shape[i] * shape[i]; e2 += out[i] * out[i]; }
+    var k = Math.sqrt(e1 / (e2 || 1));
+    for (i = 0; i < R; i++) out[i] *= k;
+    return out;
+  }
+
   /* One note on a pair of strings, with the tone T (Mandolin.prototype.TONE). */
   function render(sr, f, seed, T) {
     var hi = T.highSustain != null ? T.highSustain : 0.6;                          // a little shorter up high
     var t60 = T.sustain * (hi + (1 - hi) * Math.max(0, Math.min(1, (900 - f) / 600)));
     var cut = Math.min(sr * 0.45, T.cut * Math.sqrt(f / 293.7));       // how long the top lasts
-    // The pick, and where it strikes; brighter on the higher strings (on a
-    // real mandolin the D and A strings are nearly pure, the E string bright).
-    var start = bend(T.pos * Math.pow(293.7 / f, T.posSlope || 0), T.width * Math.pow(293.7 / f, T.widthSlope || 0), seed);
-    var up = Math.pow(2, T.cents / 1200), lag = Math.round((T.lag != null ? T.lag : COURSE_LAG) * sr);
+    var start = slope(bend(T.pos, T.width, seed));
+    // The pick reaches the pair's second string a little after the first,
+    // later on the heavier strings (it drags before it lets go).
+    var low = Math.max(0, Math.min(1, (659.3 - f) / (659.3 - 196))), r = ((seed * 48271) % 2147483647) / 2147483647;
+    var lag = Math.round((T.lag[0] + (T.lag[1] - T.lag[0]) * r) / 1000 * (1 + T.lagLow * low) * sr);
+    var up = Math.pow(2, T.cents / 1200);
     var a = GTR.thumbString(sr, f * up, t60, cut, start, seed, 0.015);
     var b = GTR.thumbString(sr, f / up, t60 * 0.9, cut * 0.9, start, seed + 7, 0.015);
     var len = Math.min(a.length, Math.floor(sr * SECONDS)), out = new Float32Array(len), peak = 0;
@@ -80,19 +91,13 @@
       out[i] = yPrev; if (Math.abs(yPrev) > peak) peak = Math.abs(yPrev);
     }
     for (i = 0; i < len; i++) out[i] /= peak || 1;
-    // A quick drop, then the ring: a mandolin's light body takes much of the
-    // string's energy at once (on a real F-style, about 10 dB in the first
-    // quarter second, then 6-9 dB a second). Without it a note held full
-    // strength for half a second and faded smoothly, like a piano's.
-    if (T.drop) for (i = 0; i < len; i++) out[i] *= 1 - T.drop + T.drop * Math.exp(-i / (T.dropTime * sr));
-    // The pick itself: a faint, quick scratch of high noise as it meets the
-    // string (on the real one, much of what there is above 5 kHz).
+    // The pick itself: a quick scratch of high noise as it meets the string.
     if (T.click) {
       var cs = seed * 3 + 1, prevN = 0;
-      for (i = 0; i < Math.floor(sr * 0.012); i++) {
+      for (i = 0; i < Math.floor(sr * 5 * T.clickTc); i++) {
         cs = (cs * 16807) % 2147483647;
         var nz = (cs / 2147483647) * 2 - 1;
-        out[i] += T.click * (nz - prevN) * Math.exp(-i / (sr * 0.0025)); prevN = nz;
+        out[i] += T.click * (nz - prevN) * Math.exp(-i / (sr * T.clickTc)); prevN = nz;
       }
     }
     var rise = Math.floor(sr * 0.0015);                                 // the pick lets go over a millisecond or two:
@@ -102,57 +107,94 @@
     return out;
   }
 
+  /* The body ringing along: the dry note, plus the body's own resonances,
+   * each set going by the pick and dying away (as guitar.js bodyResponse,
+   * for a much smaller body: the air inside near 285 Hz, the top near 420,
+   * and smaller rings up to 3 kHz). */
+  function bodyResponse(ctx, modes) {
+    var sr = ctx.sampleRate, len = Math.floor(sr * 0.25), buf = ctx.createBuffer(1, len, sr), d = buf.getChannelData(0);
+    d[0] = 1;
+    for (var i = 1; i < len; i++) {
+      var t = i / sr, v = 0;
+      for (var k = 0; k < modes.length; k++) v += (2 * modes[k][2] / (modes[k][1] * sr)) * Math.exp(-t / modes[k][1]) * Math.sin(2 * Math.PI * modes[k][0] * t);
+      d[i] += v;
+    }
+    return buf;
+  }
+
+  /* A small room's reflections (the dry sound goes round them): a burst of
+   * noise dying away over `rt` seconds, its top soaked up by the walls. His
+   * recording carries 10-15 dB more sound between a note's overtones, for
+   * 150 ms and more after a pick, than a dry string does; this brings it to
+   * within a few dB. */
+  function roomResponse(ctx, room) {
+    var sr = ctx.sampleRate, len = Math.floor(sr * room.rt * 1.2), buf = ctx.createBuffer(1, len, sr), d = buf.getChannelData(0);
+    var pre = Math.floor(sr * room.pre), a = Math.exp(-2 * Math.PI * room.lp / sr), s = 12345, lp = 0, e = 0, i;
+    for (i = pre; i < len; i++) {
+      s = (s * 16807) % 2147483647;
+      lp = (1 - a) * ((s / 2147483647) * 2 - 1) + a * lp;
+      d[i] = lp * Math.exp(-6.9 * (i - pre) / (sr * room.rt));
+      e += d[i] * d[i];
+    }
+    for (i = 0; i < len; i++) d[i] *= room.wet / Math.sqrt(e || 1);
+    return buf;
+  }
+
   function Mandolin(ctx, dest) {
     this.ctx = ctx;
     this.out = ctx.createGain();
     this.out.gain.value = this.LEVEL;
-    // The body: small and bright.
     var T = this.TONE, node = this.out;
+    var body = ctx.createConvolver(); body.normalize = false; body.buffer = bodyResponse(ctx, T.body);
+    node.connect(body); node = body;
+    // The body's tone: small and bright.
     function add(type, f, q, g) { var b = ctx.createBiquadFilter(); b.type = type; b.frequency.value = f; b.Q.value = q; if (g != null) b.gain.value = g; node.connect(b); node = b; }
     add('highpass', T.hp, 0.7);
     T.peaks.forEach(function (pk) { add('peaking', pk[0], pk[1], pk[2]); });
     add('lowpass', T.air, 0.5);
-    if (T.air2) add('lowpass', T.air2, 0.5);      // steeper above the body's top
+    var room = ctx.createConvolver(); room.normalize = false; room.buffer = roomResponse(ctx, T.room);
+    node.connect(room); room.connect(dest);
     node.connect(dest);
     this.notes = {};          // midi -> [AudioBuffer]
     this.queued = [];
-    this.ringing = [null, null, null, null];   // what each pair of strings is sounding
+    this.ringing = [null, null, null, null];   // what each pair of strings is sounding, and until when
+    this.sym = [null, null, null, null];       // each open pair's sympathetic ring
   }
 
   /* The whole mandolin's level, set so it sits with the flute (buddies.js MIX). */
-  Mandolin.prototype.LEVEL = 0.5;
-  /* The tone, chosen by ear against the user's F-style mandolin.
-   *   pick: pos (where it strikes, a fraction of the string from the bridge;
-   *     posSlope nearer the bridge going up), width (how broad and soft;
-   *     widthSlope sharper going up), click (its scratch), sharp (cents sharp
-   *     at the pick, settling);
+  Mandolin.prototype.LEVEL = 1.1;
+  /* The tone, chosen by the teacher's ear (1.28.0, "E").
+   *   pick: pos (where it strikes, a fraction of the string from the
+   *     bridge), width (how broad and soft), click and clickTc (its scratch,
+   *     and how quickly it dies), sharp, sharpLow and sharpTc (cents sharp
+   *     at the pick, more on the heavier strings, settling over seconds);
    *   string: cut (how long it keeps its top), sustain (seconds to die away,
-   *     highSustain the share kept on the highest notes), drop and dropTime
-   *     (the quick fall after the pick), cents and mix (the pair: how far
-   *     apart, and the first string's share), lag (the second string after
-   *     the first, seconds);
-   *   body: hp, peaks [[Hz, Q, dB]], air (a lowpass);
+   *     highSustain the share kept on the highest notes), cents and mix (the
+   *     pair: how far apart, and the first string's share), lag and lagLow
+   *     (ms between the pair's two strings, and how much longer on the G);
+   *   body: hp, peaks [[Hz, Q, dB]], air (a lowpass), body [[Hz, seconds it
+   *     rings, strength]], room { rt (seconds to die away), wet, lp (Hz the
+   *     walls soak up above), pre (seconds before the first reflection) },
+   *     sympathy (how loud an open pair hums along, at its strongest);
    *   touch: jitter (seconds), detune (cents), vary (share of strength), from
    *     pick to pick; openRing (how long an open string rings on before it
-   *     fades), lift (a fretted note held after the next is picked). */
-  /* Since 1.25.1 a little presence (the peak near 2.2 kHz, a crisper pick):
-   * warm as it was, the mandolin vanished under the others on an iPhone's
-   * speaker, which passes little below 700 Hz. Through a phone speaker's
-   * response it was 4.7 dB under the flute (the concertina 1 dB over); now
-   * 1.9 under. Its top against its bottom went from -23 to -17.5 dB, still
-   * far from the first version's twang (+5.5). Chosen by ear, on the phone. */
+   *     fades), lift (a fretted note held after the next is picked), mute
+   *     (seconds the pick stops the old note before the new one sounds). */
   Mandolin.prototype.TONE = {
-    pos: 0.18, width: 0.07, widthSlope: 0.7, click: 0.16, sharp: 6,
-    cut: 10000, sustain: 6, highSustain: 0.9, drop: 0.68, dropTime: 0.09, cents: 1, mix: 0.62,
-    hp: 120, peaks: [[400, 0.9, 3], [1000, 1.4, -3], [2200, 0.8, 6]], air: 6000,
-    jitter: 0.004, detune: 1.5, vary: 0.12, openRing: 0.35, lift: 0.025
+    pos: 0.2, width: 0.03, click: 0.25, clickTc: 0.004, sharp: 7, sharpLow: 13, sharpTc: 0.1,
+    cut: 12000, sustain: 6, highSustain: 0.9, cents: 1.5, mix: 0.4, lag: [8, 14], lagLow: 1.2,
+    hp: 160, peaks: [[400, 0.9, 3], [1000, 1.4, -3]], air: 4500,
+    body: [[285, 0.06, 1.125], [420, 0.05, 1.25], [600, 0.035, 1], [900, 0.025, 0.75], [1350, 0.02, 0.625], [2000, 0.012, 0.625], [3000, 0.008, 0.5]],
+    room: { rt: 0.5, wet: 0.4, lp: 6000, pre: 0.008 }, sympathy: 0.06,
+    jitter: 0.004, detune: 1.5, vary: 0.12, openRing: 0.35, lift: 0.025, mute: 0.006
   };
   Mandolin.prototype.TREMOLO = 0.075;   // seconds between strokes of a tremolo, about 13 a second
 
-  /* Render the notes it will be asked for, ahead of time. */
+  /* Render the notes it will be asked for, ahead of time, and the open
+   * strings, which hum along with them. */
   Mandolin.prototype.prepare = function (midis) {
     var ctx = this.ctx, self = this;
-    midis.forEach(function (m) {
+    midis.concat(OPEN).forEach(function (m) {
       if (self.notes[m] || !(m > 0)) return;
       var list = [];
       for (var v = 0; v < VARIANTS; v++) {
@@ -160,8 +202,8 @@
         var seed = 7 + m * 131 + v * 7919, r = [], z = seed;
         for (var j = 0; j < 3; j++) { z = (z * 16807) % 2147483647; r.push((z / 2147483647) * 2 - 1); }
         var T = Object.assign({}, self.TONE, { pos: self.TONE.pos * (1 + 0.12 * r[0]),
-                                                width: (self.TONE.width || 0) * (1 + 0.3 * r[1]),
-                                                click: (self.TONE.click || 0) * (1 + 0.4 * r[2]) });
+                                                width: self.TONE.width * (1 + 0.3 * r[1]),
+                                                click: self.TONE.click * (1 + 0.4 * r[2]) });
         var d = render(ctx.sampleRate, hz(m), seed, T), buf = ctx.createBuffer(1, d.length, ctx.sampleRate);
         buf.getChannelData(0).set(d);
         list.push(buf);
@@ -175,6 +217,9 @@
    * whether it is the open string itself. */
   function stringOf(midi) { return midi < 62 ? 0 : midi < 69 ? 1 : midi < 76 ? 2 : 3; }
   function isOpen(midi) { return midi === 55 || midi === 62 || midi === 69 || midi === 76; }
+  /* How readily an open pair hums along with a note, by the distance between
+   * them in semitones: where their overtones line up (as guitar.js). */
+  var COUPLING = { 0: 1, 12: 0.8, 24: 0.6, 7: 0.5, 19: 0.5, 5: 0.3, 17: 0.3 };
 
   /* One note: picked at t (down-stroke, unless art.up), held dur seconds.
    * As a player's: each pick a shade off in time, strength and pitch (a
@@ -193,41 +238,76 @@
       for (var p = 0; p < dur - 0.04; p += this.TREMOLO) picks.push(p);
     }
     function wobble(n) { return (Math.random() * 2 - 1) * n; }
-    var nodes = [], prev = null;
+    var nodes = [], prev = null, heavy = Math.max(0, Math.min(1, (76 - midi) / 21));
     picks.forEach(function (off, i) {
-      var at = Math.max(ctx.currentTime, t + off + wobble(T.jitter || 0)), src = ctx.createBufferSource(), g = ctx.createGain();
+      var at = Math.max(ctx.currentTime, t + off + wobble(T.jitter)), src = ctx.createBufferSource(), g = ctx.createGain();
       src.buffer = list[Math.floor(Math.random() * list.length)];
-      var tune = Math.pow(2, wobble(T.detune || 0) / 1200);
-      // Plucked, a string starts a shade sharp and settles (a piano's does not).
-      src.playbackRate.setValueAtTime(tune * Math.pow(2, (T.sharp || 0) * (1 + wobble(0.4)) / 1200), at);
-      src.playbackRate.setTargetAtTime(tune, at, 0.025);
+      var tune = Math.pow(2, wobble(T.detune) / 1200);
+      // Plucked, a string starts sharp and settles (a piano's does not).
+      src.playbackRate.setValueAtTime(tune * Math.pow(2, (T.sharp + T.sharpLow * heavy) * (1 + wobble(0.4)) / 1200), at);
+      src.playbackRate.setTargetAtTime(tune, at, T.sharpTc);
       // Down-strokes a little heavier than up-strokes; a tremolo's alternate.
       var up = (art.up ? 1 : 0) + i, k = up % 2 ? 0.82 : 1;
       if (art.tremolo) k *= i ? 0.72 : 1;
-      k *= 1 + wobble(T.vary || 0);
+      k *= 1 + wobble(T.vary);
       g.gain.setValueAtTime(Math.max(0.0001, vel * k), at);
       src.connect(g); g.connect(self.out);
       src.onended = function () { g.disconnect(); };   // rung out: let it go
       src.start(at);
-      // Whatever this string was sounding stops as the pick meets it.
+      // Whatever this string was sounding stops as the pick meets it, just
+      // before the pick lets go.
       var was = i ? prev : self.ringing[S];
       if (was) {
-        was.g.gain.setTargetAtTime(0, at, 0.006);
+        was.g.gain.setTargetAtTime(0, Math.max(ctx.currentTime, at - T.mute), 0.002);
         try { was.src.stop(at + 0.05); } catch (e) {}
       }
       prev = { g: g, src: src };
       nodes.push(g);
     });
     this.ringing[S] = prev;
+    prev.until = end + (open ? T.openRing + 0.6 : T.lift);
     if (open) {                    // an open string rings on, fading, until picked again
-      prev.g.gain.setTargetAtTime(0, end + (T.openRing || 0), 0.2);
-      try { prev.src.stop(end + (T.openRing || 0) + 1.2); } catch (e) {}
+      prev.g.gain.setTargetAtTime(0, end + T.openRing, 0.2);
+      try { prev.src.stop(end + T.openRing + 1.2); } catch (e) {}
     } else {                       // the finger lifts just after the next note sounds
-      prev.g.gain.setTargetAtTime(0, end + (T.lift || 0), 0.025);
-      try { prev.src.stop(end + (T.lift || 0) + 0.2); } catch (e) {}
+      prev.g.gain.setTargetAtTime(0, end + T.lift, 0.025);
+      try { prev.src.stop(end + T.lift + 0.2); } catch (e) {}
     }
+    this._sympathize(t, midi, vel, S, nodes);
     this.queued = this.queued.filter(function (q) { return q.t > ctx.currentTime - 1; });
     this.queued.push({ t: t, nodes: nodes });
+  };
+
+  /* The open pairs hum along: picked, a note sets ringing any open pair it
+   * agrees with (the same note, an octave, a fifth), mostly in its low
+   * overtones, building up rather than struck. A pair picked stops its hum;
+   * a pair sounding a note of its own does not hum. */
+  Mandolin.prototype._sympathize = function (t, midi, vel, S, nodes) {
+    var ctx = this.ctx, T = this.TONE, self = this;
+    var mine = this.sym[S];
+    if (mine) {
+      mine.g.gain.setTargetAtTime(0, Math.max(ctx.currentTime, t - T.mute), 0.004);
+      try { mine.src.stop(t + 0.1); } catch (e) {}
+      this.sym[S] = null;
+    }
+    for (var s = 0; s < 4; s++) {
+      if (s === S) continue;
+      var r = this.ringing[s];
+      if (r && r.until > t) continue;
+      var c = COUPLING[Math.abs(midi - OPEN[s])] || 0;
+      if (c < 0.3) continue;
+      if (this.sym[s]) { this.sym[s].g.gain.setTargetAtTime(0, t, 0.35); try { this.sym[s].src.stop(t + 2.5); } catch (e) {} }
+      var src = ctx.createBufferSource(), pure = ctx.createBiquadFilter(), g = ctx.createGain();
+      src.buffer = this.notes[OPEN[s]][0];
+      pure.type = 'lowpass'; pure.frequency.value = 1100; pure.Q.value = 0.5;
+      g.gain.setValueAtTime(0, t);
+      g.gain.setTargetAtTime(T.sympathy * c * vel, t + 0.01, 0.12);
+      src.connect(pure); pure.connect(g); g.connect(self.out);
+      src.onended = (function (g) { return function () { g.disconnect(); }; })(g);
+      src.start(t);
+      this.sym[s] = { g: g, src: src };
+      nodes.push(g);
+    }
   };
 
   /* Stop: drop every note handed over but not yet begun. */

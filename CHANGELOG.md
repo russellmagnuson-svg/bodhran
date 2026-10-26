@@ -492,6 +492,28 @@ The page at `/buddies/` has its own version number, shown next to its title.
 It was called Session Players, at `/players/`, until 1.8.0; the entries
 before that keep the old name.
 
+### Session Buddies 1.28.0 — 2026-10-25 — A plucked mandolin
+
+- **The mandolin sounds picked, not struck.** A mandolin teacher said it
+  sounded "like striking a piano key", and recorded The Kesh and his open
+  strings to compare. Measured against him, it was built like a struck
+  string: nearly a pure tone (its overtones 20-30 dB under the note; on his,
+  as strong as the note when picked), full at once, then the whole note
+  falling 10 dB, as a piano's does. It had been matched to an earlier
+  recording that turned out about 25 dB muffled. Now each pick is bright and
+  mellows as it rings, the note itself holding; the pick crosses the pair of
+  strings one after the other, so the note swells in over 15-30 ms; the
+  pitch starts sharp and settles, more on the heavier strings.
+- **An acoustic sound, as the guitar has** (asked for by the teacher): a body
+  that rings along with every pick, the open strings humming along with the
+  notes they agree with, and a small room around it.
+- He chose it by ear, over two rounds of clips. Its level in the band is as
+  before, about 2 dB under the flute, with the concertina. It takes about six
+  times the work it did (on a Mac, about 3% of one core while playing).
+- The mandolin check now listens for a plucked string: the swell, the
+  overtones, the humming strings, the room, and brightness near the teacher's
+  mandolin (the old check wanted it dark, as the muffled recording was).
+
 ### Session Buddies 1.27.2 — 2026-10-25
 
 - **The mandolin plays on a first visit**, with the guitar, flute, concertina

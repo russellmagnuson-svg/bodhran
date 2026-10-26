@@ -2796,7 +2796,7 @@
     });
 
   check('Session Buddies', 'The mandolin plays the tune as a mandolin player would',
-    'Asked for in 1.25.0 by a mandolin player: a mandolin in the mixer (off to begin with until 1.27.2, on since: see the first-visit check), playing the tune with (or instead of) the flute and concertina, in step with them. Picked down on the beat and up between (a jig D-U-D in each beat); a picked triplet in place of a roll; tremolo on a waltz’s long notes. Its sound set against the player’s own F-style mandolin: a plucked string’s overtones (not the first version’s twang: 5.5 dB more above 2 kHz than below 1 kHz, the real one -25), a quick drop after the pick, no two picks alike, an open string ringing on. Within a few dB of the flute, and (since 1.25.1, given some presence) not lost under it on a phone’s speaker; the tick and the level kept.',
+    'Asked for in 1.25.0 by a mandolin player: a mandolin in the mixer (off to begin with until 1.27.2, on since: see the first-visit check), playing the tune with (or instead of) the flute and concertina, in step with them. Picked down on the beat and up between (a jig D-U-D in each beat); a picked triplet in place of a roll; tremolo on a waltz’s long notes. Its sound (since 1.28.0) set against the player’s teacher’s playing, after he said it sounded “like striking a piano key”: picked, not struck. Bright at the pick (its overtones as strong as the note; 1.25’s were 23 dB under, matched to a muffled recording) yet not the first version’s twang (5.5 dB more above 2 kHz than below 1 kHz; his mandolin about level), swelling in as the pick crosses the pair, a fall after the pick, no two picks alike, an open string ringing on; and the acoustic sound he asked for: open strings humming along, a room around it. Within a few dB of the flute, and not lost under it on a phone’s speaker; the tick and the level kept.',
     function () {
       return json(FIX + 'the-kesh.json').then(function (kesh) {
         return withBuddies(function (win, doc) {
@@ -2838,12 +2838,38 @@
             var x = buf.getChannelData(0);
             function lv(a, b) { var s2 = 0; for (var i = Math.round(a * SR); i < Math.round(b * SR); i++) s2 += x[i] * x[i]; return 10 * Math.log10(s2 / ((b - a) * SR) + 1e-12); }
             var drop = lv(0.12, 0.14) - lv(0.35, 0.37);
-            if (!(drop > 5)) bad.push('no quick drop after the pick: ' + round(drop) + ' dB in the first quarter second');
+            // It falls after the pick as its overtones fade (a note held at full
+            // strength, as 1.25.0's first try, falls 0-2 dB). Since 1.28.0 the fall
+            // comes from the brightness fading, 4.3-7.8 dB over 20 picks (the
+            // teacher's, about 9), no longer from a fixed drop: hence 3, not 5.
+            if (!(drop > 3)) bad.push('no fall after the pick: ' + round(drop) + ' dB in the first quarter second');
             var openRing = lv(0.7, 0.8), frettedRing = lv(2.2, 2.3);
             if (!(openRing - frettedRing > 15)) bad.push('the open D does not ring on past its note (' + round(openRing) + ' dB) where the fretted E stops (' + round(frettedRing) + ' dB)');
             var diff = 0, e = 0; for (var i = 0; i < SR * 0.2; i++) { var a = x[Math.round(1.6 * SR) + i], b = x[Math.round(3.1 * SR) + i]; diff += (a - b) * (a - b); e += a * a; }
             if (!(10 * Math.log10(diff / e) > -30)) bad.push('two picks of the same note are alike: they differ by only ' + round(10 * Math.log10(diff / e)) + ' dB');
-            // Not twangy: across a run of notes, far more below 1 kHz than above 2 kHz.
+            // Picked, not struck (1.28.0). The open D at 0.1 s: it swells in as the
+            // pick crosses the pair (the teacher's, 15-30 ms; 1.25's peaked at once),
+            // and is bright at the pick, its 4th-10th overtones together as strong
+            // as the note (his: louder; 1.25's 23 dB under it).
+            function ms1(k) { var s2 = 0, a0 = Math.round((0.09 + k / 1000) * SR); for (var i = a0; i < a0 + SR / 1000; i++) s2 += x[i] * x[i]; return s2; }
+            var env = []; for (var k = 0; k < 90; k++) env.push(ms1(k));
+            var top = Math.max.apply(null, env), from = env.findIndex(function (v) { return v > 0.01 * top; }), swell = env.indexOf(top) - from;
+            // (1.28.0's: 19-47 ms over 20 picks; 1.25's: 7 at most.)
+            if (!(swell >= 12)) bad.push('a pick does not swell in: it peaks ' + swell + ' ms after it starts (picked: 15-30)');
+            function partial(f, a0, b0) {
+              var s0 = Math.round(a0 * SR), n = Math.round((b0 - a0) * SR), re = 0, im = 0;
+              for (var i = 0; i < n; i++) { var w = 0.5 - 0.5 * Math.cos(2 * Math.PI * i / (n - 1)), ph = 2 * Math.PI * f * i / SR; re += x[s0 + i] * w * Math.cos(ph); im -= x[s0 + i] * w * Math.sin(ph); }
+              return re * re + im * im;
+            }
+            var over = 0; for (k = 4; k <= 10; k++) over += partial(k * 293.66, 0.13, 0.17);
+            var bright = 10 * Math.log10(over / partial(293.66, 0.13, 0.17));
+            if (!(bright > -8)) bad.push('struck, not picked: just after the pick its overtones are ' + round(-bright) + ' dB under the note (a picked mandolin’s: as strong)');
+            // The room: a fretted note's sound hangs in it a moment after it stops.
+            var tail = lv(2.0, 2.1) - lv(1.65, 1.75);
+            if (!(tail > -35)) bad.push('no room around it: 0.15 s after a note stops it is ' + round(-tail) + ' dB down');
+            // Bright as a real mandolin, but not twangy: across a run of notes, about as
+            // much above 2 kHz as below 1 kHz (the teacher's: level; the first
+            // version's twang +5.5 dB; 1.25's muffled -17.5).
             var o2 = new OfflineAudioContext(1, SR * 4, SR), m2 = new P.Mandolin(o2, o2.destination);
             seq.forEach(function (m, i) { m2.note(0.2 + i * 0.25, 0.26, m, 0.85, { up: i % 2 === 1 }); });
             return o2.startRendering();
@@ -2858,7 +2884,18 @@
             }
             return Promise.all([bandE('highpass', 2000), bandE('lowpass', 1000)]).then(function (r) {
               var tilt = 10 * Math.log10(r[0] / r[1]);
-              if (!(tilt < -15)) bad.push('twangy: only ' + round(-tilt) + ' dB less above 2 kHz than below 1 kHz (the real mandolin: 25)');
+              if (!(tilt < 2)) bad.push('twangy: ' + round(tilt) + ' dB more above 2 kHz than below 1 kHz (the teacher’s mandolin: about level)');
+              if (!(tilt > -10)) bad.push('muffled: ' + round(-tilt) + ' dB less above 2 kHz than below 1 kHz (the teacher’s mandolin: about level)');
+              // Open strings humming along: a high D picked, the open D pair rings
+              // with it, quietly (it is in the note's overtones, not struck).
+              var o5 = new OfflineAudioContext(1, SR * 1.2, SR), m5 = new P.Mandolin(o5, o5.destination);
+              m5.note(0.1, 0.6, 74, 0.9, {});
+              return o5.startRendering().then(function (b5) {
+                var z = b5.getChannelData(0);
+                function pt(f) { var s0 = Math.round(0.4 * SR), n = Math.round(0.3 * SR), re = 0, im = 0; for (var i = 0; i < n; i++) { var w = 0.5 - 0.5 * Math.cos(2 * Math.PI * i / (n - 1)), ph = 2 * Math.PI * f * i / SR; re += z[s0 + i] * w * Math.cos(ph); im -= z[s0 + i] * w * Math.sin(ph); } return re * re + im * im; }
+                var hum = 10 * Math.log10(pt(293.66) / pt(587.33));
+                if (!(hum > -50)) bad.push('the open strings do not hum along: the open D is ' + round(-hum) + ' dB under a high D picked');
+                if (!(hum < -25)) bad.push('the open D hums too loud: ' + round(-hum) + ' dB under the high D');
               // As loud as the concertina: within 1.5 dB of 2 dB under the flute, as the page mixes them.
               var o3 = new OfflineAudioContext(1, SR * 3, SR), fb = o3.createGain(), mb = o3.createGain(), MIX = PP.MIX;
               var o4 = new OfflineAudioContext(1, SR * 3, SR); fb = o4.createGain(); fb.gain.value = MIX.tune; fb.connect(o4.destination);
@@ -2866,6 +2903,7 @@
               var fl2 = new P.Flute(o4, fb), m3 = new P.Mandolin(o3, mb);
               seq.slice(0, 8).forEach(function (m, i) { fl2.note(0.2 + i * 0.3, 0.3, m, 0.85, 0, { slur: i % 3 !== 0 }); m3.note(0.2 + i * 0.3, 0.3, m, 0.85, { up: i % 2 === 1 }); });
               return Promise.all([o3.startRendering(), o4.startRendering()]);
+              });
             });
           }).then(function (rr) {
             function kdb(b) { var z = b.getChannelData(0), s4 = 0; for (var i = 0; i < z.length; i++) s4 += z[i] * z[i]; return 10 * Math.log10(s4 / z.length); }

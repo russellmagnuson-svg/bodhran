@@ -599,11 +599,14 @@ open or folded kept in `players.hearopen`.
   drives the line under the mixer.
 - `buddies/mandolin.js` — the mandolin (since 1.25.0), a third melody
   instrument, on to begin with since 1.27.2 (off before): each note a pair of strings built with the
-  guitar's string loop (`GTR.thumbString`, shared from guitar.js) from a
-  pick-shaped bend, its sound (`Mandolin.prototype.TONE`) set against a
-  recording of a real F-style mandolin and chosen by ear; four renderings per
-  note, each pick varied in time, strength and pitch, notes damped by string
-  (an open string rings on). buddies.js `melody()` picks it down/up by the
+  guitar's string loop (`GTR.thumbString`, shared from guitar.js), started
+  from the slope of a pick-shaped bend (since 1.28.0; the bend's shape, before,
+  gave a nearly pure, struck-sounding tone), its sound (`Mandolin.prototype.TONE`)
+  set against the user's teacher's playing and chosen by his ear: the pair's
+  second string picked 8-14 ms after the first, the pitch settling from sharp,
+  a ringing body and a small room (two convolvers), and open pairs humming in
+  sympathy (`_sympathize`); four renderings per note, each pick varied in time,
+  strength and pitch, notes damped by string (an open string rings on). buddies.js `melody()` picks it down/up by the
   quaver's place in the beat, plays a roll or cran as a picked triplet and a
   waltz's long notes tremolo; `MIX.mandolin` sits it with the concertina,
   2 dB under the flute.
