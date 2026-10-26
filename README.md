@@ -604,8 +604,9 @@ open or folded kept in `players.hearopen`.
   gave a nearly pure, struck-sounding tone), its sound (`Mandolin.prototype.TONE`)
   set against the user's teacher's playing and chosen by his ear: the pair's
   second string picked 8-14 ms after the first, the pitch settling from sharp,
-  a ringing body and a small room (two convolvers), and open pairs humming in
-  sympathy (`_sympathize`); four renderings per note, each pick varied in time,
+  a ringing body (seven small resonant filters, `body()`), a small room (a
+  convolver), and open pairs humming in sympathy (`_sympathize`, one hum per
+  pair, nudged louder when excited again); four renderings per note, each pick varied in time,
   strength and pitch, notes damped by string (an open string rings on). buddies.js `melody()` picks it down/up by the
   quaver's place in the beat, plays a roll or cran as a picked triplet and a
   waltz's long notes tremolo; `MIX.mandolin` sits it with the concertina,

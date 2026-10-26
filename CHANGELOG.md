@@ -492,6 +492,19 @@ The page at `/buddies/` has its own version number, shown next to its title.
 It was called Session Players, at `/players/`, until 1.8.0; the entries
 before that keep the old name.
 
+### Session Buddies 1.28.1 — 2026-10-25
+
+- **The new mandolin is much lighter work**, after its first play stuttered
+  on an iPhone. Measured, 1.28.0 did 6.4 times the work of 1.27.2's
+  mandolin, and 70% of that was the open strings humming along: every note
+  started a fresh hum on up to three other strings, each running on for
+  2.5 s as it faded, dozens at once in a jig. Now each open pair has one
+  hum, nudged louder when a note sets it going again, as a real string
+  hums on. The body's ring is now seven small resonant filters instead of a
+  convolution (exactly the same ring, to a millionth), and the mandolin's
+  own room stops where it is 54 dB down. In all, 2.5 times the old
+  mandolin's work instead of 6.4; it sounds the same.
+
 ### Session Buddies 1.28.0 — 2026-10-25 — A plucked mandolin
 
 - **The mandolin sounds picked, not struck.** A mandolin teacher said it

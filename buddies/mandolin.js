@@ -28,7 +28,8 @@
  *     each note), each a shade off in time, strength and pitch; a note stops
  *     when its own string is picked again, a fretted one just after the
  *     finger lifts, while an open string rings on under what follows.
- * The teacher chose it by ear, from clips, over two rounds.
+ * The teacher chose it by ear, from clips, over two rounds. (1.28.1: the
+ * same sound for well under half the work: see the body and the hums.)
  *
  * art: { up: an up-stroke (a little lighter), picks: [seconds] re-picked at
  * these offsets from t (a triplet, in place of a roll), tremolo: picked
@@ -110,16 +111,18 @@
   /* The body ringing along: the dry note, plus the body's own resonances,
    * each set going by the pick and dying away (as guitar.js bodyResponse,
    * for a much smaller body: the air inside near 285 Hz, the top near 420,
-   * and smaller rings up to 3 kHz). */
-  function bodyResponse(ctx, modes) {
-    var sr = ctx.sampleRate, len = Math.floor(sr * 0.25), buf = ctx.createBuffer(1, len, sr), d = buf.getChannelData(0);
-    d[0] = 1;
-    for (var i = 1; i < len; i++) {
-      var t = i / sr, v = 0;
-      for (var k = 0; k < modes.length; k++) v += (2 * modes[k][2] / (modes[k][1] * sr)) * Math.exp(-t / modes[k][1]) * Math.sin(2 * Math.PI * modes[k][0] * t);
-      d[i] += v;
-    }
-    return buf;
+   * and smaller rings up to 3 kHz). Each resonance is a small ringing filter
+   * (its response A r^n sin(wn), exactly the decaying ring 1.28.0 convolved
+   * with); since 1.28.1, as the convolution was ten times the work. */
+  function body(ctx, input, modes) {
+    var sr = ctx.sampleRate, sum = ctx.createGain();
+    input.connect(sum);
+    modes.forEach(function (md) {
+      var r = Math.exp(-1 / (md[1] * sr)), w = 2 * Math.PI * md[0] / sr, A = 2 * md[2] / (md[1] * sr);
+      var ring = ctx.createIIRFilter([0, A * r * Math.sin(w)], [1, -2 * r * Math.cos(w), r * r]);
+      input.connect(ring); ring.connect(sum);
+    });
+    return sum;
   }
 
   /* A small room's reflections (the dry sound goes round them): a burst of
@@ -128,7 +131,8 @@
    * 150 ms and more after a pick, than a dry string does; this brings it to
    * within a few dB. */
   function roomResponse(ctx, room) {
-    var sr = ctx.sampleRate, len = Math.floor(sr * room.rt * 1.2), buf = ctx.createBuffer(1, len, sr), d = buf.getChannelData(0);
+    // Cut at 0.9 rt, where it is 54 dB down (1.28.0 ran on to 1.2 rt).
+    var sr = ctx.sampleRate, len = Math.floor(sr * room.rt * 0.9), buf = ctx.createBuffer(1, len, sr), d = buf.getChannelData(0);
     var pre = Math.floor(sr * room.pre), a = Math.exp(-2 * Math.PI * room.lp / sr), s = 12345, lp = 0, e = 0, i;
     for (i = pre; i < len; i++) {
       s = (s * 16807) % 2147483647;
@@ -145,8 +149,7 @@
     this.out = ctx.createGain();
     this.out.gain.value = this.LEVEL;
     var T = this.TONE, node = this.out;
-    var body = ctx.createConvolver(); body.normalize = false; body.buffer = bodyResponse(ctx, T.body);
-    node.connect(body); node = body;
+    node = body(ctx, node, T.body);
     // The body's tone: small and bright.
     function add(type, f, q, g) { var b = ctx.createBiquadFilter(); b.type = type; b.frequency.value = f; b.Q.value = q; if (g != null) b.gain.value = g; node.connect(b); node = b; }
     add('highpass', T.hp, 0.7);
@@ -159,6 +162,9 @@
     this.queued = [];
     this.ringing = [null, null, null, null];   // what each pair of strings is sounding, and until when
     this.sym = [null, null, null, null];       // each open pair's sympathetic ring
+    this.hum = ctx.createBiquadFilter();       // the hums are mostly the low partials
+    this.hum.type = 'lowpass'; this.hum.frequency.value = 1100; this.hum.Q.value = 0.5;
+    this.hum.connect(this.out);
   }
 
   /* The whole mandolin's level, set so it sits with the flute (buddies.js MIX). */
@@ -280,8 +286,11 @@
 
   /* The open pairs hum along: picked, a note sets ringing any open pair it
    * agrees with (the same note, an octave, a fifth), mostly in its low
-   * overtones, building up rather than struck. A pair picked stops its hum;
-   * a pair sounding a note of its own does not hum. */
+   * overtones, building up rather than struck. A pair already humming hums
+   * on, nudged to the new strength (1.28.0 started a fresh hum every time,
+   * each running on for 2.5 s as it faded: in a jig dozens at once, 70% of
+   * the mandolin's work). A pair picked stops its hum; a pair sounding a
+   * note of its own does not hum. */
   Mandolin.prototype._sympathize = function (t, midi, vel, S, nodes) {
     var ctx = this.ctx, T = this.TONE, self = this;
     var mine = this.sym[S];
@@ -296,16 +305,17 @@
       if (r && r.until > t) continue;
       var c = COUPLING[Math.abs(midi - OPEN[s])] || 0;
       if (c < 0.3) continue;
-      if (this.sym[s]) { this.sym[s].g.gain.setTargetAtTime(0, t, 0.35); try { this.sym[s].src.stop(t + 2.5); } catch (e) {} }
-      var src = ctx.createBufferSource(), pure = ctx.createBiquadFilter(), g = ctx.createGain();
+      var h = this.sym[s];
+      if (h && h.until > t + 0.3) { h.g.gain.setTargetAtTime(T.sympathy * c * vel, t + 0.01, 0.12); continue; }
+      if (h) { h.g.gain.setTargetAtTime(0, t, 0.1); try { h.src.stop(t + 0.5); } catch (e) {} }
+      var src = ctx.createBufferSource(), g = ctx.createGain();
       src.buffer = this.notes[OPEN[s]][0];
-      pure.type = 'lowpass'; pure.frequency.value = 1100; pure.Q.value = 0.5;
       g.gain.setValueAtTime(0, t);
       g.gain.setTargetAtTime(T.sympathy * c * vel, t + 0.01, 0.12);
-      src.connect(pure); pure.connect(g); g.connect(self.out);
+      src.connect(g); g.connect(self.hum);
       src.onended = (function (g) { return function () { g.disconnect(); }; })(g);
       src.start(t);
-      this.sym[s] = { g: g, src: src };
+      this.sym[s] = { g: g, src: src, until: t + SECONDS };
       nodes.push(g);
     }
   };
