@@ -2323,7 +2323,7 @@
     var keys = ['players.current', 'players.tuning', 'players.sympathy', 'players.volume', 'players.swing.hornpipe',
                 'buddies.favourites', 'buddies.recent', 'players.melody', 'players.yourturn', 'players.backing',
                 'players.drumstyle', 'players.drumbusy', 'players.voices', 'players.mineopen',
-                'players.ornaments', 'players.drumhand', 'players.hearopen', 'players.ornadd'], saved = {};
+                'players.ornaments', 'players.drumhand', 'players.hearopen', 'players.ornadd', 'players.practise'], saved = {};
     keys.forEach(function (k) { saved[k] = localStorage.getItem(k); localStorage.removeItem(k); });
     if (!(opts && opts.fresh)) {
       localStorage.setItem('players.voices', JSON.stringify({ concertina: false, mandolin: false }));
@@ -4548,6 +4548,84 @@
             if (doc.getElementById('app-bodhran').href !== location.origin + '/') bad.push('the Bodhrán link goes to ' + doc.getElementById('app-bodhran').href);
           }, { srcdoc: html });
         }).then(function () { expect(bad.length === 0, bad.join('\n')); });
+      });
+    });
+
+  check('Session Buddies', 'You can practise one part round and round',
+    'Asked for in 1.29.0: Practise the whole tune, or one part, played round and round after the count-in, with “Play it” counting times through the part. A part goes round on its first ending and takes its second only the last time; it comes in on its own lead-in (The Kesh, setting 3: the A part on its low D, the B part on its high d) and leads back round with it; a lead-in written into the next part is left out, and the part that ends the tune ends as the whole tune does. The chart fades the other parts. The choice is kept for the tune, through a reload, but another tune starts on the whole tune; a one-part tune has no choice to make.',
+    function () {
+      return Promise.all([json(FIX + 'the-kesh.json'), json(FIX + 'the-silver-spear.json'), json(FIX + 'the-swallowtail.json')]).then(function (r) {
+        return withBuddies(function (win, doc) {
+          var fr = win.frameElement, bad = [];
+          function W() { return fr.contentWindow; }
+          function D() { return fr.contentDocument; }
+          function PP() { return W().BUDDIES_PAGE; }
+          function mel(n) { return PP().plan(n).filter(function (x) { return x.who === 'flute' && !x.grace; }).map(function (x) { return x.midi + (x.final ? '!' : ''); }).join(' '); }
+          function practise(v) { var s = D().getElementById('practise'); s.value = v; s.dispatchEvent(new (W().Event)('change')); }
+          function times(v) { var t = D().getElementById('times'); t.value = v; t.dispatchEvent(new (W().Event)('change')); }
+          function rows() { return Array.prototype.map.call(D().querySelectorAll('#chart .part'), function (x) { return x.className.replace('part', '').trim() || 'shown'; }).join(','); }
+          // The Kesh, setting 3: the whole tune, then each part.
+          PP().loadTune(r[0], 2); times('2');
+          var opts = Array.prototype.map.call(D().getElementById('practise').options, function (o) { return o.textContent; }).join(' | ');
+          if (opts !== 'the whole tune | the A part | the B part' || D().getElementById('practise-box').hidden) bad.push('the choices are “' + opts + '”');
+          if (PP().form().length !== 32) bad.push('the whole tune is ' + PP().form().length + ' bars, not 32');
+          practise('1');
+          if (PP().form().length !== 8) bad.push('the B part goes round every ' + PP().form().length + ' bars, not 8');
+          if (mel(-1) !== '74') bad.push('the B part comes in on ' + mel(-1) + ' after the count-in, not its own lead-in, d (74)');
+          if (mel(0) !== '71 71 74 71 72 74') bad.push('the B part starts ' + mel(0));
+          if (mel(7) !== '83 79 78 79 74') bad.push('the B part does not lead back round with its d: ' + mel(7));
+          if (mel(15) !== '83 79 78 79!') bad.push('the B part does not end on its last note, the last time: ' + mel(15));
+          if (rows() !== 'resting,practising') bad.push('the chart shows the parts as ' + rows());
+          practise('0');
+          if (mel(-1) !== '62') bad.push('the A part comes in on ' + mel(-1) + ', not the tune’s pickup, D (62)');
+          if (mel(7) !== '69 67 66 67 62') bad.push('the A part does not lead back round with its D: ' + mel(7));
+          if (mel(15) !== '69 67 66 67!') bad.push('the A part ends ' + mel(15) + ': with the B part’s lead-in, or not at all');
+          // Kept for this tune through a reload.
+          return new Promise(function (ok) { fr.onload = function () { setTimeout(ok, 400); }; W().location.reload(); }).then(function () {
+            if (PP().practising() !== '0' || D().getElementById('practise').value !== '0') bad.push('after a reload it practises ' + PP().practising());
+            // The Silver Spear: endings. The A part goes round on its first, ends on its second.
+            PP().loadTune(r[1], 0); times('2');
+            if (PP().practising() !== 'all') bad.push('another tune starts on ' + PP().practising() + ', not the whole tune');
+            practise('0');
+            if (mel(7) !== '74 78 76 74 71 74 71 69 67') bad.push('the A part does not go round on its first ending: ' + mel(7));
+            if (mel(15) !== '74 78 76 74 71 74 69 74!') bad.push('the A part does not end on its second ending: ' + mel(15));
+            // The B part ends the tune: as the whole tune does, without the lead-in back to the top.
+            practise('1');
+            var endB = mel(15);
+            practise('all'); times('1');
+            var endTune = mel(PP().form().length - 1);
+            if (endB !== endTune) bad.push('the B part ends ' + endB + ', the whole tune ' + endTune);
+            // The Swallowtail: its B part found (written with no |:), with no lead-in of its own.
+            PP().loadTune(r[2], 0);
+            var sw = Array.prototype.map.call(D().getElementById('practise').options, function (o) { return o.textContent; }).join(' | ');
+            if (sw !== 'the whole tune | the A part | the B part') bad.push('The Swallowtail offers “' + sw + '”');
+            practise('1');
+            if (mel(-1) !== '') bad.push('The Swallowtail’s B part comes in on ' + mel(-1) + ', the A part’s note');
+            // A tune of one part: nothing to choose.
+            PP().loadTune({ id: 0, name: 'A one-part check', type: 'jig', url: '', settings: [{ id: 0, url: '', key: 'Gmajor', date: '', member: { name: 'a check' },
+              abc: '|:GAB dBG|AGA BAG|GAB dBG|AGF G3:|' }] }, 0);
+            if (!D().getElementById('practise-box').hidden) bad.push('a one-part tune offers a part to practise');
+            expect(bad.length === 0, bad.join('\n'));
+          });
+        });
+      });
+    });
+
+  check('Session Buddies', 'A tune’s parts are found where it repeats, too',
+    'Since 1.29.0 a new part also starts after a repeat’s end (:|), unless what follows is its second ending, or only a bar or two (a closing bar, or a second ending left unmarked). The Swallowtail writes its B part “…A2d:| efg a2b|…” with no |: of its own, and had been one long part, A; so had 1 in 8 settings of the Session’s 40 most popular tunes (now 1 in 27). The chart, Your turn and Practise go by these parts.',
+    function () {
+      return Promise.all([json(FIX + 'the-swallowtail.json'), json(FIX + 'the-kesh.json')]).then(function (r) {
+        var bad = [];
+        function parts(abc, key, meter) { var lay = PL.layout(abc, { key: key, meter: meter }); return lay.slots.map(function (s) { return 'ABCD'.charAt(s.part); }).join(''); }
+        var sw = parts(r[0].settings[0].abc, r[0].settings[0].key, '6/8');
+        if (sw !== 'AAAAAAAABBBBBBBB') bad.push('The Swallowtail’s bars are in parts ' + sw);
+        var k3 = parts(r[1].settings[2].abc, r[1].settings[2].key, '6/8');
+        if (!/^A+B+$/.test(k3)) bad.push('The Kesh, setting 3, is in parts ' + k3);
+        var coda = parts('|:GAB dBG|AGA BAG|GAB dBG|AGF G3:|G6||', 'Gmajor', '6/8');
+        if (/B/.test(coda)) bad.push('a closing bar after the repeat became a part of its own: ' + coda);
+        var unmarked = parts('|:GAB dBG|AGA BAG|GAB dBG|1 AGF GAB:|AGF G3||', 'Gmajor', '6/8');
+        if (/B/.test(unmarked)) bad.push('an unmarked second ending became a part of its own: ' + unmarked);
+        expect(bad.length === 0, bad.join('\n'));
       });
     });
 

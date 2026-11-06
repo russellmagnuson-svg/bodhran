@@ -513,6 +513,15 @@ lilt (`warp()` for the concertina if ticked, else the flute). `asWritten()`
 leaves triplet beats as written in every type, and in a swung type any beat
 not in plain quavers.
 
+Practise (since 1.29.0; `practise`, `players.practise` keyed by tune and
+Session setting) plays the whole tune or one part round and round:
+`practiseForm(p)` takes the part's first time through from the timeline
+(`FORM`), its second time through (`PASS2`, its second ending) for the last
+time, and its own lead-in (`LEAD`, from the bar before, by each note's
+`written` bar); `formBar(n)` gives the bar as played. Parts come from
+`abc.js` `layout()` (`partOf`): a new part at `|:`, after a double bar, or
+after `:|` unless a second ending or only a bar or two follow.
+
 Finish (under Play, or F) ends the tune at the end of the time through it is
 pressed in (`finishAt`, `isLast()`); lowering "Play it" does the same. The
 Melody choice (`melodyMode`: every, turns, a, b; `players.melody`) drops the

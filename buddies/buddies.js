@@ -17,7 +17,7 @@
    * next to the title and at the foot. Bump it with every change pushed (the
    * last number for a fix, the middle for something new) and add it to the
    * "Session Buddies" sections of CHANGELOG.md and the release notes. */
-  var VERSION = '1.28.1';
+  var VERSION = '1.29.0';
 
   var $ = function (id) { return document.getElementById(id); };
   var P = window.BUDDIES, G = window.GTR, T = window.TRAD, TPQ = P.TPQ;
@@ -216,6 +216,10 @@
    * tune: { meta: { id, name, type, url }, settings, index, lay, auto,
    *         chords: { slot: ['G'] | ['C', 'D'] }, mine: { slot: true }, source } */
   var tune = null, FORM = [], slotEls = {}, slotInfo = {};
+  // Practising one part (since 1.29.0; practiseForm): 'all', or the part's
+  // number; the part's last time through (its second ending), and the notes
+  // that lead into it. For the whole tune: none, and the tune's own pickup.
+  var practise = 'all', PASS2 = null, LEAD = [];
 
   function type() { return TYPES[tune.meta.type]; }
   function setting() { return tune.settings[tune.index]; }
@@ -259,7 +263,8 @@
     // tune reopened on setting 3 was stored as setting 1, and stayed so.
     tune.savedNumber = saved && saved.number;
     tune.fromFile = !!(saved && saved.fromFile);
-    FORM = lay.timeline;
+    practise = storedPractise();
+    buildForm();
     prepareGuitar(); prepareMandolin();
     var options = (saved && saved.options) || {};
     if (keepBpm && !options.bpm) options = Object.assign({}, options, { bpm: keepBpm });
@@ -715,6 +720,7 @@
       if (!list) return;
       var row = document.createElement('div');
       row.className = 'part';
+      row.dataset.part = p;
       row.innerHTML = '<div class="part-name">' + 'ABCDEFGH'.charAt(p) + '</div>';
       var bars = document.createElement('div');
       bars.className = 'bars';
@@ -732,6 +738,7 @@
       row.appendChild(bars);
       host.appendChild(row);
     });
+    drawPractise();
     showReset();
   }
 
@@ -927,6 +934,80 @@
 
   function quaver() { return 60 / +$('bpm').value / type().per; }
   function times() { return +$('times').value; }
+  /* ---------- practising one part (since 1.29.0) ----------
+   * Practise: the whole tune, or one part round and round. The part's bars
+   * are the first time it is played in the tune, so a part with first and
+   * second endings goes round on its first ending, which leads back to its
+   * start, and plays its second only the last time through ("Play it", or
+   * Finish). Only the notes written in the part are kept: a lead-in written
+   * at the end of its last bar into the next part is left out, and its own
+   * lead-in (the tune's pickup, for the A part; for another, the notes
+   * written for it at the end of the bar before) brings it in after the
+   * count-in and each time round. Chosen for one tune: another tune, or
+   * another setting, starts on the whole tune. */
+  function partsCount() {
+    return tune ? tune.lay.slots.reduce(function (m, sl) { return Math.max(m, sl.part + 1); }, 1) : 1;
+  }
+  function practiseForm(p) {
+    var tl = tune.lay.timeline, partOf = tune.lay.partOf, bar = tune.lay.meter.bar, slotPart = {}, i, start = -1;
+    tune.lay.slots.forEach(function (sl) { slotPart[sl.id] = sl.part; });
+    function own(tb) {
+      return { k: tb.k, slot: tb.slot, written: tb.written, marks: tb.marks,
+               notes: tb.notes.filter(function (nt) { return nt.written == null || partOf[nt.written] === p; }) };
+    }
+    for (i = 0; i < tl.length; i++) if (slotPart[tl[i].slot] === p) { start = i; break; }
+    if (start < 0) return null;
+    var first = [], again = [], seen = {};
+    for (i = start; i < tl.length && slotPart[tl[i].slot] === p && !seen[tl[i].slot]; i++) { seen[tl[i].slot] = true; first.push(own(tl[i])); }
+    for (; i < tl.length && slotPart[tl[i].slot] === p; i++) again.push(own(tl[i]));
+    var lead = start === 0 ? tune.lay.pickup :
+      tl[start - 1].notes.filter(function (nt) { return partOf[nt.written] === p; }).map(function (nt) {
+        return { tick: nt.tick - bar, dur: nt.dur, midi: nt.midi, orn: nt.orn, grace: nt.grace };
+      });
+    return { bars: first, last: again.length === first.length ? again : null, lead: lead };
+  }
+  function buildForm() {
+    FORM = tune.lay.timeline; PASS2 = null; LEAD = tune.lay.pickup;
+    if (practise === 'all') return;
+    var pf = +practise < partsCount() ? practiseForm(+practise) : null;
+    if (!pf) { practise = 'all'; return; }
+    FORM = pf.bars; PASS2 = pf.last; LEAD = pf.lead;
+  }
+  /* Bar n as it is played: the part's second time through on its last time. */
+  function formBar(n) {
+    var L = FORM.length, k = ((n % L) + L) % L;
+    return PASS2 && n >= 0 && Math.floor(n / L) + 1 >= endTime() ? PASS2[k] : FORM[k];
+  }
+  // The tune and setting, by their Session numbers: a tune reopened from
+  // last time comes back with its own setting alone, so not by position.
+  function tuneKey() { var st = setting(); return (tune.meta.id || tune.meta.name) + '/' + (st && st.id ? st.id : tune.index); }
+  function storedPractise() {
+    try { var d = JSON.parse(stored('players.practise', 'null')); if (d && d.tune === tuneKey()) return String(d.part); } catch (e) {}
+    return 'all';
+  }
+  function drawPractise() {
+    if (!tune) return;
+    var n = partsCount(), sel = $('practise'), html = '<option value="all">the whole tune</option>';
+    for (var p = 0; p < n; p++) html += '<option value="' + p + '">the ' + 'ABCDEFGH'.charAt(p) + ' part</option>';
+    sel.innerHTML = html;
+    sel.value = practise;
+    $('practise-box').hidden = n < 2;
+    Array.prototype.forEach.call(document.querySelectorAll('#chart .part'), function (row) {
+      var on = practise !== 'all' && +row.dataset.part === +practise;
+      row.classList.toggle('practising', on);
+      row.classList.toggle('resting', practise !== 'all' && !on);
+    });
+  }
+  /* A part chosen while playing starts it afresh, with the count-in. */
+  function setPractise(v) {
+    practise = v;
+    store('players.practise', JSON.stringify({ tune: tuneKey(), part: v }));
+    buildForm();
+    drawPractise();
+    idleNow();
+    if (playing) { stop(false); start(); }
+  }
+
   /* The tune ends on the last bar of a time through: the last time "Play it"
    * asks for, or the one Finish was pressed in. Until 1.13.0 only the exact
    * bar times x length counted, so "Play it" lowered below the time already
@@ -1281,7 +1362,7 @@
 
   /* The tune's pickup notes, coming in over the end of the bar before. */
   function pickupInto(tNext, q, yours) {
-    var pk = tune.lay.pickup, first = FORM[0] && FORM[0].notes[0];
+    var pk = LEAD, first = FORM[0] && FORM[0].notes[0];
     var L = type().slots * TPQ, tBar = tNext - type().slots * q;
     var written = asWritten(pk, function (p) { return L + p.tick; });
     var art = articulate(pk.map(function (p) { return { tick: L + p.tick, dur: p.dur, midi: p.midi }; }));
@@ -1430,7 +1511,7 @@
       if (n === -1) pickupInto(t0 + L * q, q, yourTurn(0));
       return L * q;
     }
-    var k = n % FORM.length, tb = FORM[k], last = isLast(n), chords = tune.chords[tb.slot];
+    var k = n % FORM.length, tb = formBar(n), last = isLast(n), chords = tune.chords[tb.slot];
     shown.push({ t: t0, n: n });
 
     /* The last bar of a time through, in a tune with a pickup. With another
@@ -1448,7 +1529,11 @@
      * keynote or the home chord (Foxhunter's #3 ends on a quaver D). Over the
      * popular settings this ends 85 of 100 such tunes on the home chord,
      * against 32, and none worse. */
-    var pk = tune.lay.pickup, atEnd = k === FORM.length - 1 && pk.length;
+    var pk = LEAD;
+    // A part practised ends as the whole tune does, without a lead-in back to
+    // the top: its own lead-in, or (a part with none) the tune's pickup.
+    if (last && !pk.length && practise !== 'all') pk = tune.lay.pickup;
+    var atEnd = k === FORM.length - 1 && pk.length;
     var cutAt = atEnd ? L * TPQ + pk[0].tick : Infinity;
     var tail = tb.notes.filter(function (nt) { return nt.tick >= cutAt; });
     var asPickup = tail.length === pk.length && tail.every(function (nt, i) {
@@ -1458,10 +1543,10 @@
     var kept = again ? tb.notes.filter(function (nt) { return nt.tick < cutAt; }) : tb.notes;
     if (atEnd && last && tail.length) kept = endWithout(tb.notes, cutAt, asPickup);
     var written = asWritten(tb.notes), mine = yourTurn(n), art = articulate(kept);
-    var before = FORM[k - 1] && FORM[k - 1].notes[FORM[k - 1].notes.length - 1];
+    var prevBar = k > 0 ? formBar(n - 1) : null, before = prevBar && prevBar.notes[prevBar.notes.length - 1];
     kept.forEach(function (note, i) {
       var dur = again ? Math.min(note.dur, cutAt - note.tick) : note.dur;
-      var nx = kept[i + 1] || (again ? pk[0] : FORM[(k + 1) % FORM.length].notes[0]);
+      var nx = kept[i + 1] || (again ? pk[0] : formBar(n + 1).notes[0]);
       var finalNote = last && i === kept.length - 1, orn = note;
       if (ornaments === 'player') {
         var pv = kept[i - 1] ? (kept[i - 1].tick + kept[i - 1].dur === note.tick ? kept[i - 1] : null)
@@ -1651,7 +1736,7 @@
       $('where').textContent = 'count-in' + (lead > 1 ? ' ' + (lead + n + 1) + ' of ' + lead : '');
       return;
     }
-    var k = n % FORM.length, tb = FORM[k], nb = FORM[(k + 1) % FORM.length];
+    var k = n % FORM.length, tb = formBar(n), nb = formBar(n + 1);
     var el = slotEls[tb.slot];
     if (el) el.classList.add('on');
     var c = tune.chords[tb.slot];
@@ -1675,9 +1760,9 @@
           dot.classList.add('on');
           (function (d) { setTimeout(function () { d.classList.remove('on'); }, 120); })(dot);
         }
-        var cur = heard >= 0 ? FORM[heard % FORM.length] : null;
+        var cur = heard >= 0 ? formBar(heard) : null;
         if (e.strum === half && cur && tune.chords[cur.slot].length > 1) {
-          nowChord(tune.chords[cur.slot][1], tune.chords[FORM[(heard + 1) % FORM.length].slot][0]);
+          nowChord(tune.chords[cur.slot][1], tune.chords[formBar(heard + 1).slot][0]);
         }
       } else {
         showBar(e.n);
@@ -1836,6 +1921,7 @@
     $('bpm-num').addEventListener('change', function () { setBpm(this.value); remember(); });
     $('bpm').addEventListener('change', remember);
     ['times', 'countin'].forEach(function (id) { $(id).addEventListener('change', remember); });
+    $('practise').addEventListener('change', function () { setPractise(this.value); });
     // Which of them are ticked is kept too (since 1.18.2; a reload put them
     // back to guitar, flute and bodhrán).
     var ticked = {};
@@ -2126,6 +2212,7 @@
     swingNow: function () { return tune ? swingNow() : 0.5; }, MIX: MIX, fluteLength: fluteLength, concertinaLength: concertinaLength,
     tune: function () { return tune; },
     form: function () { return FORM; },
+    practising: function () { return practise; },
     STARTER: STARTER, loadTune: loadTune, openText: openText, listText: listText,
     bodhranLink: bodhranLink,
     // The tune's notes bar n would hand over (count-in bars below 0), laid

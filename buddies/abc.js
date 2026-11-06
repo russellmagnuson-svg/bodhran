@@ -328,8 +328,11 @@
    * same slot, and a chord set for it is set for every time it is played.
    *
    * Returns { bars (written), order, meter, key, pickup: [notes], length,
-   *   timeline: [{ k, slot, written, notes: [{ tick, dur, midi }] }],
-   *   slots: [{ id, written, part, ending, text }] } in first-heard order. */
+   *   timeline: [{ k, slot, written, notes: [{ tick, dur, midi, written }] }],
+   *   slots: [{ id, written, part, ending, text }] in first-heard order,
+   *   partOf: [part of each written bar] }. A note's `written` is the bar it
+   *   is written in, so a lead-in at the end of one part's bar into the next
+   *   part is known to be the next part's (since 1.29.0). */
   P.layout = function (abc, opts) {
     var bars = P.readBars(abc, opts), order = P.unroll(bars), meter = P.meter(opts.meter);
     var L = meter.bar, t = 0;
@@ -358,17 +361,33 @@
     notes.forEach(function (nt) {
       if (nt.tick < 0) { pickup.push({ tick: nt.tick, dur: nt.dur, midi: nt.midi, orn: nt.orn, grace: nt.grace }); return; }
       var k = Math.floor(nt.tick / L);
-      if (timeline[k]) timeline[k].notes.push({ tick: nt.tick - k * L, dur: nt.dur, midi: nt.midi, orn: nt.orn, grace: nt.grace });
+      if (timeline[k]) timeline[k].notes.push({ tick: nt.tick - k * L, dur: nt.dur, midi: nt.midi, orn: nt.orn, grace: nt.grace, written: nt.written });
     });
     // Chord symbols in the setting, if it has any: where each one starts.
     var symbols = downs.filter(function (d) { return d.chordAt != null; })
                        .map(function (d) { return { tick: d.chordAt, name: d.name }; });
 
-    // Parts: a new part where a written bar opens a repeat or follows a
-    // double bar. The pickup into a part belongs to it.
+    // Parts: a new part where a written bar opens a repeat, follows a double
+    // bar, or (since 1.29.0) follows a repeat's end without being its second
+    // ending: the Swallowtail writes its B part "…A2d:| efg a2b|…", with no
+    // |: of its own, and was all one part, A (as were 1 in 8 of the 1,026
+    // settings of the Session's 40 most popular tunes, now 1 in 27). Unless
+    // what follows the repeat is only a bar or two before the next part or
+    // the end: a closing bar ("…:|G3||") or an unmarked second ending
+    // ("|1 abba gedg:|~b3a gedB||"), which stay with the part before.
+    // The pickup into a part belongs to it.
+    function opens(k) { return k === 0 || bars[k].startRepeat || bars[k].section; }
+    function afterRepeat(k) {
+      if (!(k > 0 && bars[k - 1].endRepeat && !bars[k].ending)) return false;
+      var run = 0;
+      for (var j = k; j < bars.length && (j === k || !opens(j)) && !(j > k && bars[j - 1].endRepeat); j++) {
+        if (bars[j].len >= meter.bar) run++;
+      }
+      return run > 2;
+    }
     var partOf = [], part = -1;
     bars.forEach(function (b, k) {
-      if (k === 0 || b.startRepeat || b.section) part++;
+      if (opens(k) || afterRepeat(k)) part++;
       partOf.push(Math.max(0, part));
     });
     var seen = {}, slots = [], firstPart = {}, nParts = 0;
@@ -386,6 +405,7 @@
     });
     return { bars: bars, order: order, meter: meter, key: P.parseKey(opts.key), length: t,
              pickup: pickup, timeline: timeline, slots: slots, symbols: symbols,
+             partOf: partOf.map(function (pt) { return firstPart[pt] || 0; }),
              warnings: bars.warnings };
   };
 

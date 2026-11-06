@@ -492,6 +492,27 @@ The page at `/buddies/` has its own version number, shown next to its title.
 It was called Session Players, at `/players/`, until 1.8.0; the entries
 before that keep the old name.
 
+### Session Buddies 1.29.0 — 2026-11-06 — Practise one part
+
+- **Practise** (beside Play it, Count-in): the whole tune, or one part,
+  played round and round after the count-in. "Play it" counts times through
+  the part; Finish ends at the end of the part. A part goes round on its
+  first ending and takes its second only the last time; it comes in on its
+  own lead-in (The Kesh, setting 3: A on its low D, B on its high d) and
+  leads back round with it; a lead-in written into the next part is left
+  out, and the part that ends the tune ends as the whole tune does. The
+  chart fades the other parts. Kept for the tune (by the Session's setting
+  number), even through a reload; another tune or setting starts on the
+  whole tune. Chosen while playing, the part starts afresh with the
+  count-in. A one-part tune has no choice to make.
+- **Parts found where a tune repeats.** A new part now also starts after a
+  repeat's end (`:|`) unless what follows is its second ending, or only a
+  bar or two (a closing bar, or a second ending left unmarked). The
+  Swallowtail writes its B part "…A2d:| efg a2b|…" with no `|:` of its own
+  and was one long part, A; across the 1,026 settings of the Session's 40
+  most popular tunes, settings found as one part went from 136 to 39, and
+  none lost a part. The chart and Your turn go by these parts too.
+
 ### Session Buddies 1.28.1 — 2026-10-25
 
 - **The new mandolin is much lighter work**, after its first play stuttered

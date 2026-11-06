@@ -131,3 +131,8 @@ button.bar .ch, button.bar .abc { display: block; }
 }
 .paste-box textarea:focus { outline: none; border-color: var(--accent-dim); }
 @media (max-width: 480px) { .paste-box textarea { font-size: 16px; } }
+
+/* Practising one part (1.29.0): the other parts' rows faded on the chart,
+ * still there to tap and change a chord. */
+.chart .part.resting { opacity: 0.4; }
+.chart .part.practising .part-name { color: var(--text); }
